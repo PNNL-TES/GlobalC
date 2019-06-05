@@ -1,0 +1,89 @@
+---
+title: "TopdownApproach"
+author: "Jinshi"
+date: "May 19, 2019"
+output: html_document
+---
+
+```{r preliminaries, message=FALSE, include=FALSE, echo=FALSE}
+# Set chunks defaults; these options will be applied to all subsequent chunks
+knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, echo = FALSE,
+                      fig.height = 4, fig.width = 8)
+# Constants
+OUTPUT_DIR		<- "outputs/"
+SEPARATOR		<- "-------------------------------------------"
+DATA_DIR <- 'data'
+# Create output and log folders if they do not exist
+if(!file.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
+# install.packages('kableExtra')
+# Load required packages
+library(cowplot)
+library(data.table)
+library(dplyr)
+library(ggplot2)
+theme_set(theme_bw())
+library(lubridate)
+library(kableExtra)
+library(cowplot)
+library(knitr)
+library("ggpubr")
+library(reshape)
+library(ggplot2)
+# install.packages("ggmap")
+library(ggmap)
+# install.packages("maps")
+library(maps)
+# install.packages("mapdata")
+library(mapdata)
+library(tidyr)
+# Source all needed functions
+source('functions.R')
+```
+
+
+```{r}
+# input data
+srdb_v4 <- read.csv(paste0(DATA_DIR,'/', 'srdbv4.csv'), header = T) # SRDB_V4 data
+FlFsFr <- read.csv(paste0(DATA_DIR,'/', 'FlFsFrSummary.csv'), header = T)
+GPP <- read.csv(paste0(DATA_DIR,'/', 'GlobalGPP_Sum.csv'), header = T)
+NPP <- read.csv(paste0(DATA_DIR,'/', 'ITONPP.CSV'), header = T)
+GlobalRs <- read.csv(paste0(DATA_DIR,'/', 'GlobalRs.csv'), header = T)
+
+```
+
+
+
+* 1. Introduction
+
+** Figure 1. Sites distribution -- FlFsFr sites and RC/HC sites
+```{r}
+# plot sites distribution of MGRsD
+plot_sites(srdb_v4, FlFsFr)
+```
+
+** Figure 2. GPP plot
+```{r, fig.height = 3, fig.width = 8}
+plot_GPP(GPP)
+```
+
+** Figure 3, plot NPP
+```{r}
+plot_NPP_Rab (NPP, srdb_v4)
+```
+
+
+
+** Figure 4, plot FfFrFw
+```{r}
+FlFsFr$ID<-"All"
+plot_Ff(FlFsFr)
+```
+
+** Figure 5, plot global Rs
+```{r}
+plot_Rs (GlobalRs) 
+```
+
+
+
+
