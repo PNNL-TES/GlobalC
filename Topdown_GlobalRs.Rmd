@@ -14,18 +14,8 @@ output:
 # 2. Ra < 0 how to resolve this 
 ```
 
+```{r}
 
-
-```{r preliminaries, message=FALSE, include=FALSE, echo=FALSE, cache=TRUE}
-# Set chunks defaults; these options will be applied to all subsequent chunks
-knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, echo = FALSE,
-                      fig.height = 4, fig.width = 8, cache = TRUE)
-# Constants
-OUTPUT_DIR		<- "outputs/"
-SEPARATOR		<- "-------------------------------------------"
-DATA_DIR <- 'data'
-# Create output and log folders if they do not exist
-if(!file.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
 # install.packages('kableExtra')
 # Load required packages
 library(cowplot)
@@ -49,7 +39,21 @@ library(mapdata)
 library(tidyr)
 library(hexbin)
 # Source all needed functions
+
 source('functions.R')
+```
+
+
+```{r preliminaries, message=FALSE, include=FALSE, echo=FALSE, cache=TRUE}
+# Set chunks defaults; these options will be applied to all subsequent chunks
+knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, echo = FALSE,
+                      fig.height = 4, fig.width = 8, cache = TRUE)
+# Constants
+OUTPUT_DIR		<- "outputs/"
+SEPARATOR		<- "-------------------------------------------"
+DATA_DIR <- 'data'
+# Create output and log folders if they do not exist
+if(!file.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
 ```
 
 
@@ -187,8 +191,8 @@ plot_froot <- function (sdata) {
 }
 
 # check whether Froot + Fshoot = 1
-Froot %>% transmute (check = Froot + Fshoot) %>% max
-Froot %>% group_by(Ecosystem) %>% summarise(count = n()) 
+# Froot %>% transmute (check = Froot + Fshoot) %>% max
+# Froot %>% group_by(Ecosystem) %>% summarise(count = n()) 
 # mean(Froot$Froot)
 plot_froot (Froot)
 

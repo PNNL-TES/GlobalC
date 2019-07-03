@@ -1,10 +1,11 @@
 
+
 #*****************************************************************************************************************
 # Baasic functions
 #*****************************************************************************************************************
 summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=F,
                       conf.interval=.95, .drop=TRUE) {
-  library(plyr)
+  # library(plyr)
   
   # New version of length which can handle NA's: if na.rm==T, don't count them
   length2 <- function (x, na.rm=FALSE) {
@@ -14,7 +15,7 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=F,
   
   # This does the summary. For each group's data frame, return a vector with
   # N, mean, and sd
-  datac <- ddply(data, groupvars, .drop=.drop,
+  datac <- plyr::ddply(data, groupvars, .drop=.drop,
                  .fun = function(xx, col) {
                    c(N    = length2(xx[[col]], na.rm=na.rm),
                      mean = mean   (xx[[col]], na.rm=na.rm),
@@ -27,7 +28,7 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=F,
   )
   
   # Rename the "mean" column
-  datac <- rename(datac, c("mean" = measurevar))
+  datac <- plyr::rename(datac, c("mean" = measurevar))
   
   datac$se <- datac$sd / sqrt(datac$N)  # Calculate standard error of the mean
   
@@ -292,9 +293,13 @@ plot_Rs <- function (sdata, sdata2, sdata3) {
   sdata2 %>% 
     select(Study_number, Biome, Ecosystem_type, Leaf_habit, Latitude, Longitude, RC_annual, Ra_annual, Rh_annual) %>% 
     filter(RC_annual > 0 & RC_annual < 1) -> 
-    sub_srdb 
+    sub_srdb
   
-  sub_srdb %>% group_by(Ecosystem_type) %>% summarise(count = n()) %>% print ()
+  sub_srdb %>%
+    count(Ecosystem_type) %>%
+    print()
+  
+  #sub_srdb %>% group_by(Ecosystem_type) %>% summarise(count = n()) %>% print ()
   
   RC_obs <- nrow(sub_srdb)
   # sub_srdb %>% filter(Ra_Rh_Ratio < 5) -> sub_srdb
