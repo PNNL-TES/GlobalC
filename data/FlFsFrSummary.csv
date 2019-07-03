@@ -1,30 +1,36 @@
-Fl,Fs,Fr,IGBP,Notes,Latitude,Longitude,Reference
-50,,,Forest,Tropical forest,9.75,-83.75,"(Allen and Lemon, 1976)"
-53,35,12,Forest,Tropical  forest,3.22,101.65,"(Yoda, 1983)"
-55,,,Forest,Warm-temperate forest,36.2,138.25,"(Yoda, 1978)"
-28,26,46,Forest,Temperate  deciduous forest,,,"(Edwards et al., 1981)"
-33.5,39,27.5,Forest,Pinus  radiata  trees,-35.35,148.77,"(Ryan et al., 1996)"
-31.6,39.4,29,Forest,"Forest in northern Manitob, Canada",55.34,-106.14,"(Ryan et al., 1997)"
-43.17,34.53,22.3,Forest,"Forest in Central Saskatchewa, Canada",55.57,-106.23,"(Ryan et al., 1997)"
-32.92,13.6,53.48,Forest,Pine forest,44.5,-120.62,"(Law, BE, Ryan, MG, Anthoni, 1999)"
-,,24.92,Crop,Crop,55.55,4.73,"(Suleau et al., 2011)"
-,,46.7,Forest,Young Beech forest,48.67,7.08,"(Granier et al., 2000)"
-23.3,6.7,70,Grass,Tropical savanna,-12.6,131.17,"(Chen et al., 2003)"
-24.4,18.28,57.32,Forest,Deciduous forest,45.48,-90.12,"(Bolstad et al., 2004)"
-31.27,26.01,42.72,Forest,Hardwood forest,45.58,-83.7,"(Curtis et al., 2005)"
-,,29.01,Forest,Spruce-dominated forest,45.2,-68.74,"(Davidson et al., 2006)"
-,,34.78,Forest,Temperate forest,51.18,4.31,"(Nagy et al., 2006)"
-,,49.04,Forest,Rain forest,21.55,101.15,"(Zhang et al., 2006)"
-,,36.43,Forest,Douglas Fir,49.52,-125.2,"(Jassal et al., 2007)"
-46.22,17.07,36.71,Forest,Scots Pine,62.52,30.49,"(Zha et al., 2007)"
-38.1,26.33,35.57,Forest,Eucalyptus forest,-35.39,148.09,"(Keith et al., 2009)"
-41.49,12.04,46.47,Forest,Scots pine forest,61.51,24.17,"(Kolari et al., 2009)"
-50.51,21.21,28.28,Forest,Amazonian forests,-2.15,-55.63,"(Malhi et al., 2009)"
-24.86,25.15,49.99,Forest,Pine forest,28.58333333,-16.325,"(Wieser et al., 2009)"
-,,36.21,Grass,Alpine meadow,37.36,101.18,"(Zhang et al., 2009)"
-50,15.45,34.55,Forest,Black spruce forest,49.69,-74.43,"(Hermle et al., 2010)"
-22.96,34.31,42.73,Forest,Brazil Eucalyptus,-19.82,-40.08,"(Ryan et al., 2010)"
-55.52,19.42,25.06,Forest,Rain forest,21.92,101.25,"(Tan et al., 2010)"
-,,23.55,Grass,Maize,51.97,5.63,"(Jans et al., 2010)"
-30.7,43.15,26.15,Forest,Eucalyptus plantation,-22.96,-48.72,"(Campoe et al., 2012)"
-,,24,Forest,Mediterranean pine forest,43.72,10.28,"(Matteucci et al., 2015)"
+Fl,Fw,Fshoot,Froot,IGBP,Ecosystem,IGBP_Comments,Latitude,Longitude,Reference,StudyNo,SRDBNo,Rleaf,Rwood,Rroot,Ra,Notes1,Notes2
+,,50,,EBF,Forest,Tropical forest,9.75,-83.75,"(Allen and Lemon, 1976)",1,,,,,,Book chapter,
+53,35,,12,EBF,Forest,Tropical  forest,3.22,101.65,"(Yoda, 1983)",1,,,,,,Book chapter,
+,,55,,EBF,Forest,Warm-temperate forest,36.2,138.25,"(Yoda, 1978)",1,,,,,,Book chapter,
+28,26,,46,DBF,Forest,Temperate  deciduous forest,,,"(Edwards et al., 1981)",1,,,,,,Book chapter,
+33.5,39,,27.5,ENF,Forest,Pinus radiata trees,-35.35,148.77,"(Ryan et al., 1996)",,,,,,,,
+31.6,39.4,,29,ENF,Forest,"Forest in northern Manitob, Canada",55.34,-106.14,"(Ryan et al., 1997)",2,,,,,,,
+43.17,34.53,,22.3,ENF,Forest,"Forest in Central Saskatchewa, Canada",55.57,-106.23,"(Ryan et al., 1997)",2,,,,,,,
+41.56626506,12.40963855,,46.02409639,ENF,Forest,NSA-OBS,55.88333333,-98.33333333,"(Ryan et al., 1997)",2,,345,103,382,830,Table 5,
+48.38709677,3.379416283,,48.23348694,ENF,Forest,NSA-OJP,55.88333333,-98.33333333,"(Ryan et al., 1997)",2,,315,22,314,651,Table 5,
+46.96356275,10.39136302,,42.64507422,DBF,Forest,NSA-OA,55.88333333,-98.33333333,"(Ryan et al., 1997)",2,,348,77,316,741,Table 5,
+64.45859873,11.08280255,,24.45859873,ENF,Forest,SSA-OBS,53.88333333,-104.8833333,"(Ryan et al., 1997)",2,,506,87,192,785,Table 5,
+66.1682243,5.607476636,,28.22429907,ENF,Forest,SSA-OJP,53.88333333,-104.8833333,"(Ryan et al., 1997)",2,,354,30,151,535,Table 5,
+51.8722467,13.54625551,,34.5814978,DBF,Forest,SSA-OA,53.88333333,-104.8833333,"(Ryan et al., 1997)",2,,471,123,314,908,Table 5,
+32.92,13.6,,53.48,EBF,Forest,Pine forest,44.5,-120.62,"(Law, BE, Ryan, MG, Anthoni, 1999)",,1470,,,,,,
+,,,24.92,CRO,Cropland,Crop,55.55,4.73,"(Suleau et al., 2011)",,6029,,,,,,
+,,,46.7,DBF,Forest,Young Beech forest,48.67,7.08,"(Granier et al., 2000)",,1602,,,,,,
+23.3,6.7,,70,SAV,Savanna,Tropical savanna,-12.6,131.17,"(Chen et al., 2003)",,2241,,,,,,
+24.4,18.28,,57.32,MF,Forest,Deciduous forest,45.48,-90.12,"(Bolstad et al., 2004)",,2532,,,,,,
+31.27,26.01,,42.72,MF,Forest,Hardwood forest,45.58,-83.7,"(Curtis et al., 2005)",,2904,,,,,,
+,,,29.01,ENF,Forest,Spruce-dominated forest,45.2,-68.74,"(Davidson et al., 2006)",,3301,,,,,,
+,,,34.78,MF,Forest,Temperate forest,51.18,4.31,"(Nagy et al., 2006)",,3503,,,,,,
+,,,49.04,EBF,Forest,Rain forest,21.55,101.15,"(Zhang et al., 2006)",,3705,,,,,,
+,,,36.43,ENF,Forest,Douglas Fir,49.52,-125.2,"(Jassal et al., 2007)",,3885,,,,,,
+46.22,17.07,,36.71,ENF,Forest,Scots Pine,62.52,30.49,"(Zha et al., 2007)",,4166,,,,,,
+38.1,26.33,,35.57,EBF,Forest,Eucalyptus forest,-35.39,148.09,"(Keith et al., 2009)",,4920,,,,,,
+41.49,12.04,,46.47,ENF,Forest,Scots pine forest,61.51,24.17,"(Kolari et al., 2009)",,4938,,,,,,
+50.51,21.21,,28.28,EBF,Forest,Amazonian forests,-2.15,-55.63,"(Malhi et al., 2009)",,4979,,,,,,
+24.86,25.15,,49.99,ENF,Forest,Pine forest,28.58333333,-16.325,"(Wieser et al., 2009)",,5227,,,,,,
+,,,36.21,GRA,Grassland,Alpine meadow,37.36,101.18,"(Zhang et al., 2009)",,5262,,,,,,
+50,15.45,,34.55,ENF,Forest,Black spruce forest,49.69,-74.43,"(Hermle et al., 2010)",,5392,,,,,,
+22.96,34.31,,42.73,EBF,Forest,Brazil Eucalyptus,-19.82,-40.08,"(Ryan et al., 2010)",,5435,,,,,,
+55.52,19.42,,25.06,EBF,Forest,Rain forest,21.92,101.25,"(Tan et al., 2010)",,5545,,,,,,
+,,,23.55,CRO,Cropland,Maize,51.97,5.63,"(Jans et al., 2010)",,5833,,,,,,
+30.7,43.15,,26.15,EBF,Forest,Eucalyptus plantation,-22.96,-48.72,"(Campoe et al., 2012)",,6245,,,,,,
+,,,24,MF,Forest,Mediterranean pine forest,43.72,10.28,"(Matteucci et al., 2015)",,10043,,,,,,
