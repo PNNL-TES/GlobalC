@@ -460,7 +460,7 @@ ggplot(rs_results) + aes(Rs) + geom_histogram(col = "black", fill = "gray", bins
   annotate("text", x = quantile(rs_results$Rs, 0.98), y = 5000, label = paste0("95%CI (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")"), hjust = 0) +
   annotate("text", x = quantile(rs_results$Rs, 0.98), y = 4000, label = paste0("95%CI (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
            , hjust = 0, col = "blue") +
-  ylab(expression(R[S]~"("~Pg~C~yr^{-1}~")"))
+  ylab(expression(count))
 
 # Rs raw data plot
 # var_CI <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
