@@ -3,8 +3,8 @@ title: "TopdownApproach"
 author: "Jinshi"
 date: "May 19, 2019"
 output:
-  word_document: default
   html_document: default
+  word_document: default
 ---
 
 
@@ -60,13 +60,13 @@ if(!file.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
 
 ```{r}
 # input data
-srdb_v4 <- read.csv(paste0(DATA_DIR,'/', 'srdbv4.csv'), header = T) # SRDB_V4 data
-FlFsFr <- read.csv(paste0(DATA_DIR,'/', 'FlFsFrSummary.csv'), header = T)
-GPP <- read.csv(paste0(DATA_DIR,'/', 'GlobalGPP_Sum.csv'), header = T)
-NPP <- read.csv(paste0(DATA_DIR,'/', 'ITONPP.CSV'), header = T)
-GlobalRs <- read.csv(paste0(DATA_DIR,'/', 'GlobalRs.csv'), header = T)
-RaGPP <- read.csv(paste0(DATA_DIR,'/', 'RaGPP.csv'), header = T)
-IGBP <- read.table(paste0(DATA_DIR,'/', 'IGBP.txt'), header = T, sep = ",")
+srdb_v4 <- read.csv(file.path(DATA_DIR, 'srdbv4.csv')) # SRDB_V4 data
+FlFsFr <- read.csv(file.path(DATA_DIR, 'FlFsFrSummary.csv'))
+GPP <- read.csv(file.path(DATA_DIR, 'GlobalGPP_Sum.csv'))
+NPP <- read.csv(file.path(DATA_DIR, 'ITONPP.CSV'))
+GlobalRs <- read.csv(file.path(DATA_DIR, 'GlobalRs.csv'))
+RaGPP <- read.csv(file.path(DATA_DIR, 'RaGPP.csv'))
+IGBP <- read.table(file.path(DATA_DIR, 'IGBP.txt'), header = TRUE, sep = ",")
 # sort(unique(IGBP$IGBP2001Pr))
 # there are 16 IGBP group
 IGBP %>% mutate(IGBP = case_when( IGBP2001Pr == 0 ~ "WAT",
@@ -88,6 +88,10 @@ IGBP %>% mutate(IGBP = case_when( IGBP2001Pr == 0 ~ "WAT",
                                   IGBP2001Pr == 16 ~ "BSV",
                                   TRUE ~ "UNC"
                                   ) ) -> IGBP
+
+# BBL: Interesting; I didn't know case_when! Aanother way to do this would be 
+# IGBP_list <- c("WAT", "ENF", ...)
+# IGBP$IGBP <- IGBP_list[IGBP$IGBP2001Pr]
 
 # 16 IGBP group into 10 Ecosystems
 IGBP %>% mutate (Ecosystem = case_when( IGBP2001Pr == 0 ~ "Water",
@@ -116,13 +120,20 @@ IGBP %>% mutate (Ecosystem = case_when( IGBP2001Pr == 0 ~ "Water",
 
 ```{r}
 # IGBP area by type
-IGBP %>% filter(Ecosystem != "Water" & Ecosystem != "Snow" & Ecosystem != "Unclassified" & Ecosystem != "Urbland") %>%  
-  group_by (Ecosystem) %>% summarise ( count = n() ) %>% mutate (percent = count/sum(count))
+IGBP %>% 
+  filter(Ecosystem != "Water", Ecosystem != "Snow",
+         Ecosystem != "Unclassified", Ecosystem != "Urbland") %>%  
+  group_by(Ecosystem) %>% 
+  summarise(count = n()) %>% 
+  mutate(percent = count / sum(count))
 # sum(0.191,0.17,0.214,0.153,0.155,0.113,0.004)
 
 # Remove desert and shrubland because no data for Froot and Ra/GPP ratio
-IGBP %>% filter(Ecosystem != "Water" & Ecosystem != "Snow" & Ecosystem != "Unclassified" & Ecosystem != "Urbland" & Ecosystem != "Desert" & Ecosystem != "Shrubland") %>%  
-  group_by (Ecosystem) %>% summarise ( count = n() ) %>% mutate (percent = count/sum(count))
+IGBP %>% 
+  filter(Ecosystem != "Water", Ecosystem != "Snow",
+         Ecosystem != "Unclassified", Ecosystem != "Urbland",
+         Ecosystem != "Desert", Ecosystem != "Shrubland") %>%  
+  group_by(Ecosystem) %>% summarise ( count = n() ) %>% mutate (percent = count/sum(count))
 sum(0.267,0.298,0.213,0.216,0.006)
 ```
 
@@ -155,6 +166,7 @@ plot_sites(srdb_v4, FlFsFr)
 ```{r}
 # potential issue: only two points from grassland
 # no point from tundra 
+# BBL: difficult to see what's going on here
 Froot <- cal_Froot(FlFsFr, srdb_v4)
 
 plot_froot <- function (sdata) {
@@ -346,7 +358,7 @@ ggplot(gpp_results) +
 ```
 
 ```{r}
-# Quantify the properbility GPP following (107, 133)
+# Quantify the probability GPP following (107, 133)
 # about 29% chance GPP will between (107-133)
 y <- mean(gpp_results$GPP)
 s <- sd(gpp_results$GPP)
@@ -522,7 +534,7 @@ ggplot(rs_results) +
 ```
 
 ```{r}
-# about 27% chance Rs will between (80-92)
+# about 27% chance Rs will be between (80-92)
 y <- mean(rs_results$Rs)
 s <- sd(rs_results$Rs)
 p_Rs_higher_than_80 <- pnorm ((y - 80)/(s))
