@@ -100,7 +100,8 @@ plot_sites <- function (sdata, sdata2) {
 # plot GPP
 plot_GPP <- function (sdata) {
   
-  sdata$Global <- "n=50"
+  obs_gpp <- nrow(sdata)
+  sdata$Global <- paste0("n=", obs_gpp)
   p_GPP <- ggplot(sdata, aes(x = Global, y=GPP)) + geom_violin() +
     geom_jitter(shape=16, position=position_jitter(0.2), col = 'gray') +
     geom_boxplot(width=.1) +
@@ -130,7 +131,7 @@ plot_GPP <- function (sdata) {
   p_trend <- ggplot(sdata, aes(x = Global, y=Trend)) + geom_violin() +
     geom_jitter(shape=16, position=position_jitter(0.2), col = 'gray') +
     geom_boxplot(width=.1) +
-    geom_point(aes(y=0.2), col="red") + geom_point(aes(y=0.43), col="red") +
+    # geom_point(aes(y=0.2), col="red") + geom_point(aes(y=0.43), col="red") +
     # stat_summary(fun.y=median, geom="point", size=2, color="red") +
     ylab(expression(GPP~trend~"("~Pg~yr^{-2}~")"))
   
@@ -146,7 +147,6 @@ plot_GPP <- function (sdata) {
   plot_grid(p_GPP, Trend_GPP, p_trend, ncol = 3
             , labels = c('( a )', '( b )', '( c )')
             , vjust = c(3,3, 3), hjust = c(-2.35, -1.5, -2.25))
-
 }
 
 
@@ -201,7 +201,6 @@ plot_RaGPP <- function (sdata2, sdata3) {
 }
 
 
-
 # FlFsFr %>%
 #   select(Fshoot, Froot, Ecosystem) ->
 #   comb_data
@@ -220,7 +219,7 @@ plot_RaGPP <- function (sdata2, sdata3) {
 cal_Froot <- function (sdata, sdata2) {
   # Froot and Fshoot data from digitized papers
   sdata %>%
-    select(Fshoot, Froot, Ecosystem) ->
+    select(Latitude, Longitude, Fshoot, Froot, Ecosystem) ->
     comb_data
   comb_data$Fshoot <- ifelse(is.na(comb_data$Fshoot), 100-comb_data$Froot, comb_data$Fshoot) 
   comb_data$Froot <- ifelse(is.na(comb_data$Froot), 100-comb_data$Fshoot, comb_data$Froot)
@@ -232,7 +231,7 @@ cal_Froot <- function (sdata, sdata2) {
   # Ra = Rroot + Rshoot = ER - Rh
   sdata2 %>% 
     # select(Study_number, Biome, Ecosystem_type, Leaf_habit, Latitude, Longitude, Ra_annual, ER, GPP, NPP) %>% 
-    select(Ecosystem_type, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>% 
+    select(Latitude, Longitude, Ecosystem_type, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>% 
     filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER) ) -> 
     sub_srdb
   sub_srdb$ER <- ifelse(is.na(sub_srdb$ER), sub_srdb$GPP, sub_srdb$ER) # IF ER not available, use GPP (assume NEP very small).
@@ -249,7 +248,7 @@ cal_Froot <- function (sdata, sdata2) {
   # mean(sub_srdb$Froot)
   
   sub_srdb$Fshoot <- 1 - sub_srdb$Froot
-  sub_srdb %>% select(Fshoot, Froot, Ecosystem_type) -> sub_srdb
+  sub_srdb %>% select(Latitude, Longitude, Fshoot, Froot, Ecosystem_type) -> sub_srdb
   colnames(sub_srdb) <- colnames(comb_data)
   
   comb_data <- rbind(comb_data, sub_srdb)

@@ -15,12 +15,11 @@ output:
 ```
 
 ```{r}
-
 # install.packages('kableExtra')
 # Load required packages
 library(cowplot)
-library(data.table)
 library(dplyr)
+library(data.table)
 library(ggplot2)
 theme_set(theme_bw())
 library(lubridate)
@@ -38,6 +37,7 @@ library(maps)
 library(mapdata)
 library(tidyr)
 library(hexbin)
+
 # Source all needed functions
 
 source('functions.R')
@@ -110,6 +110,19 @@ IGBP %>% mutate (Ecosystem = case_when( IGBP2001Pr == 0 ~ "Water",
                                         TRUE ~ "Unclassified")) -> IGBP
 # DGRsD <- read.csv(paste0(DATA_DIR,'/', 'DGRsD.csv'), header = T)
 
+AGB <- read.table(paste0(DATA_DIR,'/', 'GLC2000_Point.txt'), header = T, sep = ",")
+AGB %>% filter(RASTERVALU != -9999) -> AGB
+SOC <- read.table(paste0(DATA_DIR,'/', 'SOC_Point.txt'), header = T, sep = ",")
+```
+
+
+```{r}
+head(AGB)
+max(AGB$RASTERVALU)
+min(AGB$RASTERVALU)
+
+max(SOC$RASTERVALU)
+min(SOC$RASTERVALU)
 ```
 
 
@@ -195,9 +208,22 @@ plot_froot <- function (sdata) {
 # Froot %>% group_by(Ecosystem) %>% summarise(count = n()) 
 # mean(Froot$Froot)
 plot_froot (Froot)
+```
 
+
+```{r}
+# Each row get the closese latitude and longitude values to AGB and SOC data
+# there are no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
+AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
+Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Longitude*2, 0)/2-0.25) -> Froot
+
+left_join(Froot, AGB) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
+left_join(Froot, SOC) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
 
 ```
+
+
+
 
 ** Figure, plot global Rs
 ```{r, fig.height=6, fig.width=8}
@@ -214,19 +240,21 @@ plot_Rs (GlobalRs, srdb_v4, NPP)
 # Ra = Rroot + Rshoot
 
 var_RC <- srdb_v4 %>% select(RC_annual, Ecosystem_type) %>% filter(RC_annual > 0.01 & RC_annual < 0.99 & !is.na(RC_annual)) 
-var_agr <- var_RC %>% filter (Ecosystem_type=="Agriculture") 
-var_des <- var_RC %>% filter (Ecosystem_type=="Desert") 
-var_for <- var_RC %>% filter (Ecosystem_type=="Forest") 
-var_gra <- var_RC %>% filter (Ecosystem_type=="Grassland") 
-var_sav <- var_RC %>% filter (Ecosystem_type=="Savanna")
-var_shr <- var_RC %>% filter (Ecosystem_type=="Shrubland") 
-var_wet <- var_RC %>% filter (Ecosystem_type=="Wetland") 
+var_agr <- var_RC %>% filter (Ecosystem_type == "Agriculture") 
+var_des <- var_RC %>% filter (Ecosystem_type == "Desert") 
+var_for <- var_RC %>% filter (Ecosystem_type == "Forest") 
+var_gra <- var_RC %>% filter (Ecosystem_type == "Grassland") 
+var_sav <- var_RC %>% filter (Ecosystem_type == "Savanna")
+var_shr <- var_RC %>% filter (Ecosystem_type == "Shrubland") 
+var_wet <- var_RC %>% filter (Ecosystem_type == "Wetland") 
+var_rest <- var_RC %>% filter (Ecosystem_type != "Forest") 
 
 var_Rs <- GlobalRs %>% filter(!is.na(Rs) & is.na(SD) )
 
 n_samp <- 50000
 n_rep <- 50000
 
+set.seed(1234567)
 gpp_results <- tibble(
   # Rs = replicate( n_rep, sample(var_Rs$Rs, n_samp, replace = TRUE) %>% mean() ),
   # Rs1 = rnorm(n = n_samp, mean = 68, sd = 4),
@@ -249,16 +277,23 @@ gpp_results <- tibble(
   Rc_sav = sample(var_sav$RC_annual, n_samp, replace = TRUE) ,
   Rc_shr = sample(var_shr$RC_annual, n_samp, replace = TRUE) ,
   Rc_wet = sample(var_wet$RC_annual, n_samp, replace = TRUE) ,
+  Rc_rest = sample(var_rest$RC_annual, n_samp, replace = TRUE) ,
   Rc = (Rc_agr*0.191 + Rc_des*0.17 + Rc_for*0.214 + Rc_gra*0.153 + Rc_sav*0.155 + Rc_shr*0.113 + Rc_wet*0.004),
+  # only seperate into two groups, forest and the rest
+  Rc2 = Rc_rest * 0.214 + Rc_for * 0.786,
+    
   # Froot = sample(Froot$Froot, n_samp, replace = TRUE) ,
   Froot_agr = sample(Froot[Froot$Ecosystem == "Agriculture",]$Froot, n_samp, replace = TRUE),
   Froot_for = sample(Froot[Froot$Ecosystem == "Forest",]$Froot, n_samp, replace = TRUE),
   Froot_gra = sample(Froot[Froot$Ecosystem == "Grassland",]$Froot, n_samp, replace = TRUE),
   Froot_sav = sample(Froot[Froot$Ecosystem == "Savanna",]$Froot, n_samp, replace = TRUE),
   Froot_wet = sample(Froot[Froot$Ecosystem == "Wetland",]$Froot, n_samp, replace = TRUE),
+  Froot_rest = sample(Froot[Froot$Ecosystem != "Forest",]$Froot, n_samp, replace = TRUE),
   Froot = Froot_agr*0.267 + Froot_for*0.298 + Froot_gra*0.213 + Froot_sav*0.216 + Froot_wet*0.006,
-  # FsFr = 1 / (1 - Froot),
+  # seperate into 2 groupts
+  Froot2 = Froot_rest * 0.702 + Froot_for*0.29,
   FsFr = (1 - Froot) / Froot,
+  FsFr2 = (1 - Froot2) / Froot2,
   NPP = sample(NPP$NPP, n_samp, replace = TRUE) ,
   
   gpp1 = rnorm(n = n_samp, mean = 124.6, sd = 2.7),
@@ -272,7 +307,12 @@ gpp_results <- tibble(
   GPP_raw =  (gpp1 + gpp2 + gpp3 + gpp4 + gpp5 + gpp6 + gpp7 + gpp8)/8,
   Rroot = Rs * Rc,
   Rshoot = Rroot * FsFr,
+  # seperate into only two groups
+  Rroot2 = Rs * Rc2,
+  # Rshoot2 = Rroot2 * FsFr2,
+  
   GPP = NPP + Rroot + Rshoot
+  # GPP2 = NPP + Rroot2 + Rshoot2
 )
 
 ```
@@ -298,6 +338,7 @@ ggplot(gpp_results) + aes(GPP) + geom_histogram(col = "black", fill = "gray", bi
   annotate("text", x = quantile(gpp_results$GPP, 0.98), y = 7000, label = paste0("95%CI (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
            , hjust = 0, col = "blue") +
   xlab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
+
 
 # GPP ~ NPP
 ggplot(gpp_results) +
@@ -383,6 +424,7 @@ var_Fire <- c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)
 n_samp <- 50000
 # n_rep <- 3
 
+set.seed(1234567)
 rs_results <- tibble(
   # GPP = replicate(n_rep, sample(GPP$GPP, n_samp, replace = TRUE) %>% mean() ),
   # GPP = sample(GPP$GPP, n_samp, replace = TRUE),
