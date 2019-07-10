@@ -17,6 +17,7 @@ output:
 ## Abbreviation
 * Rroot - root respiration
 * Rshoot - shoot respiration
+* Rs - soil respiration
 * Ra - autotrophic respiration (Rroot + Rshoot)
 * GPP - gross primary production
 * NPP - net primary production
@@ -29,6 +30,33 @@ output:
 * RaGPP - (Ra/GPP) ratio
 
 
+### Assumptions
+* Bottom-up approach: 
+  1. We collected published global soil respiration estimates
+  2. We then partition Rs into root respiration and belowground heterotrophic resipiration
+  3. We also collected published NPP estimates in the past decades from ITO et al. (2011)
+  4. We then collected (and calculated) Rroot/Ra ratio, according to the root respiration, GPP can be calculates as (NPP + Rroot + Rshoot)
+  5. We then compare this bottomup GPP with published GPP in the past decades (n=65) to see how much probability they will match
+
+* Top-down approach:
+  1. We first collect global GPP estimates in the past decades
+  2. We then estimate Ra according to Ra/GPP ratio and GPP-NPP
+  3. Heterotrophic respiration was estimated according to Rh = NPP - HerbComsum - Fire - Csink (NEP)
+  4. Rs_topdown =  Rh + Rroot
+  5. We then compare this top-down Rs with published Rs in the past decades (n=27)n to see how much probability they will match
+  
+### Questions and more anlysis in the future
+* How unlikely is it that we can reconcile current Rs and GPP estimates? 
+  E.g. what % of the distribution of each 'allows' us to match the central estimate of the other? (<30%)
+* What is driving the differences between botton-up GPP and reported GPP and top-down Rs and reported Rs?
+* How do we resolve this? Where is better/more data needed? 
+* These questions all resolve around influence x uncertainty = importance, right? This is basically the 'Dietze graph'.
+* Which is more likely, low GPP or high Rs? -- discussion
+
+### Importance/implication/benifits
+* Provide another way to estimate GPP and Rs
+* Provide a method to compare bottom-up GPP (start from field Rs/Froot/RC/Rroot measurements, then modelling to estimate GPP) with remote sensing or land model GPP.
+* Provide a method to compare top-down Rs (Rs seperated from remote sensing land model based GPP) with filed experiment based Rs (field Rs measurement, then modeling).
 
 
 ```{r}
