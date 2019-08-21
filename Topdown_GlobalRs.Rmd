@@ -3,8 +3,8 @@ title: "TopdownApproach"
 author: "Jinshi"
 date: "May 19, 2019"
 output:
-  word_document: default
   html_document: default
+  word_document: default
 ---
 
 
@@ -90,6 +90,7 @@ source('functions.R')
 
 
 ```{r preliminaries, message=FALSE, include=FALSE, echo=FALSE, cache=TRUE}
+# message=FALSE, include=FALSE, echo=FALSE, cache=TRUE
 # Set chunks defaults; these options will be applied to all subsequent chunks
 knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, echo = FALSE,
                       fig.height = 4, fig.width = 8, cache = TRUE)
@@ -101,7 +102,9 @@ DATA_DIR <- 'data'
 if(!file.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
 ```
 
+### Method
 
+We used `r nrow(GPP) published GPP values`
 
 ```{r}
 # input data
@@ -225,15 +228,17 @@ plot_sites(srdb_v4, FlFsFr)
 ```{r}
 # Get Froot and Fshoot information from FlFsFr dataset and srdb_v4, see cal_Froot() in functions for more information
 Froot <- cal_Froot(FlFsFr, srdb_v4) 
+
 # check whether Froot + Fshoot = 1
 Froot %>% transmute (check = Froot + Fshoot) %>% max
 Froot %>% transmute (check = Froot + Fshoot) %>% min
 Froot %>% group_by(Ecosystem) %>% summarise(count = n())
 mean(Froot$Froot)
+
 ```
 
 ** Plot Froot by ecosystem type
-```{r}
+```{r, fig.height = 4, fig.width = 6}
 # potential issue: only two points from grassland
 # no point from tundra 
 # BBL: difficult to see what's going on here; really needs more comments!
@@ -248,12 +253,14 @@ plot_froot <- function (sdata) {
     # stat_summary(fun.y=median, geom="point", size=2, color="red") +
     scale_x_discrete(limits = c("Agriculture", "Forest", "Grassland", "Savanna", "Wetland"),
                      labels = c("Agriculture (n=4)", "Forest (n=111)", "Grassland (n=2)", "Savanna (n=2)", "Wetland (n=3)") ) +
-    theme(axis.title.x=element_blank())
+    theme(axis.title.x=element_blank()) +
+    ylab("Rroot to Ra ratio")
   
   print(Fl_plot)
 }
 
 plot_froot (Froot)
+ggsave("outputs/FigureS2.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
 
 
@@ -271,6 +278,7 @@ left_join(Froot, SOC) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
 ```{r, fig.height=6, fig.width=8}
 # more details please see function plot_Rs()
 plot_Rs (GlobalRs, srdb_v4, NPP) 
+ggsave("outputs/FigureS3.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
 
@@ -312,8 +320,9 @@ gpp_results <- tibble(
   Rs7 = rnorm(n = n_samp, mean = 94.3, sd = 9.13), # same as above
   Rs8 = rnorm(n = n_samp, mean = 78.34, sd = 2.25), # same as above
   Rs9 = rnorm(n = n_samp, mean = 72.55, sd = 7.13), # same as above
+  Rs10 = rnorm(n = n_samp, mean = 93.3, sd = 3.11), # same as above
   # Rs was calculated as the mean of above 9 Rs estimates
-  Rs = (Rs1 + Rs2 + Rs3 + Rs4 + Rs5 + Rs6 + Rs7 + Rs8 + Rs9)/9,
+  Rs = (Rs1 + Rs2 + Rs3 + Rs4 + Rs5 + Rs6 + Rs7 + Rs8 + Rs9 + Rs10)/10,
   
   # Rc = replicate( n_rep, var_RC$RC_annual, n_samp, replace = TRUE) %>% mean() ), # senario 0: Rc not seperate into different ecosystems, not used
   # Senario 1: Rc seperate into 7 groups
@@ -355,8 +364,11 @@ gpp_results <- tibble(
   gpp5 = rnorm(n = n_samp, mean = 119, sd = 6), # same as above
   gpp6 = rnorm(n = n_samp, mean = 110.5, sd = 21.3), # same as above
   gpp7 = rnorm(n = n_samp, mean = 117, sd = 13), # same as above
-  gpp8 = sample(GPP[is.na(GPP$SD),]$GPP, n_samp, replace = TRUE), # for those do not have SD information, take 50000 samples using boosting 
-  GPP_raw =  (gpp1 + gpp2 + gpp3 + gpp4 + gpp5 + gpp6 + gpp7 + gpp8) / 8, # scenario 1: calculate 
+  gpp8 = rnorm(n = n_samp, mean = 147, sd = 16), # same as above
+  gpp9 = rnorm(n = n_samp, mean = 119, sd = 6), # same as above
+  gpp10 = rnorm(n = n_samp, mean = 122, sd = 25), # same as above
+  gpp11 = sample(GPP[is.na(GPP$SD),]$GPP, n_samp, replace = TRUE), # for those do not have SD information, take 50000 samples using boosting 
+  GPP_raw =  (gpp1 + gpp2 + gpp3 + gpp4 + gpp5 + gpp6 + gpp7 + gpp8 + gpp9 + gpp10 + gpp11) / 11, # scenario 1: calculate 
   
   # Bottom up estimate of GPP, senario 1
   Rroot = Rs * Rc, # calculate root respiration
@@ -389,13 +401,19 @@ gpp_results %>% mutate(check = (1 - Froot) / Froot, FsFr)
 # senario 1
 var_CI <- quantile(gpp_results$GPP, c(0.025, 0.5, 0.975)) %>% round(0)
 var_CI_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
-ggplot(gpp_results) + aes(GPP) + geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_histogram(aes(GPP_raw), col = "blue", fill = "blue", bins = 30, alpha = 0.35) +
-  geom_vline(xintercept = c(quantile (gpp_results$GPP_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
-  annotate("text", x = quantile(gpp_results$GPP, 0.98), y = 9000, label = paste0("95%CI (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")"), hjust = 0) +
-  annotate("text", x = quantile(gpp_results$GPP, 0.98), y = 7000, label = paste0("95%CI (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
-           , hjust = 0, col = "blue") +
+ggplot(gpp_results) + aes(GPP) + 
+  # geom_histogram(col = "black", fill = "gray", bins = 30) + 
+  geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) ) +
+  # geom_histogram(aes(GPP_raw), col = "blue", fill = "blue", bins = 30, alpha = 0.35) +
+  geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
+  # geom_vline(xintercept = c(quantile (gpp_results$GPP_raw, c(0.025, 0.975))),col = "gray", linetype = 2, size = 1) +
+  annotate("text", x = 150, y = 0.035, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")")
+           , hjust = 0, col = rgb(1,0,1)) +
+  annotate("text", x = 150, y = 0.025, label = paste0("2.5%,50%,97.5% quantile (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
+           , hjust = 0, col = rgb(0,1,1)) +
   xlab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
+
+ggsave("outputs/Figure2.jpg", width = 6, height = 4, dpi = 300, units = "in")
 
 # senario 2, RC seperate into 4 groups, and Froot seperate into 2 groups
 var_CI <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
@@ -461,8 +479,8 @@ ggplot(gpp_results) +
 y <- mean(gpp_results$GPP)
 s <- sd(gpp_results$GPP)
 # accume GPP following normal distribution, with mean = y and sd = s, we can calculate the properbility of GPP following (107-133) 95%CI
-p_gpp_less_than_133 <- pnorm ((133 - y) / (s))
-p_gpp_less_than_107 <- pnorm ((107 - y) / (s))
+p_gpp_less_than_133 <- pnorm ((134 - y) / (s))
+p_gpp_less_than_107 <- pnorm ((111 - y) / (s))
 p_gpp <- p_gpp_less_than_133 -p_gpp_less_than_107
 p_gpp
 # pnorm (-0.329)
@@ -479,11 +497,12 @@ p_gpp
 
 
 ** GPP plot
-```{r, fig.height = 3, fig.width = 8}
+```{r, fig.height = 6, fig.width = 8}
 # panel (a). all 65 GPP estimates
 # panel (b). GPP vs year, the red dots in panel c are calculated trend from panel b (increase rate = 0.2 if outliers removed, increase rate = 0.42 if outlers kept)
 # panel (c). 16 GPP estimates reported GPP increase trend
-plot_GPP(GPP)
+plot_GPP(GPP, GlobalRs)
+ggsave("outputs/FigureS1.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
 
@@ -491,6 +510,7 @@ plot_GPP(GPP)
 ```{r}
 # only one point from tundra
 var_RaGpp <- plot_RaGPP (RaGPP, srdb_v4)
+ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
 var_RaGpp %>% group_by (Ecosystem) %>% summarise ( count = n() ) %>% mutate (percent = count/sum(count)) %>%  arrange (desc(Ecosystem))
 ```
 
@@ -515,8 +535,11 @@ rs_results <- tibble(
   gpp5 = rnorm(n = n_samp, mean = 119, sd = 6),
   gpp6 = rnorm(n = n_samp, mean = 110.5, sd = 21.3),
   gpp7 = rnorm(n = n_samp, mean = 117, sd = 13),
-  gpp8 = sample(GPP[is.na(GPP$SD),]$GPP, n_samp, replace = TRUE),
-  GPP =  (gpp1 + gpp2 + gpp3 + gpp4 + gpp5 + gpp6 + gpp7 + gpp8)/8,
+  gpp8 = rnorm(n = n_samp, mean = 147, sd = 16),
+  gpp9 = rnorm(n = n_samp, mean = 119, sd = 6), # same as above
+  gpp10 = rnorm(n = n_samp, mean = 122, sd = 25), # same as above
+  gpp11 = sample(GPP[is.na(GPP$SD),]$GPP, n_samp, replace = TRUE), # for those do not have SD information, take 50000 samples using boosting 
+  GPP =  (gpp1 + gpp2 + gpp3 + gpp4 + gpp5 + gpp6 + gpp7 + gpp8 + gpp9 + gpp10 + gpp11)/11,
   
   NPP = sample(NPP$NPP, n_samp, replace = TRUE),
   HerbComsum = rnorm(n = n_samp, mean = 2.2, sd = 0.2),
@@ -548,6 +571,7 @@ rs_results <- tibble(
   Froot2 = Froot_rest * 0.702 + Froot_for*0.298,
   
   # Rs_raw = sample(na.omit(GlobalRs$Rs), n_samp, replace = TRUE) ,
+  Rs1 = sample(var_Rs$Rs, n_samp, replace = TRUE),
   Rs2 = rnorm(n = n_samp, mean = 80.4, sd = 16.9),
   Rs3 = rnorm(n = n_samp, mean = 98, sd = 12),
   Rs4 = rnorm(n = n_samp, mean = 79, sd = 7.65),
@@ -556,8 +580,8 @@ rs_results <- tibble(
   Rs7 = rnorm(n = n_samp, mean = 94.3, sd = 9.13),
   Rs8 = rnorm(n = n_samp, mean = 78.34, sd = 2.25),
   Rs9 = rnorm(n = n_samp, mean = 72.55, sd = 7.13),
-  Rs10 = sample(var_Rs$Rs, n_samp, replace = TRUE),
-  Rs_raw = (Rs2 + Rs3 + Rs4 + Rs5 + Rs6 + Rs7 + Rs8 + Rs9 + Rs10)/9,
+  Rs10 = rnorm(n = n_samp, mean = 93.3, sd = 3.11),
+  Rs_raw = (Rs1 + Rs2 + Rs3 + Rs4 + Rs5 + Rs6 + Rs7 + Rs8 + Rs9 + Rs10)/10,
   
   Ra1 = GPP * RaGpp, # first way to calculate Ra, Ra = GPP * RaGPP
   Ra2 = GPP - NPP, # second way to calculate Ra, Ra = GPP - NPP
@@ -595,13 +619,16 @@ rs_results$Ra3 %>% min(na.rm = TRUE)
 
 var_CI <- quantile(rs_results$Rs_topdown, c(0.025, 0.5, 0.975)) %>% round(0)
 var_CI_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
-ggplot(rs_results) + aes(Rs_topdown) + geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_histogram(aes(Rs_raw), col = "blue", fill = "blue", bins = 30, alpha = 0.35) +
-  geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
-  annotate("text", x = quantile(rs_results$Rs_topdown, 0.98), y = 7000, label = paste0("95%CI (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")"), hjust = 0) +
-  annotate("text", x = quantile(rs_results$Rs_topdown, 0.98), y = 4000, label = paste0("95%CI (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
-           , hjust = 0, col = "blue") +
+ggplot(rs_results) + aes(Rs_topdown) + geom_density(col = "gray", fill = rgb(1,0,1, alpha = 0.25)) + 
+  geom_density(aes(Rs_raw), col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
+  # geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
+  annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")")
+           , hjust = 0, col = rgb(1,0,1)) +
+  annotate("text", x = 100, y = 0.03, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
+           , hjust = 0, col = rgb(0,1,1)) +
   ylab(expression(count))
+
+ggsave("outputs/Figure3.jpg", width = 6, height = 4, dpi = 300, units = "in")
 
 # senario two
 var_CI <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)

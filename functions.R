@@ -98,7 +98,7 @@ plot_sites <- function (sdata, sdata2) {
 
 
 # plot GPP
-plot_GPP <- function (sdata) {
+plot_GPP <- function (sdata, sdata2) {
   
   obs_gpp <- nrow(sdata)
   sdata$Global <- paste0("n=", obs_gpp)
@@ -119,7 +119,7 @@ plot_GPP <- function (sdata) {
   Trend_GPP <- Trend_GPP + geom_smooth(aes(Year, GPP), method = "lm") +
     theme(legend.title=element_blank()) +
     # one outlier
-    geom_point(data = subset(sdata, sdata$GPP < 90 | sdata$GPP > 180) ,aes(x=Year, y=GPP), color = c("red"), shape = 4 ) +
+    geom_point(data = subset(sdata, sdata$GPP < 90 | sdata$GPP > 180) ,aes(x=Year, y=GPP), color = c("red"), shape = 16 ) +
     theme(legend.position = "none") +
     theme(axis.title.y = element_blank())
     # annotate("text", x = 1958, y = 175, size = 5)
@@ -127,11 +127,17 @@ plot_GPP <- function (sdata) {
   lm_model1 <- lm(GPP~Year, data = subGPP)
   lm_model2 <- lm(GPP~Year, data = GPP)
   
-  sdata$Global <- "n=16"
+  print(summary(lm_model1))
+  print(summary(lm_model2))
+  
+  slope1 <- coefficients(summary(lm_model1))[2,1]
+  slope2 <- coefficients(summary(lm_model2))[2,1]
+  
+  sdata$Global <- paste0("n=", GPP %>% filter(!is.na(Trend)) %>% nrow())
   p_trend <- ggplot(sdata, aes(x = Global, y=Trend)) + geom_violin() +
     geom_jitter(shape=16, position=position_jitter(0.2), col = 'gray') +
     geom_boxplot(width=.1) +
-    # geom_point(aes(y=0.2), col="red") + geom_point(aes(y=0.43), col="red") +
+    geom_point(aes(y=slope1), col="red") + geom_point(aes(y=slope2), col="red") +
     # stat_summary(fun.y=median, geom="point", size=2, color="red") +
     ylab(expression(GPP~trend~"("~Pg~yr^{-2}~")"))
   
@@ -141,12 +147,40 @@ plot_GPP <- function (sdata) {
   CI <- round(qt(0.975,df=nrow(sdata)-1)*se, 3)
   print(paste0("95% CI=", CI))
   print(paste0("number of trend=", nrow(GPP[!is.na(GPP$Trend),])))
-  print(summary(lm_model1))
-  print(summary(lm_model2))
+ 
   
-  plot_grid(p_GPP, Trend_GPP, p_trend, ncol = 3
-            , labels = c('( a )', '( b )', '( c )')
-            , vjust = c(3,3, 3), hjust = c(-2.35, -1.5, -2.25))
+  # plot global Rs
+  p_Rs <- ggplot(sdata2, aes(x = paste0("n=",nrow(sdata2)), y=Rs)) + geom_violin() +
+    geom_jitter(shape=16, position=position_jitter(0.2), col = 'gray') +
+    geom_boxplot(width=.1) +
+    # stat_summary(fun.y=median, geom="point", size=2, color="red") +
+    ylab(expression(R[S]~"("~Pg~yr^{-1}~")")) +
+    xlab("Global")
+  
+  # plot Rs~Year relationship
+  Trend_Rs <- ggplot (sdata2, aes(x = Year, y = Rs)) + geom_point() +
+    geom_smooth(aes(Year, Rs), method = "lm") +
+    xlim(min(sdata$Year), max(sdata$Year)) +
+    theme(legend.title=element_blank()) +
+    theme(axis.title.y=element_blank()) 
+  
+  sum_mod <- lm(Rs~Year, data = sdata2)
+  slope3 <- coefficients(summary(sum_mod))[2,1]
+  print(sum_mod)
+  
+  # plot trend
+  Rs_IRate <- sdata2 %>% filter(!is.na(IncreaseRate)) %>% 
+    ggplot(aes(x = "n=7", y=IncreaseRate)) + geom_violin() +
+    geom_jitter(shape=16, position=position_jitter(0.2), col = 'gray') +
+    geom_boxplot(width=.1) +
+    ylab(expression(R[S]~trend~"("~Pg~yr^{-2}~")")) +
+    xlab("Global") 
+    # geom_point(aes(y=slope3), col="red")  
+  
+  plot_grid(p_GPP, Trend_GPP, p_trend, p_Rs, Trend_Rs, Rs_IRate
+            , ncol = 3
+            , labels = c('( a )', '( b )', '( c )', "( d )", "( e )", "( f )")
+            , vjust = c(3), hjust = c(-2.35, -1.5, -2.25, -2.25, -1.5, -2.65))
 }
 
 
