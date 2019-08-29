@@ -59,7 +59,7 @@ output:
 * Provide a method to compare top-down Rs (Rs seperated from remote sensing land model based GPP) with filed experiment based Rs (field Rs measurement, then modeling).
 
 
-```{r}
+```{r, message=FALSE}
 # install.packages('kableExtra')
 # Load required packages
 library(data.table)
@@ -104,7 +104,6 @@ if(!file.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
 
 ### Method
 
-We used `r nrow(GPP) published GPP values`
 
 ```{r}
 # input data
@@ -136,11 +135,9 @@ IGBP %>% mutate(IGBP = case_when( IGBP2001Pr == 0 ~ "WAT",
                                   IGBP2001Pr == 15 ~ "SNO",
                                   IGBP2001Pr == 16 ~ "BSV",
                                   TRUE ~ "UNC" ) ) -> IGBP
-
 # BBL: Interesting; I didn't know case_when! Aanother way to do this would be 
 # IGBP_list <- c("WAT", "ENF", ...)
 # IGBP$IGBP <- IGBP_list[IGBP$IGBP2001Pr]
-
 # 16 IGBP group into 10 Ecosystems
 IGBP %>% mutate (Ecosystem = case_when( IGBP2001Pr == 0 ~ "Water",
                                         IGBP2001Pr == 1 ~ "Forest",
@@ -160,11 +157,34 @@ IGBP %>% mutate (Ecosystem = case_when( IGBP2001Pr == 0 ~ "Water",
                                         IGBP2001Pr == 15 ~ "Snow",
                                         IGBP2001Pr == 16 ~ "Desert",
                                         TRUE ~ "Unclassified")) -> IGBP
-# DGRsD <- read.csv(paste0(DATA_DIR,'/', 'DGRsD.csv'), header = TRUE)
 
+IGBP %>% mutate(IGBP_group = case_when( IGBP2001Pr == 0 ~ "WAT",
+                                  IGBP2001Pr == 1 ~ "EF",
+                                  IGBP2001Pr == 2 ~ "EF",
+                                  IGBP2001Pr == 3 ~ "DF",
+                                  IGBP2001Pr == 4 ~ "DF",
+                                  IGBP2001Pr == 5 ~ "MF",
+                                  IGBP2001Pr == 6 ~ "SH",
+                                  IGBP2001Pr == 7 ~ "SH",
+                                  IGBP2001Pr == 8 ~ "GRA",
+                                  IGBP2001Pr == 9 ~ "GRA",
+                                  IGBP2001Pr == 10 ~ "GRA",
+                                  IGBP2001Pr == 11 ~ "WET",
+                                  IGBP2001Pr == 12 ~ "CRO",
+                                  IGBP2001Pr == 13 ~ "URB",
+                                  IGBP2001Pr == 14 ~ "CRO",
+                                  IGBP2001Pr == 15 ~ "SNO",
+                                  IGBP2001Pr == 16 ~ "BSV",
+                                  TRUE ~ "UNC" ) ) -> IGBP
+
+# DGRsD <- read.csv(paste0(DATA_DIR,'/', 'DGRsD.csv'), header = TRUE)
 AGB <- read.table(paste0(DATA_DIR,'/', 'GLC2000_Point.txt'), header = T, sep = ",")
 AGB %>% filter(RASTERVALU != -9999) -> AGB
 SOC <- read.table(paste0(DATA_DIR,'/', 'SOC_Point.txt'), header = T, sep = ",")
+
+srdb_v4 %>% 
+  select(Study_number, Biome, Ecosystem_type, Leaf_habit, Latitude, Longitude, RC_annual, Ra_annual, Rh_annual) %>% 
+  filter(RC_annual > 0 & RC_annual < 1) -> sub_srdb
 ```
 
 
@@ -179,43 +199,6 @@ min(SOC$RASTERVALU)
 
 
 
-```{r}
-# IGBP area by type
-IGBP %>% 
-  filter(Ecosystem != "Water", Ecosystem != "Snow",
-         Ecosystem != "Unclassified", Ecosystem != "Urbland") %>%  
-  group_by(Ecosystem) %>% 
-  summarise(count = n()) %>% 
-  mutate(percent = count / sum(count))
-# sum(0.191,0.17,0.214,0.153,0.155,0.113,0.004)
-
-# Remove desert and shrubland because no data for Froot and Ra/GPP ratio
-IGBP %>% 
-  filter(Ecosystem != "Water", Ecosystem != "Snow",
-         Ecosystem != "Unclassified", Ecosystem != "Urbland",
-         Ecosystem != "Desert", Ecosystem != "Shrubland") %>%  
-  group_by(Ecosystem) %>% summarise ( count = n() ) %>% mutate (percent = count/sum(count))
-sum(0.267,0.298,0.213,0.216,0.006)
-```
-
-
-
-
-
-```{r}
-# plot Ra Rs relationship
-# Ra_Rs_relationship <- function (sdata) {
-#   sdata$Ra_Norm <- ifelse (is.na(sdata$Ra_Norm), sdata$RS_Norm - sdata$Rh_Norm, sdata$Ra_Norm)
-#   sdata %>% filter (!is.na(Ra_Norm) & !is.na(RS_Norm) & !is.na(Ecosystem_type)
-#                     & Ecosystem_type != 'Forest') -> sdata
-#   ggplot(data = sdata, aes(Ra_Norm, RS_Norm)) + geom_point() + facet_wrap(~Ecosystem_type)
-# }
-
-# Ra_Rs_relationship(DGRsD)
-
-```
-
-
 * 1. Introduction
 
 ** Figure. Sites distribution -- FlFsFr sites and RC/HC sites
@@ -228,14 +211,34 @@ plot_sites(srdb_v4, FlFsFr)
 ```{r}
 # Get Froot and Fshoot information from FlFsFr dataset and srdb_v4, see cal_Froot() in functions for more information
 Froot <- cal_Froot(FlFsFr, srdb_v4) 
-
+# class(Froot$IGBP)
 # check whether Froot + Fshoot = 1
 Froot %>% transmute (check = Froot + Fshoot) %>% max
 Froot %>% transmute (check = Froot + Fshoot) %>% min
 Froot %>% group_by(Ecosystem) %>% summarise(count = n())
+
+Froot %>% mutate(IGBP2 = case_when( 
+                                    IGBP %in% c('DBF', 'Deciduous') & Ecosystem == 'Forest' ~ "DF",
+                                    IGBP %in% c('EBF', 'ENF', 'Evergreen') & Ecosystem == 'Forest' ~ "EF",
+                                    IGBP %in% c('MF', 'Mixed') & Ecosystem == 'Forest' ~ "MF",
+                                    TRUE ~ "Other"
+                                    )) -> Froot
+
+Froot %>% count(IGBP2) 
 mean(Froot$Froot)
 
 ```
+
+
+** GPP plot
+```{r, fig.height = 6, fig.width = 8}
+# panel (a). all 65 GPP estimates
+# panel (b). GPP vs year, the red dots in panel c are calculated trend from panel b (increase rate = 0.2 if outliers removed, increase rate = 0.42 if outlers kept)
+# panel (c). 16 GPP estimates reported GPP increase trend
+plot_GPP(GPP, GlobalRs)
+ggsave("outputs/FigureS1.jpg", width = 8, height = 6, dpi = 300, units = "in")
+```
+
 
 ** Plot Froot by ecosystem type
 ```{r, fig.height = 4, fig.width = 6}
@@ -246,15 +249,15 @@ mean(Froot$Froot)
 plot_froot <- function (sdata) {
   var_obs <- nrow(sdata)
   # plot Froot (root respiration/aototrophic respiration ratio) by ecosystem type
-  Fl_plot <- ggplot(sdata, aes(x = Ecosystem, y=Froot)) + geom_violin() +
+  Fl_plot <- ggplot(sdata, aes(x = IGBP2, y=Froot)) + geom_violin() +
     geom_jitter(shape=16, position=position_jitter(0.2), col = "gray") +
     geom_boxplot(width=.1) +
     ylab("Froot") +
     # stat_summary(fun.y=median, geom="point", size=2, color="red") +
-    scale_x_discrete(limits = c("Agriculture", "Forest", "Grassland", "Savanna", "Wetland"),
-                     labels = c("Agriculture (n=4)", "Forest (n=111)", "Grassland (n=2)", "Savanna (n=2)", "Wetland (n=3)") ) +
+    scale_x_discrete(limits = c("DF", "EF", "MF", "Other"),
+                     labels = c("DF (n=13)","EF (n=91)", "MF (n=7)", "Other (n=11)") ) +
     theme(axis.title.x=element_blank()) +
-    ylab("Rroot to Ra ratio")
+    ylab("Rroot-to-Ra-ratio")
   
   print(Fl_plot)
 }
@@ -271,14 +274,122 @@ Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Lon
 # there are no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
 left_join(Froot, AGB) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
 left_join(Froot, SOC) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
-
 ```
+
+
 
 ** Plot global Rs, NPP, Fire-burned Carbon, and RC by ecosystem (root respiration to soil respiration ratio)
 ```{r, fig.height=6, fig.width=8}
-# more details please see function plot_Rs()
-plot_Rs (GlobalRs, srdb_v4, NPP) 
+# more details please see function plot_Rroot_Rs()
+# prepare data first
+sub_srdb %>% select(Leaf_habit) %>% group_by(Leaf_habit) %>% summarise(count = n())
+sub_srdb %>% mutate(IGBP2 = case_when( Ecosystem_type == "Agriculture" ~ "Agriculture"
+                                       , Ecosystem_type == "Grassland" ~ "Grassland"
+                                       , Ecosystem_type %in% c("Savanna", "Shrubland") ~ "Shrubland"
+                                       , Ecosystem_type == "Forest" & Leaf_habit == 'Deciduous' ~ "DF"
+                                       , Ecosystem_type == "Forest" & Leaf_habit == 'Evergreen' ~ "EF"
+                                       , Ecosystem_type == "Forest" & Leaf_habit == 'Mixed' ~ "Mixed"
+                                       , TRUE ~ "Other" )) -> sub_srdb
+sub_srdb %>% group_by(IGBP2) %>% summarise(count = n())
+
+plot_Rroot_Rs (GlobalRs, sub_srdb, NPP) 
 ggsave("outputs/FigureS3.jpg", width = 8, height = 6, dpi = 300, units = "in")
+```
+
+** Plot Ra to GPP ratio
+```{r}
+# only one point from tundra
+prep_RaGpp <- function() {
+  # Ra/GPP
+  RaGPP$Source <- "Meta-papers"
+  RaGPP %>% select(Ecosystem, Leaf_habit, RaGPP_ratio, Source) -> sdata2
+  srdb_v4 %>% 
+    # select(Study_number, Biome, Ecosystem_type, Leaf_habit, Latitude, Longitude, Ra_annual, ER, GPP, NPP) %>% 
+    select(Ecosystem_type, Leaf_habit, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>% 
+    filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER) ) -> sub_srdb
+  sub_srdb$ER <- ifelse(is.na(sub_srdb$ER), sub_srdb$GPP, sub_srdb$ER) # assume NEP very small
+  sub_srdb$RaGPP_ratio <- (sub_srdb$ER - sub_srdb$NPP)/sub_srdb$GPP
+  sub_srdb %>% filter (RaGPP_ratio > 0 & RaGPP_ratio <1 & !is.na(Ecosystem_type)) -> sub_srdb
+  sub_srdb$Source <- "srdb_v4"
+  sub_srdb %>% select(Ecosystem_type, Leaf_habit, RaGPP_ratio, Source) -> sub_srdb
+  colnames(sub_srdb) <- colnames(sdata2)
+  
+  sdata2 <- rbind(sdata2, sub_srdb)
+  return (sdata2)
+}
+
+var_RaGpp <- prep_RaGpp()
+var_RaGpp %>% count(Ecosystem)
+var_RaGpp %>% count(Leaf_habit)
+
+var_RaGpp %>% mutate(IGBP2 = case_when( Ecosystem %in% c( "Crop", "Tundra", "Wetland", "Agriculture" ) ~ "Other"
+                                         , Ecosystem %in% c("Grassland", "Savanna") ~ "Grassland" 
+                                         , Ecosystem == "Forest" & Leaf_habit == "Deciduous" ~ "Deciduous"
+                                         , Ecosystem == "Forest" & Leaf_habit == "Evergreen" ~ "Evergreen"
+                                         , Ecosystem == "Forest" & Leaf_habit == "Forest" ~ "Forest"
+                                         , Ecosystem == "Forest" & Leaf_habit == "Mixed" ~ "Forest"
+                                         , TRUE ~ "NOTA" )) -> var_RaGpp
+
+var_RaGpp %>% count(IGBP2)
+
+plot_RaGPP(var_RaGpp)
+
+ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
+var_RaGpp %>% group_by (Ecosystem) %>% summarise ( count = n() ) %>% mutate (percent = count/sum(count)) %>%  arrange (desc(Ecosystem))
+```
+
+```{r}
+# IGBP area by type
+IGBP %>% count(IGBP_group)
+
+IGBP %>% filter(IGBP_group != "WAT") %>% 
+  group_by(IGBP_group) %>% 
+  summarise(count = n()) %>% 
+  mutate(percent = count / sum(count)) -> IGBP_summary
+
+ag_area <- IGBP_summary[IGBP_summary$IGBP_group == "CRO",]$percent
+df_area <- IGBP_summary[IGBP_summary$IGBP_group == "DF",]$percent
+ef_area <- IGBP_summary[IGBP_summary$IGBP_group == "EF",]$percent
+mf_area <- IGBP_summary[IGBP_summary$IGBP_group == "MF",]$percent
+gra_area <- IGBP_summary[IGBP_summary$IGBP_group == "GRA",]$percent
+shr_area <- IGBP_summary[IGBP_summary$IGBP_group == "SH",]$percent
+
+```
+
+```{r}
+# prepare data for bottom-up boostrapping
+# 1. prepare RC (Rroot-to-Rs ratio data) **********
+# get subset data for Bottom-up approache to estimate GPP, seperate into 7 groups
+var_RC <- sub_srdb %>% select(RC_annual, Ecosystem_type, IGBP2) %>% filter(RC_annual > 0.01 & RC_annual < 0.99 & !is.na(RC_annual)) # dataset contain RC records
+var_for_rc <- var_RC %>% filter (Ecosystem_type == "Forest") # dataset contain RC records only for Forest ecosystem
+# forest further seperate into 3 groups
+var_df_rc <- var_RC %>% filter (IGBP2 == "DF") # dataset contain RC records only for DF
+var_ef_rc <- var_RC %>% filter (IGBP2 == "EF") # dataset contain RC records only for EF ecosystem
+var_mf_rc <- var_RC %>% filter (IGBP2 == "Mixed") # dataset contain RC records only for MF ecosystem
+var_agr_rc <- var_RC %>% filter (Ecosystem_type == "Agriculture") # dataset contain RC records only for agriculture ecosystem
+var_gra_rc <- var_RC %>% filter (Ecosystem_type == "Grassland") # dataset contain RC records only for grassland ecosystem
+var_shr_rc <- var_RC %>% filter (Ecosystem_type %in% c("Shrubland", "Savanna") ) # dataset contain RC records only for grassland ecosystem
+# Other groups
+var_other_rc <- var_RC %>% filter (Ecosystem_type %in% c("Desert", "Wetland" )) # dataset contain RC records only for Other ecosystem
+var_rest_rc <- var_RC # for those ecosystem (e.g., tundra) has no data, use all from RC dataset
+
+# 2. prepare Froot (Rroot-to-Ra ratio data) **********
+var_agr_froot = Froot[Froot$Ecosystem == "Agriculture",]$Froot # samples of Froot for agriculture
+var_for_froot = Froot[Froot$Ecosystem == "Forest",]$Froot # samples of Froot for forest
+var_gra_froot = Froot[Froot$Ecosystem == "Grassland",]$Froot # samples of Froot for grassland
+var_sav_froot = Froot[Froot$Ecosystem == "Savanna",]$Froot # samples of Froot for savanna
+var_wet_froot = Froot[Froot$Ecosystem == "Wetland",]$Froot # samples of Froot for agriculture
+var_rest_froot = Froot$Froot # for those ecosystems has no data, use all data from Froot
+# only seperate into ef and the rest
+var_ef_froot = Froot[Froot$IGBP2 == "EF",]$Froot # Froot data for ef
+var_df_froot = Froot[Froot$IGBP2 == "DF",]$Froot # Froot data for df
+var_mf_froot = Froot[Froot$IGBP2 == "MF",]$Froot # Froot data for mf
+var_other_froot = Froot[Froot$IGBP2 == "Other",]$Froot # samples of Froot for non-ef
+
+# var_rest <- var_RC %>% filter (Ecosystem_type != "Forest") # dataset contain RC records for non-forest ecosystem
+var_Rs <- GlobalRs %>% filter(!is.na(Rs) & is.na(SD) ) # dataset contain global Rs estimates (without standard diviation information)
+var_GPP <- GPP[is.na(GPP$SD),]$GPP
+
 ```
 
 
@@ -291,26 +402,19 @@ ggsave("outputs/FigureS3.jpg", width = 8, height = 6, dpi = 300, units = "in")
 # Ra = Rroot + Rshoot
 # GPP = NPP + Rroot + Rshoot
 
-# get subset data for Bottom-up approache to estimate GPP
-var_RC <- srdb_v4 %>% select(RC_annual, Ecosystem_type) %>% filter(RC_annual > 0.01 & RC_annual < 0.99 & !is.na(RC_annual)) # dataset contain RC records
-var_agr <- var_RC %>% filter (Ecosystem_type == "Agriculture") # dataset contain RC records only for agriculture ecosystem
-var_des <- var_RC %>% filter (Ecosystem_type == "Desert") # dataset contain RC records only for desert
-var_for <- var_RC %>% filter (Ecosystem_type == "Forest") # dataset contain RC records only for Forest ecosystem
-var_gra <- var_RC %>% filter (Ecosystem_type == "Grassland") # dataset contain RC records only for grassland ecosystem
-var_sav <- var_RC %>% filter (Ecosystem_type == "Savanna") # dataset contain RC records only for savanna ecosystem
-var_shr <- var_RC %>% filter (Ecosystem_type == "Shrubland") # dataset contain RC records only for shrubland ecosystem
-var_wet <- var_RC %>% filter (Ecosystem_type == "Wetland") # dataset contain RC records only for wetland ecosystem
-# var_rest <- var_RC %>% filter (Ecosystem_type != "Forest") # dataset contain RC records for non-forest ecosystem
-var_Rs <- GlobalRs %>% filter(!is.na(Rs) & is.na(SD) ) # dataset contain global Rs estimates (without standard diviation information)
-
 n_samp <- 50000 # take 50000 samples
 # n_rep <- 50000 
 
-set.seed(1234567)
+# bootstrapping
+set.seed(20190827)
+
 gpp_results <- tibble(
+  #Step 1. Prepare Global Rs data
   # Rs = replicate( n_rep, sample(var_Rs$Rs, n_samp, replace = TRUE) %>% mean() ),
-  # Rs1 = rnorm(n = n_samp, mean = 68, sd = 4),
-  Rs1 = sample(var_Rs$Rs, n_samp, replace = TRUE), # randomly take a sample from global Rs estimates, with replace=TRUE, repeat 50000 times
+  # Rs1 = rnorm(n = n_samp, mean = 68, sd = 4), # not sure about the SD = 4
+  # for those without SD Rs, randomly take a sample from global Rs estimates, with replace=TRUE, repeat 50000 times
+  Rs1 = sample(var_Rs$Rs, n_samp, replace = TRUE), 
+  # for those studies reported Rs (mean and SD, 9 studies) using rnorm functions
   Rs2 = rnorm(n = n_samp, mean = 80.4, sd = 16.9), # for those with standard diviation, 50000 samples were take from normal distribution ~ (mean=80.4, sd=16.9)
   # repeat until all Rs estimates with sd samples were taken and hold in the outputs
   Rs3 = rnorm(n = n_samp, mean = 98, sd = 12), # same as above
@@ -321,42 +425,13 @@ gpp_results <- tibble(
   Rs8 = rnorm(n = n_samp, mean = 78.34, sd = 2.25), # same as above
   Rs9 = rnorm(n = n_samp, mean = 72.55, sd = 7.13), # same as above
   Rs10 = rnorm(n = n_samp, mean = 93.3, sd = 3.11), # same as above
-  # Rs was calculated as the mean of above 9 Rs estimates
+  # Rs was calculated as the mean of above 10 subsamples
   Rs = (Rs1 + Rs2 + Rs3 + Rs4 + Rs5 + Rs6 + Rs7 + Rs8 + Rs9 + Rs10)/10,
   
-  # Rc = replicate( n_rep, var_RC$RC_annual, n_samp, replace = TRUE) %>% mean() ), # senario 0: Rc not seperate into different ecosystems, not used
-  # Senario 1: Rc seperate into 7 groups
-  Rc_agr = sample(var_agr$RC_annual, n_samp, replace = TRUE) , # randomly take a sample from RC estimates for agriculture, repeat 50000 times
-  Rc_des = sample(var_des$RC_annual, n_samp, replace = TRUE) , # randomly take a sample from RC estimates for desert, repeat 50000 times
-  Rc_for = sample(var_for$RC_annual, n_samp, replace = TRUE) , # randomly take a sample from RC estimates for forest, repeat 50000 times
-  Rc_gra = sample(var_gra$RC_annual, n_samp, replace = TRUE) , # randomly take a sample from RC estimates for grassland, repeat 50000 times
-  Rc_sav = sample(var_sav$RC_annual, n_samp, replace = TRUE) , # randomly take a sample from RC estimates for savanna, repeat 50000 times
-  Rc_shr = sample(var_shr$RC_annual, n_samp, replace = TRUE) , # randomly take a sample from RC estimates for shrubland, repeat 50000 times
-  Rc_wet = sample(var_wet$RC_annual, n_samp, replace = TRUE) , # randomly take a sample from RC estimates for wetland, repeat 50000 times
-  # calculation: Rc as a average of 7 ecosystem types, weighted by there area
-  Rc = (Rc_agr*0.191 + Rc_des*0.17 + Rc_for*0.214 + Rc_gra*0.153 + Rc_sav*0.155 + Rc_shr*0.113 + Rc_wet*0.004), 
-  # Senario 2: Rc seperate into 4 groups: agriculture, forest, grassland, and rest (all other ecosystems with obs<40, take samples from all RC records)
-  Rc_rest = sample(var_RC$RC_annual, n_samp, replace = TRUE) , # randomly take a sample from all RC estimates, repeat 50000 times
-  # only seperate into four groups, agriculture, forest, grassland and the rest
-  Rc2 = (Rc_agr*0.191 + Rc_for*0.214 + Rc_gra*0.153 + Rc_rest*0.442), 
-    
-  # Froot = sample(Froot$Froot, n_samp, replace = TRUE), # senario 0: Froot not seperate into different ecosystems, not used
-  Froot_agr = sample(Froot[Froot$Ecosystem == "Agriculture",]$Froot, n_samp, replace = TRUE), # take 50000 samples of Froot for agriculture 
-  Froot_for = sample(Froot[Froot$Ecosystem == "Forest",]$Froot, n_samp, replace = TRUE), # take 50000 samples of Froot for forest 
-  Froot_gra = sample(Froot[Froot$Ecosystem == "Grassland",]$Froot, n_samp, replace = TRUE), # take 50000 samples of Froot for grassland 
-  Froot_sav = sample(Froot[Froot$Ecosystem == "Savanna",]$Froot, n_samp, replace = TRUE), # take 50000 samples of Froot for savanna 
-  Froot_wet = sample(Froot[Froot$Ecosystem == "Wetland",]$Froot, n_samp, replace = TRUE), # take 50000 samples of Froot for agriculture 
-  # take 50000 samples of Froot from all Froot recods, for senario2, those ecosystems have less than 40 obs use value from all Froot records
-  Froot_rest = sample(Froot$Froot, n_samp, replace = TRUE), 
-  
-  # senario1: Froot calculate from 5 ecosystems, weighted by area
-  Froot = Froot_agr*0.267 + Froot_for*0.298 + Froot_gra*0.213 + Froot_sav*0.216 + Froot_wet*0.006,
-  # Senario 2: seperate into 2 ecosystems and weighted by area
-  Froot2 = Froot_rest * 0.702 + Froot_for*0.298,
-  FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of senario 1
-  FsFr2 = (1 - Froot2) / Froot2, # calculate Froot to Fshoot ratio of senario 2
+  # Step 2. Prepare NPP, boosting from ITO paper
   NPP = sample(NPP$NPP, n_samp, replace = TRUE) , # take 500000 samples from NPP records
   
+  # Step 3. Prepare GPP (same logic as global Rs)
   gpp1 = rnorm(n = n_samp, mean = 124.6, sd = 2.7), # if gpp have mean and standard diviation, take 50000 samples from the normal distribution
   gpp2 = rnorm(n = n_samp, mean = 135.7, sd = 21.712), # same as above
   gpp3 = rnorm(n = n_samp, mean = 109.29, sd = 27.33), # same as above
@@ -367,22 +442,67 @@ gpp_results <- tibble(
   gpp8 = rnorm(n = n_samp, mean = 147, sd = 16), # same as above
   gpp9 = rnorm(n = n_samp, mean = 119, sd = 6), # same as above
   gpp10 = rnorm(n = n_samp, mean = 122, sd = 25), # same as above
-  gpp11 = sample(GPP[is.na(GPP$SD),]$GPP, n_samp, replace = TRUE), # for those do not have SD information, take 50000 samples using boosting 
-  GPP_raw =  (gpp1 + gpp2 + gpp3 + gpp4 + gpp5 + gpp6 + gpp7 + gpp8 + gpp9 + gpp10 + gpp11) / 11, # scenario 1: calculate 
+  # for those do not have SD information, take 50000 samples using boosting 
+  gpp11 = sample(var_GPP, n_samp, replace = TRUE), 
+  # calculate GPP, this is the Top-dowm GPP (collected from previous studies, and resampling)
+  GPP_raw =  (gpp1 + gpp2 + gpp3 + gpp4 + gpp5 + gpp6 + gpp7 + gpp8 + gpp9 + gpp10 + gpp11)/11, 
   
+  # Step 4. sampling Rroot-to Rs ratio (RC)
+  Rc_agr = sample(var_agr_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for agriculture, repeat 50000 times
+  # forest further seperate into 3 groups
+  Rc_df = sample(var_df_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for df, repeat 50000 times
+  Rc_ef = sample(var_ef_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for df, repeat 50000 times
+  Rc_mf = sample(var_mf_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for df, repeat 50000 times
+  # other ecosystems
+  Rc_gra = sample(var_gra_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for grassland, repeat 50000 times
+  Rc_shr = sample(var_shr_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for grassland, repeat 50000 times
+  # note that for the rest ecosystems we used samples from all RC records rather that from other groups
+  Rc_rest = sample(var_rest_rc$RC_annual, n_samp, replace = TRUE), 
+  
+  
+  # Step 5. Sampling Rroot-to-Ra ratio (Froot)
+  Froot_df = sample(var_df_froot, n_samp, replace = TRUE),
+  Froot_ef = sample(var_ef_froot, n_samp, replace = TRUE),
+  Froot_mf = sample(var_mf_froot, n_samp, replace = TRUE),
+  # note that for the rest ecosystems we used samples from all RC records rather that from other groups
+  Froot_rest = sample(var_rest_froot, n_samp, replace = TRUE),
+  
+  # Step 6. calculation ********************
+  # Rc = replicate( n_rep, var_RC$RC_annual, n_samp, replace = TRUE) %>% mean() ), # senario 0: Rc not seperate into different ecosystems, not used
+  Rc = sample(var_RC$RC_annual, n_samp, replace = TRUE),
+  # Rc = Rc_df*df_area + Rc_ef*ef_area + Rc_mf*mf_area + Rc_rest*1-(df_area + ef_area + mf_area), 
+  
+  # Senario 2: Rc seperate into 4 groups: agriculture, forest, grassland, and rest (all other ecosystems with obs<40, take samples from all RC records)
+  # only seperate into four groups, agriculture, forest, grassland and the rest
+  # 1-(0.191 + 0.214 + 0.153 + 0.268)
+  Rc2 = (Rc_agr*ag_area + Rc_df*df_area + Rc_ef*ef_area + Rc_mf*mf_area + Rc_gra*gra_area + Rc_shr*shr_area 
+         + Rc_rest*(1-ag_area-df_area-ef_area-mf_area-gra_area-shr_area)), 
+  # mean(sample(var_for$RC_annual, n_samp, replace = TRUE))
+  # sample(var_df$RC_annual, n_samp, replace = TRUE) %>% mean
+  # sample(var_ef$RC_annual, n_samp, replace = TRUE) %>% mean
+  # sample(var_mf$RC_annual, n_samp, replace = TRUE) %>% mean
+    
+  # senario1: Froot not seperate into different ecosystems
+  Froot = sample(Froot$Froot, n_samp, replace = TRUE) ,
+  
+  FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of senario 1
   # Bottom up estimate of GPP, senario 1
   Rroot = Rs * Rc, # calculate root respiration
   Rshoot = Rroot * FsFr, # calculate shoot respiration
   
-  # Bottom up estimate of GPP, senario 2
+  # Senario 2: seperate into 2 ecosystems and weighted by area
+  # Froot %>% count(Ecosystem)
+  Froot2 = Froot_df*df_area + Froot_ef*ef_area + Froot_mf*mf_area + Froot_rest * (1-df_area-ef_area-mf_area),
+  FsFr2 = (1 - Froot2) / Froot2, # calculate Froot to Fshoot ratio of senario 2
+  # # Bottom up estimate of GPP, senario 2
   Rroot2 = Rs * Rc2,
   Rshoot2 = Rroot2 * FsFr2,
   
   GPP = NPP + Rroot + Rshoot, # scenario 1: calculate GPP
-  GPP2 = NPP + Rroot2 + Rshoot2 # scenario 2: calculate GPP
+  GPP2 = NPP + Rroot2 + Rshoot2 # scenario 2: calculate GPP2
 )
-
 ```
+
 
 
 
@@ -390,6 +510,19 @@ gpp_results <- tibble(
 # check
 gpp_results %>% mutate(check = (1 - Froot) / Froot, FsFr)
 ```
+
+
+```{r}
+# Each row get the closese latitude and longitude values to AGB and SOC data
+AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
+Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Longitude*2, 0)/2-0.25) -> Froot
+# there are no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
+left_join(Froot, AGB) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
+left_join(Froot, SOC) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
+```
+
+
+
 
 
 
@@ -401,7 +534,7 @@ gpp_results %>% mutate(check = (1 - Froot) / Froot, FsFr)
 # senario 1
 var_CI <- quantile(gpp_results$GPP, c(0.025, 0.5, 0.975)) %>% round(0)
 var_CI_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
-ggplot(gpp_results) + aes(GPP) + 
+gpp_results %>% ggplot() + aes(GPP) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
   geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) ) +
   # geom_histogram(aes(GPP_raw), col = "blue", fill = "blue", bins = 30, alpha = 0.35) +
@@ -413,23 +546,42 @@ ggplot(gpp_results) + aes(GPP) +
            , hjust = 0, col = rgb(0,1,1)) +
   xlab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
 
-ggsave("outputs/Figure2.jpg", width = 6, height = 4, dpi = 300, units = "in")
+# ggsave("outputs/Figure2.jpg", width = 6, height = 4, dpi = 300, units = "in")
 
-# senario 2, RC seperate into 4 groups, and Froot seperate into 2 groups
+# senario 2
 var_CI <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
 var_CI_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
-ggplot(gpp_results) + aes(GPP2) + geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_histogram(aes(GPP_raw), col = "blue", fill = "blue", bins = 30, alpha = 0.35) +
-  geom_vline(xintercept = c(quantile (gpp_results$GPP_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
-  annotate("text", x = quantile(gpp_results$GPP2, 0.98), y = 9000, label = paste0("95%CI (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")"), hjust = 0) +
-  annotate("text", x = quantile(gpp_results$GPP2, 0.98), y = 7000, label = paste0("95%CI (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
-           , hjust = 0, col = "blue") +
+ggplot(gpp_results) + aes(GPP2) + 
+  # geom_histogram(col = "black", fill = "gray", bins = 30) + 
+  geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) ) +
+  # geom_histogram(aes(GPP_raw), col = "blue", fill = "blue", bins = 30, alpha = 0.35) +
+  geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
+  # geom_vline(xintercept = c(quantile (gpp_results$GPP_raw, c(0.025, 0.975))),col = "gray", linetype = 2, size = 1) +
+  annotate("text", x = 150, y = 0.035, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")")
+           , hjust = 0, col = rgb(1,0,1)) +
+  annotate("text", x = 150, y = 0.025, label = paste0("2.5%,50%,97.5% quantile (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
+           , hjust = 0, col = rgb(0,1,1)) +
   xlab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
 
+gpp_results %>% ggplot() + aes(Rc) + 
+  # geom_histogram(col = "black", fill = "gray", bins = 30) + 
+  geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) )
+
+gpp_results %>% ggplot() + aes(Rc2) + 
+  # geom_histogram(col = "black", fill = "gray", bins = 30) + 
+  geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) )
+
+gpp_results %>% ggplot() + aes(Rroot) + 
+  # geom_histogram(col = "black", fill = "gray", bins = 30) + 
+  geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) )
+
+gpp_results %>% ggplot() + aes(Rroot2) + 
+  # geom_histogram(col = "black", fill = "gray", bins = 30) + 
+  geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) )
 
 # GPP ~ NPP
 ggplot(gpp_results) +
-  aes(x = NPP, y = GPP) +
+  aes(x = NPP, y = GPP2) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") + 
@@ -438,7 +590,7 @@ ggplot(gpp_results) +
 
 # GPP ~ Rs
 ggplot(gpp_results) +
-  aes(x = Rs, y = GPP) +
+  aes(x = gpp_results$Rs, y = GPP2) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
@@ -447,7 +599,7 @@ ggplot(gpp_results) +
 
 # GPP ~ Rc
 ggplot(gpp_results) +
-  aes(x = Rc, y = GPP) +
+  aes(x = Rc, y = GPP2) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
@@ -456,7 +608,7 @@ ggplot(gpp_results) +
 
 # GPP ~ Froot
 ggplot(gpp_results) +
-  aes(x = Froot, y = GPP) +
+  aes(x = Froot, y = GPP2) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
@@ -465,7 +617,7 @@ ggplot(gpp_results) +
 
 # GPP ~ Fshoot
 ggplot(gpp_results) +
-  aes(x = 1-Froot, y = GPP) +
+  aes(x = 1-Froot, y = GPP2) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
@@ -496,81 +648,53 @@ p_gpp
 ```
 
 
-** GPP plot
-```{r, fig.height = 6, fig.width = 8}
-# panel (a). all 65 GPP estimates
-# panel (b). GPP vs year, the red dots in panel c are calculated trend from panel b (increase rate = 0.2 if outliers removed, increase rate = 0.42 if outlers kept)
-# panel (c). 16 GPP estimates reported GPP increase trend
-plot_GPP(GPP, GlobalRs)
-ggsave("outputs/FigureS1.jpg", width = 8, height = 6, dpi = 300, units = "in")
-```
 
-
-** Plot Ra to GPP ratio
 ```{r}
-# only one point from tundra
-var_RaGpp <- plot_RaGPP (RaGPP, srdb_v4)
-ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
-var_RaGpp %>% group_by (Ecosystem) %>% summarise ( count = n() ) %>% mutate (percent = count/sum(count)) %>%  arrange (desc(Ecosystem))
-```
+# prepare data fro top-down approach
+# Froot used the same data as bottom-up approach
+var_Fire <- c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)
+# prepare RaGPP ratio data
+var_RaGpp %>% count(IGBP2)
+var_RaGpp_df = var_RaGpp[var_RaGpp$IGBP2 == "Deciduous", ]$RaGPP_ratio
+var_RaGpp_ef = var_RaGpp[var_RaGpp$IGBP2 == "Evergreen", ]$RaGPP_ratio
+# mix forest are from all forest due to lack of data
+var_RaGpp_mf = var_RaGpp[var_RaGpp$Ecosystem == "Forest", ]$RaGPP_ratio 
+var_RaGpp_gra = var_RaGpp[var_RaGpp$Ecosystem == "Grassland", ]$RaGPP_ratio
 
+```
 
 
 ```{r}
 # topdowm approach to eatimate Rs
 # Ra = GPP * Ra_GPP_ratio (calculated based on data from a summary paper and from srdb, see plot_RaGPP function)
 # Ra = GPP - NPP (two approaches yield a very similar results, we thus used the average of two estimates)
-
-var_Fire <- c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)
 n_samp <- 50000
 
-set.seed(1234567)
+set.seed(20190827)
 rs_results <- tibble(
-  # GPP = replicate(n_rep, sample(GPP$GPP, n_samp, replace = TRUE) %>% mean() ),
-  # GPP = sample(GPP$GPP, n_samp, replace = TRUE),
-  gpp1 = rnorm(n = n_samp, mean = 124.6, sd = 2.7),
-  gpp2 = rnorm(n = n_samp, mean = 135.7, sd = 21.712),
-  gpp3 = rnorm(n = n_samp, mean = 109.29, sd = 27.33),
-  gpp4 = rnorm(n = n_samp, mean = 118, sd = 26),
-  gpp5 = rnorm(n = n_samp, mean = 119, sd = 6),
-  gpp6 = rnorm(n = n_samp, mean = 110.5, sd = 21.3),
-  gpp7 = rnorm(n = n_samp, mean = 117, sd = 13),
-  gpp8 = rnorm(n = n_samp, mean = 147, sd = 16),
+  # Step 1. Prepare GPP data
+  gpp1 = rnorm(n = n_samp, mean = 124.6, sd = 2.7), # if gpp have mean and standard diviation, take 50000 samples from the normal distribution
+  gpp2 = rnorm(n = n_samp, mean = 135.7, sd = 21.712), # same as above
+  gpp3 = rnorm(n = n_samp, mean = 109.29, sd = 27.33), # same as above
+  gpp4 = rnorm(n = n_samp, mean = 118, sd = 26), # same as above
+  gpp5 = rnorm(n = n_samp, mean = 119, sd = 6), # same as above
+  gpp6 = rnorm(n = n_samp, mean = 110.5, sd = 21.3), # same as above
+  gpp7 = rnorm(n = n_samp, mean = 117, sd = 13), # same as above
+  gpp8 = rnorm(n = n_samp, mean = 147, sd = 16), # same as above
   gpp9 = rnorm(n = n_samp, mean = 119, sd = 6), # same as above
   gpp10 = rnorm(n = n_samp, mean = 122, sd = 25), # same as above
-  gpp11 = sample(GPP[is.na(GPP$SD),]$GPP, n_samp, replace = TRUE), # for those do not have SD information, take 50000 samples using boosting 
-  GPP =  (gpp1 + gpp2 + gpp3 + gpp4 + gpp5 + gpp6 + gpp7 + gpp8 + gpp9 + gpp10 + gpp11)/11,
+  # for those do not have SD information, take 50000 samples using boosting 
+  gpp11 = sample(var_GPP, n_samp, replace = TRUE), 
+  # calculate GPP, this is the Top-dowm GPP (collected from previous studies, and resampling)
+  GPP_raw =  (gpp1 + gpp2 + gpp3 + gpp4 + gpp5 + gpp6 + gpp7 + gpp8 + gpp9 + gpp10 + gpp11)/11, 
   
+  # Step 2. prepare other components, NPP and NPP consumed by fire etc.
   NPP = sample(NPP$NPP, n_samp, replace = TRUE),
   HerbComsum = rnorm(n = n_samp, mean = 2.2, sd = 0.2),
   Fire = sample(var_Fire, n_samp, replace = TRUE),
   sink = rnorm(n = n_samp, mean = 2.10, sd = 0.28),
   
-  # RaGpp = sample(var_RaGpp$RaGPP_ratio, n_samp, replace = TRUE),
-  RaGpp_agr = sample(var_RaGpp[var_RaGpp$Ecosystem == "Agriculture", ]$RaGPP_ratio, n_samp, replace = TRUE),
-  RaGpp_for = sample(var_RaGpp[var_RaGpp$Ecosystem == "Forest", ]$RaGPP_ratio, n_samp, replace = TRUE),
-  RaGpp_gra = sample(var_RaGpp[var_RaGpp$Ecosystem == "Grassland", ]$RaGPP_ratio, n_samp, replace = TRUE),
-  RaGpp_sav = sample(var_RaGpp[var_RaGpp$Ecosystem == "Savanna", ]$RaGPP_ratio, n_samp, replace = TRUE),
-  RaGpp_wet = sample(var_RaGpp[var_RaGpp$Ecosystem == "Wetland", ]$RaGPP_ratio, n_samp, replace = TRUE),
-  RaGpp_rest = sample(var_RaGpp$RaGPP_ratio, n_samp, replace = TRUE),
-  
-  # senario 1
-  RaGpp = RaGpp_agr*0.267 + RaGpp_for*0.298 + RaGpp_gra*0.213 + RaGpp_sav*0.216 + RaGpp_wet*0.006,
-  # senario 2
-  RaGpp2 = RaGpp_for*0.298 + RaGpp_rest*(1-0.298),
-  
-  # Froot = sample(Froot$Froot, n_samp, replace = TRUE), # senario 0: Froot not seperate into different ecosystems, not used
-  Froot_agr = sample(Froot[Froot$Ecosystem == "Agriculture",]$Froot, n_samp, replace = TRUE),
-  Froot_for = sample(Froot[Froot$Ecosystem == "Forest",]$Froot, n_samp, replace = TRUE),
-  Froot_gra = sample(Froot[Froot$Ecosystem == "Grassland",]$Froot, n_samp, replace = TRUE),
-  Froot_sav = sample(Froot[Froot$Ecosystem == "Savanna",]$Froot, n_samp, replace = TRUE),
-  Froot_wet = sample(Froot[Froot$Ecosystem == "Wetland",]$Froot, n_samp, replace = TRUE),
-  Froot_rest = sample(Froot$Froot, n_samp, replace = TRUE),
-  Froot = Froot_agr*0.267 + Froot_for*0.298 + Froot_gra*0.213 + Froot_sav*0.216 + Froot_wet*0.006,
-  # seperate into 2 groupts
-  Froot2 = Froot_rest * 0.702 + Froot_for*0.298,
-  
-  # Rs_raw = sample(na.omit(GlobalRs$Rs), n_samp, replace = TRUE) ,
+  # Step 3. prepare Rs data
   Rs1 = sample(var_Rs$Rs, n_samp, replace = TRUE),
   Rs2 = rnorm(n = n_samp, mean = 80.4, sd = 16.9),
   Rs3 = rnorm(n = n_samp, mean = 98, sd = 12),
@@ -583,23 +707,49 @@ rs_results <- tibble(
   Rs10 = rnorm(n = n_samp, mean = 93.3, sd = 3.11),
   Rs_raw = (Rs1 + Rs2 + Rs3 + Rs4 + Rs5 + Rs6 + Rs7 + Rs8 + Rs9 + Rs10)/10,
   
-  Ra1 = GPP * RaGpp, # first way to calculate Ra, Ra = GPP * RaGPP
-  Ra2 = GPP - NPP, # second way to calculate Ra, Ra = GPP - NPP
-  # BBL: what's this comma? Why doesn't it cause an error?
-  # response: because few Ra2 < 0 (when GPP < NPP), for those estimates, just drop them? or use Ra1 replace them? or keep them?
-  Ra3 = ifelse(Ra2 < 0, Ra1, Ra2), 
+  # Step 4. Ra-to-GPP ratio boosting
+  # RaGpp = sample(var_RaGpp$RaGPP_ratio, n_samp, replace = TRUE),
+  RaGpp_df = sample(var_RaGpp_df, n_samp, replace = TRUE),
+  RaGpp_ef = sample(var_RaGpp_ef, n_samp, replace = TRUE),
+  RaGpp_mf = sample(var_RaGpp_mf, n_samp, replace = TRUE),
+  RaGpp_gra = sample(var_RaGpp_gra, n_samp, replace = TRUE),
+  # note that for the rest ecosystems, we used samples from all Froot rather than Other group
+  RaGpp_rest = sample(var_RaGpp$RaGPP_ratio, n_samp, replace = TRUE),
+  
+  # Step 5. Sampling Rroot-to-Ra ratio (Froot)
+  Froot_df = sample(var_df_froot, n_samp, replace = TRUE),
+  Froot_ef = sample(var_ef_froot, n_samp, replace = TRUE),
+  Froot_mf = sample(var_mf_froot, n_samp, replace = TRUE),
+  Froot_gra = sample(var_gra_froot, n_samp, replace = TRUE),
+  # note that for the rest ecosystems, we used samples from all Froot rather than Other group
+  Froot_rest = sample(var_rest_froot, n_samp, replace = TRUE), 
+  
+  # Calculation **********
+  # senario 1
+  RaGpp = RaGpp_rest,
+  # # senario 2
+  RaGpp2 = RaGpp_df*df_area + RaGpp_ef*ef_area + RaGpp_mf*mf_area + RaGpp_gra*gra_area + RaGpp_rest*(1-df_area-ef_area-mf_area-gra_area),
+  # 
+  # # # get Froot (Froot2 is better, from bottom-up section, see above results)
+  Froot2 = Froot_df*df_area + Froot_ef*ef_area + Froot_mf*mf_area + Froot_rest * (1-df_area-ef_area-mf_area),
+  # 
+  Ra1 = GPP_raw * RaGpp, # first way to calculate Ra, Ra = GPP * RaGPP
+  Ra2 = GPP_raw - NPP, # second way to calculate Ra, Ra = GPP - NPP
+  # # BBL: what's this comma? Why doesn't it cause an error?
+  # # response: because few Ra2 < 0 (when GPP < NPP), for those estimates, just drop them? or use Ra1 replace them? or keep them?
+  Ra3 = ifelse(Ra2 < 0, Ra1, Ra2),
   Ra_avg1 = (Ra1 + Ra3) / 2,
-  
-  Rroot = Ra_avg1 * Froot,
-  Rshoot = Ra_avg1 * (1 - Froot),
-  Rs_topdown = NPP - HerbComsum - Fire - sink + Rroot, 
-  
-  # senario2
-  Ra4 = GPP * RaGpp2, # first way to calculate Ra, Ra = GPP * RaGPP
+  # # 
+  Rroot = Ra_avg1 * Froot2,
+  Rshoot = Ra_avg1 * (1 - Froot2),
+  Rs_topdown = NPP - HerbComsum - Fire - sink + Rroot,
+  # 
+  # # senario2
+  Ra4 = GPP_raw * RaGpp2, # first way to calculate Ra, Ra = GPP * RaGPP
   Ra_avg2 = (Ra4 + Ra3) / 2,
   Rroot2 = Ra_avg2 * Froot2,
   Rshoot2 = Ra_avg2 * (1 - Froot2),
-  Rs_topdown2 = NPP - HerbComsum - Fire - sink + Rroot2, 
+  Rs_topdown2 = NPP - HerbComsum - Fire - sink + Rroot2
   
 )
 ```
@@ -617,9 +767,11 @@ rs_results$Ra3 %>% min(na.rm = TRUE)
 # mean(rs_results$Rs)
 # max(rs_results$Rs)
 
+# scenatio 1. RaGPP ratio not seperated
 var_CI <- quantile(rs_results$Rs_topdown, c(0.025, 0.5, 0.975)) %>% round(0)
 var_CI_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
-ggplot(rs_results) + aes(Rs_topdown) + geom_density(col = "gray", fill = rgb(1,0,1, alpha = 0.25)) + 
+ggplot(rs_results) + aes(Rs_topdown) + 
+  geom_density(col = "gray", fill = rgb(1,0,1, alpha = 0.25)) + 
   geom_density(aes(Rs_raw), col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
   # geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
   annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")")
@@ -628,17 +780,17 @@ ggplot(rs_results) + aes(Rs_topdown) + geom_density(col = "gray", fill = rgb(1,0
            , hjust = 0, col = rgb(0,1,1)) +
   ylab(expression(count))
 
-ggsave("outputs/Figure3.jpg", width = 6, height = 4, dpi = 300, units = "in")
-
-# senario two
+# senario 2. RaGPP ratio seperated into 2 groups
 var_CI <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)
 var_CI_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
-ggplot(rs_results) + aes(Rs_topdown2) + geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_histogram(aes(Rs_raw), col = "blue", fill = "blue", bins = 30, alpha = 0.35) +
-  geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
-  annotate("text", x = quantile(rs_results$Rs_topdown2, 0.98), y = 7000, label = paste0("95%CI (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")"), hjust = 0) +
-  annotate("text", x = quantile(rs_results$Rs_topdown2, 0.98), y = 4000, label = paste0("95%CI (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
-           , hjust = 0, col = "blue") +
+ggplot(rs_results) + aes(Rs_topdown2) + 
+  geom_density(col = "gray", fill = rgb(1,0,1, alpha = 0.25)) + 
+  geom_density(aes(Rs_raw), col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
+  # geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
+  annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")")
+           , hjust = 0, col = rgb(1,0,1)) +
+  annotate("text", x = 100, y = 0.03, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
+           , hjust = 0, col = rgb(0,1,1)) +
   ylab(expression(count))
 
 # Rs raw data plot
@@ -656,7 +808,7 @@ ggplot(rs_results) +
 
 # Rs ~ GPP
 ggplot(rs_results) +
-  aes(x = GPP, y = Rs_topdown) +
+  aes(x = GPP_raw, y = Rs_topdown) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
@@ -683,7 +835,7 @@ ggplot(rs_results) +
 
 # Rs ~ Froot
 ggplot(rs_results) +
-  aes(x = Froot, y = Rs_topdown) +
+  aes(x = Froot2, y = Rs_topdown) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
@@ -698,6 +850,45 @@ ggplot(rs_results) +
   geom_smooth(method = "lm") +
   xlab(expression(Fire~burned~"("~Pg~C~yr^{-1}~")")) +
   ylab(expression(R[S]~"("~Pg~C~yr^{-1}~")"))
+```
+
+
+```{r, fig.height=8, fig.width=6}
+# senario 2, RC seperate into 4 groups, and Froot seperate into 2 groups
+var_CI <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
+var_CI_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+ggplot(gpp_results) + aes(GPP2) + 
+  geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) ) +
+  geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
+  # geom_vline(xintercept = c(quantile (gpp_results$GPP_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
+  annotate("text", x = 150, y = 0.035, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")")
+           , hjust = 0, col = rgb(1,0,1)) +
+  annotate("text", x = 150, y = 0.025, label = paste0("2.5%,50%,97.5% quantile (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
+           , hjust = 0, col = rgb(0,1,1)) +
+  # annotate("text", x = 150, y = 0.045, label = expression("Rroot-to-R"[S]~"seperated into 4 groups")
+  #          , hjust = 0) +
+  xlab(expression(GPP~"("~Pg~C~yr^{-1}~")")) -> p1
+
+# senario two
+var_CI <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)
+var_CI_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+ggplot(rs_results) + aes(Rs_topdown2) + 
+  geom_density(col = "gray", fill = rgb(1,0,1, alpha = 0.5)) + 
+  geom_density(aes(Rs_raw), col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
+  # geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
+  # annotate("text", x = 100, y = 0.08, label = expression("Rroot-to-Ra ratio seperated into 4 groups")
+  #          , hjust = 0) +
+  annotate("text", x = 100, y = 0.06, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")")
+           , hjust = 0, col = rgb(1,0,1)) +
+  annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
+           , hjust = 0, col = rgb(0,1,1)) +
+  ylab(expression(count)) +
+  xlab(expression(Global~R[S]~"("~Pg~C~yr^{-1}~")")) -> p2
+
+plot_grid(p1, p2, ncol=1, labels = c("(a)", "(b)")
+          , hjust = -4, vjust = 4)
+
+ggsave("outputs/Figure2.jpg", width = 6, height = 8, dpi = 300, units = "in")
 ```
 
 ```{r}

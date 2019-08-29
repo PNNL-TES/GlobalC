@@ -186,37 +186,19 @@ plot_GPP <- function (sdata, sdata2) {
 
 
 # plot NPP and Rab/Rh
-plot_RaGPP <- function (sdata2, sdata3) {
-  # Ra/GPP
-  sdata2$Source <- "Meta-papers"
-  sdata2 %>% select(Ecosystem, RaGPP_ratio, Source) -> sdata2
+plot_RaGPP <- function (sdata2) {
   
-  
-  sdata3 %>% 
-    # select(Study_number, Biome, Ecosystem_type, Leaf_habit, Latitude, Longitude, Ra_annual, ER, GPP, NPP) %>% 
-    select(Ecosystem_type, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>% 
-    filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER) ) -> sub_srdb
-  sub_srdb$ER <- ifelse(is.na(sub_srdb$ER), sub_srdb$GPP, sub_srdb$ER) # assume NEP very small
-  sub_srdb$RaGPP_ratio <- (sub_srdb$ER - sub_srdb$NPP)/sub_srdb$GPP
-  sub_srdb %>% filter (RaGPP_ratio > 0 & RaGPP_ratio <1 & !is.na(Ecosystem_type)) -> sub_srdb
-  sub_srdb$Source <- "srdb_v4"
-  sub_srdb %>% select(Ecosystem_type, RaGPP_ratio, Source) -> sub_srdb
-  colnames(sub_srdb) <- colnames(sdata2)
-  
-  sdata2 <- rbind(sdata2, sub_srdb)
-  sdata2[sdata2$Ecosystem == "Crop", ]$Ecosystem <- "Agriculture"
-  sdata2[sdata2$Ecosystem == "Tundra", ]$Ecosystem <- "Grassland" # only one tundra site, and IGBP has no tundra class, put it to grassland
   var_obs <- nrow(sdata2)
  
   sdata2$Global <- paste0("n=", var_obs)
   
-  Ra_GPP <- ggplot(sdata2, aes(x = Ecosystem, y=RaGPP_ratio)) + geom_violin() +
+  Ra_GPP <- ggplot(sdata2, aes(x = IGBP2, y=RaGPP_ratio)) + geom_violin() +
     geom_jitter(shape=16, position=position_jitter(0.2), col = 'gray') +
     geom_boxplot(width=.1) +
     # stat_summary(fun.y=median, geom="point", size=2, color="red") +
-    ylab("Ra/GPP ratio") +
-    scale_x_discrete(limits = c("Agriculture", "Forest", "Grassland", "Savanna", "Wetland"),
-                     labels = c("Agriculture (n=6)", "Forest (n=207)", "Grassland (n=7)", "Savanna (n=5)", "Wetland (n=7)") ) +
+    ylab("Ra-to-GPP-ratio") +
+    scale_x_discrete(limits = c("Deciduous", "Evergreen", "Forest", "Grassland", "Other"),
+                     labels = c("Deciduous (n=18)", "Evergreen (n=121)", "Forest (n=68)", "Grassland (n=11)", "Other (n=14)") ) +
     theme(axis.title.x=element_blank())
   
   print(mean(sdata2$RaGPP_ratio))
@@ -231,7 +213,7 @@ plot_RaGPP <- function (sdata2, sdata3) {
   # plot_grid(p_NPP, Ra_GPP, labels = c('( a )', '( b )')
   #           , vjust = c(3.5,3.5), hjust = c(-2.5, -2.25) )
   
-  return (sdata2)
+  
 }
 
 
@@ -253,7 +235,7 @@ plot_RaGPP <- function (sdata2, sdata3) {
 cal_Froot <- function (sdata, sdata2) {
   # Froot and Fshoot data from digitized papers
   sdata %>%
-    select(Latitude, Longitude, Fshoot, Froot, Ecosystem) ->
+    select(Latitude, Longitude, Fshoot, Froot, Ecosystem, IGBP) ->
     comb_data
   comb_data$Fshoot <- ifelse(is.na(comb_data$Fshoot), 100-comb_data$Froot, comb_data$Fshoot) 
   comb_data$Froot <- ifelse(is.na(comb_data$Froot), 100-comb_data$Fshoot, comb_data$Froot)
@@ -265,7 +247,7 @@ cal_Froot <- function (sdata, sdata2) {
   # Ra = Rroot + Rshoot = ER - Rh
   sdata2 %>% 
     # select(Study_number, Biome, Ecosystem_type, Leaf_habit, Latitude, Longitude, Ra_annual, ER, GPP, NPP) %>% 
-    select(Latitude, Longitude, Ecosystem_type, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>% 
+    select(Latitude, Longitude, Ecosystem_type, Leaf_habit, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>% 
     filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER) ) -> 
     sub_srdb
   sub_srdb$ER <- ifelse(is.na(sub_srdb$ER), sub_srdb$GPP, sub_srdb$ER) # IF ER not available, use GPP (assume NEP very small).
@@ -282,7 +264,7 @@ cal_Froot <- function (sdata, sdata2) {
   # mean(sub_srdb$Froot)
   
   sub_srdb$Fshoot <- 1 - sub_srdb$Froot
-  sub_srdb %>% select(Latitude, Longitude, Fshoot, Froot, Ecosystem_type) -> sub_srdb
+  sub_srdb %>% select(Latitude, Longitude, Fshoot, Froot, Ecosystem_type, Leaf_habit) -> sub_srdb
   colnames(sub_srdb) <- colnames(comb_data)
   
   comb_data <- rbind(comb_data, sub_srdb)
@@ -293,7 +275,7 @@ cal_Froot <- function (sdata, sdata2) {
 
 
 # plot global Rs
-plot_Rs <- function (sdata, sdata2, sdata3) {
+plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
   sub_Rs <- subset(sdata, !is.na(sdata$Rs))
   Rs_obs <- nrow(sub_Rs)
   sub_Rs$label <- paste0("n=", Rs_obs)
@@ -323,13 +305,8 @@ plot_Rs <- function (sdata, sdata2, sdata3) {
   
   # RC and RH distribution
   # RC
-  sdata2 %>% 
-    select(Study_number, Biome, Ecosystem_type, Leaf_habit, Latitude, Longitude, RC_annual, Ra_annual, Rh_annual) %>% 
-    filter(RC_annual > 0 & RC_annual < 1) -> 
-    sub_srdb
-  
   sub_srdb %>%
-    count(Ecosystem_type) %>%
+    count(IGBP2) %>%
     print()
   
   #sub_srdb %>% group_by(Ecosystem_type) %>% summarise(count = n()) %>% print ()
@@ -346,13 +323,13 @@ plot_Rs <- function (sdata, sdata2, sdata3) {
     theme(axis.title.x=element_blank())
   
   # RC by biome
-  RC_plot2 <- ggplot(sub_srdb, aes(x = Ecosystem_type, y=RC_annual)) + geom_violin() +
+  RC_plot2 <- ggplot(sub_srdb, aes(x = IGBP2, y=RC_annual)) + geom_violin() +
     geom_jitter(shape=16, position=position_jitter(0.2), col = 'gray') +
     geom_boxplot(width=.1) +
-    scale_x_discrete(limits = c("Agriculture", "Desert", "Forest", "Grassland", "Savanna", "Shrubland", "Wetland"),
-                     labels = c("Agriculture (n=40)", "Desert (n=3)", "Forest (n=480)", "Grassland (n=74)", "Savanna (n=3)", "Shrubland(n=11)", "Wetland (n=6)") ) +
+    scale_x_discrete(limits = c("Agriculture", "DF", "EF", "Mixed", "Grassland", "Shrubland", "Other"),
+                     labels = c("Agriculture (n=40)", "DF (n=189)", "EF (n=256)", "Mixed (n=28)", "Grassland (n=74)", "Shrubland (n=14)", "Other (n=16)" ) ) +
     # stat_summary(fun.y=median, geom="point", size=2, color="red") +
-    ylab("RC") +
+    ylab("Rroot-to-R"[S]~ratio) +
     theme(axis.title.x=element_blank())
   
   
@@ -386,12 +363,12 @@ plot_Rs <- function (sdata, sdata2, sdata3) {
     theme(axis.title.x = element_blank())
     
   
-  p_mul <- plot_grid(p_Rs, p_NPP, p_fire, nrow = 1
-            , labels = c('( a )', '( b )', '( c )')
+  p_mul <- plot_grid(p_NPP, p_fire, nrow = 1
+            , labels = c('( a )', '( b )')
             , vjust = c(3), hjust = c(-2.8, -2.8, -2.5)) 
   
   plot_grid(p_mul, RC_plot2, nrow = 2
-            , labels = c('', '( d )')
+            , labels = c('', '( c )')
             , vjust = c(3), hjust = c(-2.8) )
 
 }
