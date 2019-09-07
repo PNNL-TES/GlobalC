@@ -394,7 +394,7 @@ var_GPP <- GPP[is.na(GPP$SD),]$GPP
 
 
 ```{r}
-# Bottom-up approache to stimate GPP
+# Bottom-up approache to estimate GPP
 # Rroot = Rs * RC (Rroot to Rs ratio, from srdb)
 # Froot = Rroot / Ra (root autotrophic respiration to total autotrophic respiration fraction/ratio, calculation please see plot_froot function)
 # Fshoot = 1-Froot
@@ -650,7 +650,7 @@ p_gpp
 
 
 ```{r}
-# prepare data fro top-down approach
+# prepare data for top-down approach
 # Froot used the same data as bottom-up approach
 var_Fire <- c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)
 # prepare RaGPP ratio data
@@ -665,7 +665,7 @@ var_RaGpp_gra = var_RaGpp[var_RaGpp$Ecosystem == "Grassland", ]$RaGPP_ratio
 
 
 ```{r}
-# topdowm approach to eatimate Rs
+# topdown approach to estimate Rs
 # Ra = GPP * Ra_GPP_ratio (calculated based on data from a summary paper and from srdb, see plot_RaGPP function)
 # Ra = GPP - NPP (two approaches yield a very similar results, we thus used the average of two estimates)
 n_samp <- 50000
@@ -892,7 +892,7 @@ ggsave("outputs/Figure2.jpg", width = 6, height = 8, dpi = 300, units = "in")
 ```
 
 ```{r}
-# accume Rs following normal distribution, with mean = y and sd = s, we can calculate the properbility of Rs following (80-92) 95%CI
+# assuming Rs follows a normal distribution, with mean = y and sd = s, we can calculate the probability of Rs following (80-92) 95%CI
 # about 28% chance Rs will be between (80-92)
 y <- mean(rs_results$Rs_topdown)
 s <- sd(rs_results$Rs_topdown)
@@ -908,5 +908,47 @@ p_Rs_higher_than_80 <- pnorm ((y - 80)/(s))
 p_Rs_higher_than_92 <- pnorm ((y - 92)/(s))
 p_Rs <- p_Rs_higher_than_80 -p_Rs_higher_than_92
 p_Rs
+```
+
+## Site-specific ratios of GPP to Rs
+
+Presumably, as a matter of mathematics, the ratio of global Rs to global GPP should be the linear combination (sum) of all terrestrial points Neither SRDB nor FLUXNET is an unbiased sample of the land surface, but it may be instructive to look at the Rs:GPP for three data sources:
+
+* Global GPP estimates, comparing them against the mean Rs estimate (~85 Pg C);
+* the SRDB itself, for sites at which both GPP and Rs were measured;
+* and FLUXNET2015 Tier 1, using Rs data measured very close to the towers.
+
+```{r, site-ratios}
+#topdown <- expand.grid(GPP = GPP$GPP, Rs = GlobalRs$Rs)
+topdown <- data.frame(GPP = GPP$GPP, Rs = mean(GlobalRs$Rs))
+topdown$Source <- paste0("Global GPP\n(N = ", nrow(topdown), ")")
+topdown$Type <- "Global"
+
+srdb_v4 %>% 
+  filter(!is.na(GPP), !is.na(Rs_annual), Ecosystem_state != "Managed") %>% 
+  select(Rs = Rs_annual, GPP, Biome, Ecosystem_type) %>% 
+  mutate(Biome = as.character(Biome), 
+         Ecosystem_type = as.character(Ecosystem_type)) ->
+  srdb
+srdb$Source <- paste0("SRDB\n(N = ", nrow(srdb), ")")
+srdb$Type <- "Observations"
+
+read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>% 
+  select(Biome, Ecosystem_type, FLUXNET_SITE_ID, GPP = gpp_fluxnet, Rs = Rs_annual) %>% 
+  filter(!is.na(GPP), !is.na(Rs)) ->
+  fluxnet
+fluxnet$Source <- paste0("FLUXNET\n(N = ", nrow(fluxnet), ")")
+fluxnet$Type <- "Observations"
+
+bind_rows(topdown, srdb, fluxnet) %>% 
+  mutate(Ratio = Rs / GPP) ->
+  ratios
+
+p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) + 
+  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), size = 0.75) +
+  geom_jitter(alpha = I(0.25)) + 
+  ylab("Ratio of Rs to GPP") + xlab("") +
+  coord_cartesian(ylim = c(0, 2))
+print(p_ratios)
 ```
 
