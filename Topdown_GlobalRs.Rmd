@@ -940,8 +940,11 @@ read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>%
 fluxnet$Source <- paste0("FLUXNET\n(N = ", nrow(fluxnet), ")")
 fluxnet$Type <- "Observations"
 
-bind_rows(topdown, srdb, fluxnet) %>% 
-  mutate(Ratio = Rs / GPP) ->
+cmip6 <- data.frame(Source = "CMIP6\n(N = 0)", Type = "Models", stringsAsFactors = FALSE)
+
+bind_rows(topdown, srdb, fluxnet, cmip6) %>% 
+  mutate(Ratio = Rs / GPP,
+         Source = factor(Source, unique(Source)[c(2,3,1,4)])) ->
   ratios
 
 p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) + 
