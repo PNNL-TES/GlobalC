@@ -115,11 +115,14 @@ plot_GPP <- function (sdata, sdata2) {
 
   # Trend
   subGPP <- subset( sdata, sdata$GPP > 90 & sdata$GPP < 180 )
-  Trend_GPP <- ggplot (subGPP, aes(x = Year, y = GPP)) + geom_point() 
-  Trend_GPP <- Trend_GPP + geom_smooth(aes(Year, GPP), method = "lm") +
+  Trend_GPP <- ggplot (subGPP, aes(x = Year, y = GPP)) +
+    geom_point(col = "gray")
+  Trend_GPP <- Trend_GPP + 
+    # geom_smooth(aes(Year, GPP), method = "lm", col = "black", se = FALSE) +
+    geom_smooth(aes(Year, GPP), method = "lm", col = "red", data = sdata, se = TRUE) +
     theme(legend.title=element_blank()) +
     # one outlier
-    geom_point(data = subset(sdata, sdata$GPP < 90 | sdata$GPP > 180) ,aes(x=Year, y=GPP), color = c("red"), shape = 16 ) +
+    # geom_point(data = subset(sdata, sdata$GPP < 90 | sdata$GPP > 180) ,aes(x=Year, y=GPP), color = c("red"), shape = 16 ) +
     theme(legend.position = "none") +
     theme(axis.title.y = element_blank())
     # annotate("text", x = 1958, y = 175, size = 5)
@@ -137,7 +140,8 @@ plot_GPP <- function (sdata, sdata2) {
   p_trend <- ggplot(sdata, aes(x = Global, y=Trend)) + geom_violin() +
     geom_jitter(shape=16, position=position_jitter(0.2), col = 'gray') +
     geom_boxplot(width=.1) +
-    geom_point(aes(y=slope1), col="red") + geom_point(aes(y=slope2), col="red") +
+    # geom_point(aes(y=slope1), col="black", shape = 13) + 
+    geom_point(aes(y=slope2), col="red", shape = 13) +
     # stat_summary(fun.y=median, geom="point", size=2, color="red") +
     ylab(expression(GPP~trend~"("~Pg~yr^{-2}~")"))
   
@@ -158,11 +162,12 @@ plot_GPP <- function (sdata, sdata2) {
     xlab("Global")
   
   # plot Rs~Year relationship
-  Trend_Rs <- ggplot (sdata2, aes(x = Year, y = Rs)) + geom_point() +
-    geom_smooth(aes(Year, Rs), method = "lm") +
+  Trend_Rs <- ggplot (sdata2, aes(x = Year, y = Rs)) + geom_point(col = "gray") +
+    geom_smooth(aes(Year, Rs), method = "lm", col = "red") +
     xlim(min(sdata$Year), max(sdata$Year)) +
     theme(legend.title=element_blank()) +
-    theme(axis.title.y=element_blank()) 
+    theme(axis.title.y=element_blank()) +
+    annotate("text", x=1962, y=80, label = expression(Trend~"=0.52"))
   
   sum_mod <- lm(Rs~Year, data = sdata2)
   slope3 <- coefficients(summary(sum_mod))[2,1]
@@ -174,10 +179,10 @@ plot_GPP <- function (sdata, sdata2) {
     geom_jitter(shape=16, position=position_jitter(0.2), col = 'gray') +
     geom_boxplot(width=.1) +
     ylab(expression(R[S]~trend~"("~Pg~yr^{-2}~")")) +
-    xlab("Global") 
-    # geom_point(aes(y=slope3), col="red")  
+    xlab("Global") +
+    geom_point(aes(y=slope3), col="red", shape = 13)
   
-  plot_grid(p_GPP, Trend_GPP, p_trend, p_Rs, Trend_Rs, Rs_IRate
+  plot_grid(p_Rs, Trend_Rs, Rs_IRate, p_GPP, Trend_GPP, p_trend
             , ncol = 3
             , labels = c('( a )', '( b )', '( c )', "( d )", "( e )", "( f )")
             , vjust = c(3), hjust = c(-2.35, -1.5, -2.25, -2.25, -1.5, -2.65))
@@ -196,9 +201,9 @@ plot_RaGPP <- function (sdata2) {
     geom_jitter(shape=16, position=position_jitter(0.2), col = 'gray') +
     geom_boxplot(width=.1) +
     # stat_summary(fun.y=median, geom="point", size=2, color="red") +
-    ylab("Ra-to-GPP-ratio") +
+    ylab("Ra-GPP ratio") +
     scale_x_discrete(limits = c("Deciduous", "Evergreen", "Forest", "Grassland", "Other"),
-                     labels = c("Deciduous (n=18)", "Evergreen (n=121)", "Forest (n=68)", "Grassland (n=11)", "Other (n=14)") ) +
+                     labels = c("Deciduous (n=20)", "Evergreen (n=127)", "Forest (n=68)", "Grassland (n=11)", "Other (n=14)") ) +
     theme(axis.title.x=element_blank())
   
   print(mean(sdata2$RaGPP_ratio))
@@ -212,7 +217,6 @@ plot_RaGPP <- function (sdata2) {
   print(Ra_GPP)
   # plot_grid(p_NPP, Ra_GPP, labels = c('( a )', '( b )')
   #           , vjust = c(3.5,3.5), hjust = c(-2.5, -2.25) )
-  
   
 }
 
@@ -329,7 +333,7 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
     scale_x_discrete(limits = c("Agriculture", "DF", "EF", "Mixed", "Grassland", "Shrubland", "Other"),
                      labels = c("Agriculture (n=40)", "DF (n=189)", "EF (n=256)", "Mixed (n=28)", "Grassland (n=74)", "Shrubland (n=14)", "Other (n=16)" ) ) +
     # stat_summary(fun.y=median, geom="point", size=2, color="red") +
-    ylab("Rroot-to-R"[S]~ratio) +
+    ylab("Rroot-R"[S]~"ratio") +
     theme(axis.title.x=element_blank())
   
   

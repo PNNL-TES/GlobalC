@@ -1,116 +1,124 @@
-Ecosystem,Ecosystem_comments,Ecosystem_comments2,Leaf_habit,Ra,GPP,RaGPP_ratio,MAT,Ref,Comments
-Crop,Aldalfa,,,,,0.42,,Amothor (2001),
-Crop,"Maize, rice and, wheat",,,,,0.45,,Amothor (2001),
-Grassland,Shortgrass prairie,,,,,0.34,,Amothor (2001),
-Grassland,Shortgrass prairie,,,,,0.51,,Amothor (2001),
-Grassland,Tall grass prairie,No grazing,,,,0.61,,Amothor (2001),
-Grassland,Tall grass prairie,Seasonal grazing,,,,0.65,,Amothor (2001),
-Grassland,Tall grass prairie,Year round grazing,,,,0.62,,Amothor (2001),
-Forest,Tropical moist ,Ivory coast,Evergreen,,,0.75,,Amothor (2001),
-Forest,Tropical moist ,Puerto Rico,Evergreen,,,0.88,,Amothor (2001),
-Forest,Tropical moist ,Southern Thailand,Evergreen,,,0.66,,Amothor (2001),
-Forest,Temperate,Warm evergreen,Evergreen,,,0.72,,Amothor (2001),
-Forest,Temperate,Warm evergreen oak,Evergreen,,,0.66,,Amothor (2001),
-Forest,Temperate,Abies sachalinensis,Evergreen,,,0.53,,Amothor (2001),
-Forest,Temperate,Castanopis cuspidata,Evergreen,,,0.58,,Amothor (2001),
-Forest,Temperate,Chamaecyparis obtusa plantation,Evergreen,,,0.62,,Amothor (2001),
-Forest,Temperate,Crytomeria japonico plantation,Evergreen,,,0.71,,Amothor (2001),
-Forest,Temperate,Fagus crenata secondary forest,Evergreen,,,0.44,,Amothor (2001),
-Forest,Temperate,Fagus crenata plantation,Evergreen,,,0.56,,Amothor (2001),
-Forest,Temperate,Fagus sylvatica 8 yrs old,Evergreen,,,0.46,,Amothor (2001),
-Forest,Temperate,Fagus sylvatica 25 yrs old,Evergreen,,,0.39,,Amothor (2001),
-Forest,Temperate,Fagus sylvatica 46 yrs old,Evergreen,,,0.43,,Amothor (2001),
-Forest,Temperate,Fagus sylvatica 85 yrs old,Evergreen,,,0.47,,Amothor (2001),
-Forest,Temperate,Fraxinus excelsior plantation,Deciduous,,,0.37,,Amothor (2001),
-Forest,Temperate,Liriodendron tulipifera,Deciduous,,,0.66,,Amothor (2001),
-Forest,Temperate,Picea abies plantation,Evergreen,,,0.32,,Amothor (2001),
-Forest,Temperate,Pinus densiflora plantation,Evergreen,,,0.71,,Amothor (2001),
-Forest,Temperate,Pinus ponderosa,Evergreen,,,0.55,,Amothor (2001),
-Forest,Temperate,Pinus taeda plantation,Evergreen,,,0.58,,Amothor (2001),
-Forest,Temperate,Pinus spp.,Evergreen,,,0.55,,Amothor (2001),
-Forest,Temperate,Pseudotsuga Tsuga,Evergreen,,,0.93,,Amothor (2001),
-Forest,Temperate,Quercus Acer,Deciduous,,,0.5,,Amothor (2001),
-Forest,Temperate,Quercus Acer,Deciduous,,,0.54,,Amothor (2001),
-Forest,Temperate,Quercus Pinus,Deciduous,,,0.55,,Amothor (2001),
-Forest,Temperate,Quercus spp.,Deciduous,,,0.61,,Amothor (2001),
-Forest,Temperate,Quercus carpinus,Deciduous,,,0.38,,Amothor (2001),
-Forest,Subalpine,Coniferous,Evergreen,,,0.72,,Amothor (2001),
-Forest,Subalpine,Abies,Evergreen,,,0.68,,Amothor (2001),
-Forest,Subalpine,Abies veitchii,Evergreen,,,0.61,,Amothor (2001),
-Forest,Boreal,Picea mariana,Evergreen,,,0.69,,Amothor (2001),
-Forest,Boreal,Picea mariana,Evergreen,,,0.75,,Amothor (2001),
-Forest,Boreal,Pinus banksiana,Evergreen,,,0.68,,Amothor (2001),
-Forest,Boreal,Pinus banksiana,Evergreen,,,0.72,,Amothor (2001),
-Forest,Boreal,Populus tremuloides,Deciduous,,,0.55,,Amothor (2001),
-Forest,Boreal,Populus tremuloides,Deciduous,,,0.66,,Amothor (2001),
-Wetland,Temperate coastal salt marsh,Spartina,,,,0.77,,Amothor (2001),
-Wetland,Temperate coastal salt marsh,Spartina Distichlis,,,,0.69,,Amothor (2001),
-Tundra,Arctic tundra,,,,,0.5,,Amothor (2001),
-Forest,,,Forest,,,0.76,-1.64,Piao (2010),Direct up-scaled estimation
-Forest,,,Forest,,,0.66,-1.56,Piao (2010),Direct up-scaled estimation
-Forest,,,Forest,,,0.7,0.69,Piao (2010),Direct up-scaled estimation
-Forest,,,Forest,,,0.7,1.08,Piao (2010),Direct up-scaled estimation
-Forest,,,Forest,,,0.72,8.89,Piao (2010),Direct up-scaled estimation
-Forest,,,Forest,,,0.63,8.81,Piao (2010),Direct up-scaled estimation
-Forest,,,Forest,,,0.45,8.89,Piao (2010),Direct up-scaled estimation
-Forest,,,Forest,,,0.5,7.49,Piao (2010),Direct up-scaled estimation
-Forest,,,Forest,,,0.7,26.7,Piao (2010),Direct up-scaled estimation
-Forest,,,Forest,,,0.64,-4.94,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.7,-0.19,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.93,0.79,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.73,0.79,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.72,0.79,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.69,1.04,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.66,1.01,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.66,0.72,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.65,0.8,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.53,0.8,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.6,2.94,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.56,4.77,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.58,6.81,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.53,6.78,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.5,6.32,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.54,7.45,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.56,8.4,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.58,8.47,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.63,8.05,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.65,8.12,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.68,8.22,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.73,10.01,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.6,12.58,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.6,14.24,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.43,7.49,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.45,8.3,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.25,6.47,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.3,8.23,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.38,9.32,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.35,9.88,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.33,11.96,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.85,25.08,Piao (2010),GPP-NPP
-Forest,,,Forest,,,0.62,0.62,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.63,1.01,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.63,2.98,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.38,4.78,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.34,7.42,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.4,9.25,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.44,9.99,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.35,11.99,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.48,8.23,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.5,7.45,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.51,6.78,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.58,12.76,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.58,8.12,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.6,8.05,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.67,10.05,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.68,6.71,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.75,24.9,Piao (2010),TER-Rh
-Forest,,,Forest,,,0.78,25.04,Piao (2010),TER-Rh
-Forest,,,Forest,117,498,0.23,,Ma (2007),
-Forest,,,Forest,306,715,0.43,,Ma (2007),
-Forest,,,Forest,253,638,0.4,,Ma (2007),
-Forest,,,Forest,466,878,0.53,,Ma (2007),
-Forest,,,Forest,585,833,0.7,,Ma (2007),
-Forest,,,Forest,345,712,0.48,,Ma (2007),
-Forest,Pinus taeda,,Evergreen,2068,4124,0.5,,,SRDB 155
-Forest,Liriodendron,,Deciduous,,,0.66,,,SRDB 155
-Forest,Pinus quercus,,Evergreen,,,0.53,,,SRDB 155
+Ecosystem,Ecosystem_comments,Ecosystem_comments2,Leaf_habit,Ra,GPP,RaGPP_ratio,MAT,Ref,Comments,
+Crop,Aldalfa,,,,,0.42,,Amothor (2001),,
+Crop,"Maize, rice and, wheat",,,,,0.45,,Amothor (2001),,
+Grassland,Shortgrass prairie,,,,,0.34,,Amothor (2001),,
+Grassland,Shortgrass prairie,,,,,0.51,,Amothor (2001),,
+Grassland,Tall grass prairie,No grazing,,,,0.61,,Amothor (2001),,
+Grassland,Tall grass prairie,Seasonal grazing,,,,0.65,,Amothor (2001),,
+Grassland,Tall grass prairie,Year round grazing,,,,0.62,,Amothor (2001),,
+Forest,Tropical moist ,Ivory coast,Evergreen,,,0.75,,Amothor (2001),,
+Forest,Tropical moist ,Puerto Rico,Evergreen,,,0.88,,Amothor (2001),,
+Forest,Tropical moist ,Southern Thailand,Evergreen,,,0.66,,Amothor (2001),,
+Forest,Temperate,Warm evergreen,Evergreen,,,0.72,,Amothor (2001),,
+Forest,Temperate,Warm evergreen oak,Evergreen,,,0.66,,Amothor (2001),,
+Forest,Temperate,Abies sachalinensis,Evergreen,,,0.53,,Amothor (2001),,
+Forest,Temperate,Castanopis cuspidata,Evergreen,,,0.58,,Amothor (2001),,
+Forest,Temperate,Chamaecyparis obtusa plantation,Evergreen,,,0.62,,Amothor (2001),,
+Forest,Temperate,Crytomeria japonico plantation,Evergreen,,,0.71,,Amothor (2001),,
+Forest,Temperate,Fagus crenata secondary forest,Evergreen,,,0.44,,Amothor (2001),,
+Forest,Temperate,Fagus crenata plantation,Evergreen,,,0.56,,Amothor (2001),,
+Forest,Temperate,Fagus sylvatica 8 yrs old,Evergreen,,,0.46,,Amothor (2001),,
+Forest,Temperate,Fagus sylvatica 25 yrs old,Evergreen,,,0.39,,Amothor (2001),,
+Forest,Temperate,Fagus sylvatica 46 yrs old,Evergreen,,,0.43,,Amothor (2001),,
+Forest,Temperate,Fagus sylvatica 85 yrs old,Evergreen,,,0.47,,Amothor (2001),,
+Forest,Temperate,Fraxinus excelsior plantation,Deciduous,,,0.37,,Amothor (2001),,
+Forest,Temperate,Liriodendron tulipifera,Deciduous,,,0.66,,Amothor (2001),,
+Forest,Temperate,Picea abies plantation,Evergreen,,,0.32,,Amothor (2001),,
+Forest,Temperate,Pinus densiflora plantation,Evergreen,,,0.71,,Amothor (2001),,
+Forest,Temperate,Pinus ponderosa,Evergreen,,,0.55,,Amothor (2001),,
+Forest,Temperate,Pinus taeda plantation,Evergreen,,,0.58,,Amothor (2001),,
+Forest,Temperate,Pinus spp.,Evergreen,,,0.55,,Amothor (2001),,
+Forest,Temperate,Pseudotsuga Tsuga,Evergreen,,,0.93,,Amothor (2001),,
+Forest,Temperate,Quercus Acer,Deciduous,,,0.5,,Amothor (2001),,
+Forest,Temperate,Quercus Acer,Deciduous,,,0.54,,Amothor (2001),,
+Forest,Temperate,Quercus Pinus,Deciduous,,,0.55,,Amothor (2001),,
+Forest,Temperate,Quercus spp.,Deciduous,,,0.61,,Amothor (2001),,
+Forest,Temperate,Quercus carpinus,Deciduous,,,0.38,,Amothor (2001),,
+Forest,Subalpine,Coniferous,Evergreen,,,0.72,,Amothor (2001),,
+Forest,Subalpine,Abies,Evergreen,,,0.68,,Amothor (2001),,
+Forest,Subalpine,Abies veitchii,Evergreen,,,0.61,,Amothor (2001),,
+Forest,Boreal,Picea mariana,Evergreen,,,0.69,,Amothor (2001),,
+Forest,Boreal,Picea mariana,Evergreen,,,0.75,,Amothor (2001),,
+Forest,Boreal,Pinus banksiana,Evergreen,,,0.68,,Amothor (2001),,
+Forest,Boreal,Pinus banksiana,Evergreen,,,0.72,,Amothor (2001),,
+Forest,Boreal,Populus tremuloides,Deciduous,,,0.55,,Amothor (2001),,
+Forest,Boreal,Populus tremuloides,Deciduous,,,0.66,,Amothor (2001),,
+Wetland,Temperate coastal salt marsh,Spartina,,,,0.77,,Amothor (2001),,
+Wetland,Temperate coastal salt marsh,Spartina Distichlis,,,,0.69,,Amothor (2001),,
+Tundra,Arctic tundra,,,,,0.5,,Amothor (2001),,
+Forest,,,Forest,,,0.76,-1.64,Piao (2010),Direct up-scaled estimation,
+Forest,,,Forest,,,0.66,-1.56,Piao (2010),Direct up-scaled estimation,
+Forest,,,Forest,,,0.7,0.69,Piao (2010),Direct up-scaled estimation,
+Forest,,,Forest,,,0.7,1.08,Piao (2010),Direct up-scaled estimation,
+Forest,,,Forest,,,0.72,8.89,Piao (2010),Direct up-scaled estimation,
+Forest,,,Forest,,,0.63,8.81,Piao (2010),Direct up-scaled estimation,
+Forest,,,Forest,,,0.45,8.89,Piao (2010),Direct up-scaled estimation,
+Forest,,,Forest,,,0.5,7.49,Piao (2010),Direct up-scaled estimation,
+Forest,,,Forest,,,0.7,26.7,Piao (2010),Direct up-scaled estimation,
+Forest,,,Forest,,,0.64,-4.94,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.7,-0.19,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.93,0.79,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.73,0.79,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.72,0.79,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.69,1.04,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.66,1.01,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.66,0.72,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.65,0.8,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.53,0.8,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.6,2.94,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.56,4.77,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.58,6.81,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.53,6.78,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.5,6.32,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.54,7.45,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.56,8.4,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.58,8.47,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.63,8.05,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.65,8.12,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.68,8.22,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.73,10.01,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.6,12.58,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.6,14.24,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.43,7.49,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.45,8.3,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.25,6.47,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.3,8.23,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.38,9.32,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.35,9.88,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.33,11.96,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.85,25.08,Piao (2010),GPP-NPP,
+Forest,,,Forest,,,0.62,0.62,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.63,1.01,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.63,2.98,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.38,4.78,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.34,7.42,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.4,9.25,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.44,9.99,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.35,11.99,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.48,8.23,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.5,7.45,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.51,6.78,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.58,12.76,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.58,8.12,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.6,8.05,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.67,10.05,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.68,6.71,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.75,24.9,Piao (2010),TER-Rh,
+Forest,,,Forest,,,0.78,25.04,Piao (2010),TER-Rh,
+Forest,,,Forest,117,498,0.23,,Ma (2007),,
+Forest,,,Forest,306,715,0.43,,Ma (2007),,
+Forest,,,Forest,253,638,0.4,,Ma (2007),,
+Forest,,,Forest,466,878,0.53,,Ma (2007),,
+Forest,,,Forest,585,833,0.7,,Ma (2007),,
+Forest,,,Forest,345,712,0.48,,Ma (2007),,
+Forest,Pinus taeda,,Evergreen,2068,4124,0.5,,Kinerson(1997),SRDB 155,
+Forest,Liriodendron,,Deciduous,,,0.66,,Kinerson(1997),SRDB 155,
+Forest,Pinus quercus,,Evergreen,,,0.53,,Kinerson(1997),SRDB 155,
+Forest,Boreal humid,,Evergreen,489,973,0.502569373,,Luyssaert(2007)GCB,,50.26
+Forest,Boreal semiaird,,Evergreen,541,773,0.699870634,,Luyssaert(2007)GCB,,69.99
+Forest,Boreal semiaird,,Deciduous,755,1201,0.628642798,,Luyssaert(2007)GCB,,62.86
+Forest,Temperate humid,,Evergreen,951,1762,0.539727582,,Luyssaert(2007)GCB,,53.97
+Forest,Temperate humid,,Deciduous,673,1375,0.489454545,,Luyssaert(2007)GCB,,48.95
+Forest,Temperate semiarid,,Evergreen,498,1228,0.405537459,,Luyssaert(2007)GCB,,40.55
+Forest,Mediterranean warm,,Evergreen,615,1478,0.416102842,,Luyssaert(2007)GCB,,41.61
+Forest,Tropical humid,,Evergreen,2323,3551,0.654181921,,Luyssaert(2007)GCB,,65.42
