@@ -26,14 +26,14 @@ output:
 
 
 ## Assumptions
-* Bottom-up approach: 
+* __Bottom-up approach:__ 
   1. We collected published global soil respiration estimates (mostly is based on bottom up field Rs measurements)
   2. We then partition Rs into root respiration and belowground heterotrophic resipiration
   3. We also collected published NPP estimates in the past decades from ITO et al. (2011)
   4. We then collected (and calculated) Rroot/Ra ratio, according to the root respiration, GPP can be calculates as (NPP + Rroot + Rshoot)
   5. We then compare this bottomup GPP with published GPP in the past decades (n=65) to see how much probability they will match
 
-* Top-down approach:
+* __Top-down approach:__
   1. We first collect global GPP estimates in the past decades (most is top-dow remote sensing estimates)
   2. We then estimate Ra according to Ra/GPP ratio and GPP-NPP
   3. Heterotrophic respiration was estimated according to Rh = NPP - HerbComsum - Fire - Csink (NEP)
@@ -56,7 +56,14 @@ output:
 * Provide a method to compare top-down Rs (Rs seperated from remote sensing land model based GPP) with filed experiment based Rs (field Rs measurement, then modeling).
 
 
-```{r load packages, message=FALSE}
+```{r load packages, message=FALSE, echo=FALSE}
+# Constants
+OUTPUT_DIR		<- "outputs/"
+SEPARATOR		<- "-------------------------------------------"
+DATA_DIR <- 'data'
+# Create output and log folders if they do not exist
+if(!file.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
+
 # install.packages('kableExtra')
 library(kableExtra)
 # Load required packages
@@ -69,7 +76,8 @@ library(cowplot)
 library(knitr)
 # install.packages("ggpubr")
 library("ggpubr")
-# library(reshape)
+# install.packages("reshape")
+library(reshape)
 library(ggplot2)
 # install.packages("ggmap")
 library(ggmap)
@@ -88,7 +96,7 @@ source('functions.R')
 
 
 
-```{r self defined functions}
+```{r self defined functions, echo=FALSE}
 # prepare Ra-GPP ratio 
 prep_RaGpp <- function() {
   # Ra/GPP
@@ -129,17 +137,11 @@ plot_froot <- function (sdata) {
 
 
 
-```{r preliminaries, message=FALSE, include=FALSE, echo=FALSE, cache=TRUE}
+```{r preliminaries, echo=FALSE}
 # message=FALSE, include=FALSE, echo=FALSE, cache=TRUE
 # Set chunks defaults; these options will be applied to all subsequent chunks
-knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, echo = FALSE,
+knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, echo = FALSE, warning = FALSE,
                       fig.height = 4, fig.width = 8, cache = TRUE)
-# Constants
-OUTPUT_DIR		<- "outputs/"
-SEPARATOR		<- "-------------------------------------------"
-DATA_DIR <- 'data'
-# Create output and log folders if they do not exist
-if(!file.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
 ```
 
 
@@ -250,8 +252,8 @@ Froot %>% mutate(IGBP2 = case_when(
 ```
 
 
-* 1. Introduction
-```{r plot sites spatial destribution}
+## Sites spatial distribution
+```{r plot sites spatial distribution, echo=FALSE, warning=FALSE}
 # plot sites distribution 
 # Figure. Sites distribution -- FlFsFr sites and RC/HC sites
 plot_sites(srdb_v4, FlFsFr)
@@ -259,7 +261,7 @@ plot_sites(srdb_v4, FlFsFr)
 
 
 ## Ratio by vegetation types {.tabset .tabset-fade .tabset-pills}
-### GPP plot
+### Plot GPP
 ```{r plot GPP and RSG, fig.height = 6, fig.width = 8}
 # panel (a). all 65 GPP estimates
 # panel (b). GPP vs year, the red dots in panel c are calculated trend from panel b (increase rate = 0.2 if outliers removed, increase rate = 0.42 if outlers kept)
@@ -289,7 +291,7 @@ plot_Rroot_Rs (GlobalRs, sub_srdb, NPP)
 ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
-### Plot Froot by ecosystem type
+### Plot Rroot-Ra ratio
 ```{r plot Rroot-Ra ratio, fig.height = 4, fig.width = 6}
 # potential issue: only two points from grassland
 # no point from tundra 
@@ -538,7 +540,6 @@ ggplot(gpp_results) + aes(GPP2) +
 
 ### GPP vs components relationships
 ```{r}
-
 gpp_results %>% ggplot() + aes(Rc) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
   geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) )
@@ -601,7 +602,7 @@ ggplot(gpp_results) +
   ylab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
 ```
 
-### prototion of aggrement
+### Probability of aggrement
 ```{r compute propotion of aggrement between top-down RSG and bottom-up GPP}
 # Quantify the probability GPP following (107, 133)
 # about 29% chance GPP will between (107-133)
@@ -610,8 +611,8 @@ s <- sd(gpp_results$GPP)
 # accume GPP following normal distribution, with mean = y and sd = s, we can calculate the properbility of GPP following (107-133) 95%CI
 p_gpp_high <- pnorm ((gpp_qt_raw[3] - y) / (s))
 p_gpp_low <- pnorm ((gpp_qt_raw[1] - y) / (s))
-p_gpp <- p_gpp_high - p_gpp_low
-p_gpp
+p_gpp1 <- (p_gpp_high - p_gpp_low) %>% round(4)
+print(paste0("The probability of aggrement in scenario 1 is: ", p_gpp1))
 # pnorm (-0.329)
 
 # senario 2 looks like a little bit right tail skew
@@ -620,9 +621,12 @@ y <- mean(gpp_results$GPP2)
 s <- sd(gpp_results$GPP2)
 p_gpp_high <- pnorm ((gpp_qt_raw[3] - y) / (s))
 p_gpp_low <- pnorm ((gpp_qt_raw[1] - y) / (s))
-p_gpp <- p_gpp_high - p_gpp_low
-p_gpp
+p_gpp2 <- (p_gpp_high - p_gpp_low) %>% round(4)
+print(paste0("The probability of aggrement in scenario 2 is: ", p_gpp2))
 ```
+
+The probability of aggrement in scenario 1 is ```r p_gpp1*100``` %.  
+The probability of aggrement in scenario 2 is ```r p_gpp2*100``` %.
 
 
 ```{r prepare variables fro RSG boostrapping}
@@ -827,7 +831,8 @@ ggplot(rs_results) +
   ylab(expression(R[S]~"("~Pg~C~yr^{-1}~")"))
 ```
 
-### RSG propotion of aggrement
+### RSG probability of aggrement
+
 ```{r compute propotion of aggrement between top-down RSG and bottom-up RSG}
 # accume Rs following normal distribution, with mean = y and sd = s, we can calculate the properbility of Rs following (80-92) 95%CI
 # about 28% chance Rs will be between (80-92)
@@ -835,17 +840,20 @@ y <- mean(rs_results$Rs_topdown)
 s <- sd(rs_results$Rs_topdown)
 p_Rs_high <- pnorm ((y - rsg_qt_raw[1])/(s))
 p_Rs_low <- pnorm ((y - rsg_qt_raw[3])/(s))
-p_Rs <- p_Rs_high - p_Rs_low
-p_Rs
+p_Rs1 <- (p_Rs_high - p_Rs_low) %>% round(4)
+print(paste0("The probability of aggrement in scenario 1 is: ", p_Rs1))
 
 # Senario 2: about 23% chance Rs will be between (80-92)
 y <- mean(rs_results$Rs_topdown2)
 s <- sd(rs_results$Rs_topdown2)
 p_Rs_high <- pnorm ((y - rsg_qt_raw[1])/(s))
 p_Rs_low <- pnorm ((y - rsg_qt_raw[3])/(s))
-p_Rs <- p_Rs_high - p_Rs_low
-p_Rs
+p_Rs2 <- (p_Rs_high - p_Rs_low) %>% round(4)
+print(paste0("The probability of aggrement in scenario 2 is: ", p_Rs2))
 ```
+
+The probability of aggrement in scenario 1 is ```r p_Rs1*100``` %.  
+The probability of aggrement in scenario 2 is ```r p_Rs2*100``` %.
 
 
 ## Topdown and bottomup comparison - Figure 1
