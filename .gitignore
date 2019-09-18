@@ -39,7 +39,7 @@ rsconnect/
 # Script products
 logs/
 outputs/
-Manuscript/
+Document/
 
 # OS files
 .DS_Store
@@ -58,6 +58,3 @@ Papers/
 # Exclude old 
 old/
 
-# Example
-Example.Rmd
-Example.html
