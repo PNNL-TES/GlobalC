@@ -518,7 +518,7 @@ gpp_results %>% ggplot() + aes(GPP) +
 
 ```
 
-### Sematio 2 - ratio weighted by ecosystem
+### Sematio 2 - ratio __weighted__ by ecosystem
 ```{r}
 # senario 2
 rsg_qt <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
@@ -730,7 +730,7 @@ rs_results <- tibble(
 
 
 ## RSG results diagnose {.tabset .tabset-fade .tabset-pills}
-### Scenario 1 - ratio not weighted by ecosystem
+### Scenario 1 - ratio __not__ weighted by ecosystem
 ```{r plot RSG results}
 # mean(rs_results$Rs)
 # max(rs_results$Rs)
@@ -756,7 +756,7 @@ ggplot(rs_results) + aes(Rs_topdown) +
 
 ```
 
-### Scenario 2 - ratio not weighted by ecosystem
+### Scenario 2 - ratio __weighted__ by ecosystem
 ```{r}
 # senario 2. RaGPP ratio seperated into 2 groups
 rsg_qt <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)
