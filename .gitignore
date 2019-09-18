@@ -58,3 +58,6 @@ Papers/
 # Exclude old 
 old/
 
+# Example
+Example.Rmd
+Example.html

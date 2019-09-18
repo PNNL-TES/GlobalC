@@ -8,16 +8,11 @@ output:
 ---
 
 
-```{r}
-# To do list and questions
-# 1. Savanna and grassland more than 20% area, but sample numbers are too small for Frrot, RC, and Ra/Gpp ratio
-# 2. Ra < 0 how to resolve this 
-```
-
 ## Abbreviation
 * Rroot - root respiration
 * Rshoot - shoot respiration
 * Rs - soil respiration
+* RSG - global annual soil respiration 
 * Ra - autotrophic respiration (Rroot + Rshoot)
 * GPP - gross primary production
 * NPP - net primary production
@@ -30,30 +25,32 @@ output:
 * RaGPP - (Ra/GPP) ratio
 
 
-### Assumptions
+## Assumptions
 * Bottom-up approach: 
-  1. We collected published global soil respiration estimates
+  1. We collected published global soil respiration estimates (mostly is based on bottom up field Rs measurements)
   2. We then partition Rs into root respiration and belowground heterotrophic resipiration
   3. We also collected published NPP estimates in the past decades from ITO et al. (2011)
   4. We then collected (and calculated) Rroot/Ra ratio, according to the root respiration, GPP can be calculates as (NPP + Rroot + Rshoot)
   5. We then compare this bottomup GPP with published GPP in the past decades (n=65) to see how much probability they will match
 
 * Top-down approach:
-  1. We first collect global GPP estimates in the past decades
+  1. We first collect global GPP estimates in the past decades (most is top-dow remote sensing estimates)
   2. We then estimate Ra according to Ra/GPP ratio and GPP-NPP
   3. Heterotrophic respiration was estimated according to Rh = NPP - HerbComsum - Fire - Csink (NEP)
   4. Rs_topdown =  Rh + Rroot
   5. We then compare this top-down Rs with published Rs in the past decades (n=27)n to see how much probability they will match
   
-### Questions and more anlysis in the future
+## Questions and more anlysis in the future
 * How unlikely is it that we can reconcile current Rs and GPP estimates? 
   E.g. what % of the distribution of each 'allows' us to match the central estimate of the other? (<30%)
 * What is driving the differences between botton-up GPP and reported GPP and top-down Rs and reported Rs?
 * How do we resolve this? Where is better/more data needed? 
 * These questions all resolve around influence x uncertainty = importance, right? This is basically the 'Dietze graph'.
 * Which is more likely, low GPP or high Rs? -- discussion
+* Savanna and grassland more than 20% area, but sample numbers are too small for Frrot, RC, and Ra/Gpp ratio
+* Ra < 0 how to resolve this (resolved)
 
-### Importance/implication/benifits
+## Importance/implication/benifits
 * Provide another way to estimate GPP and Rs
 * Provide a method to compare bottom-up GPP (start from field Rs/Froot/RC/Rroot measurements, then modelling to estimate GPP) with remote sensing or land model GPP.
 * Provide a method to compare top-down Rs (Rs seperated from remote sensing land model based GPP) with filed experiment based Rs (field Rs measurement, then modeling).
@@ -86,7 +83,6 @@ library(hexbin)
 library(dplyr)
 # Source all needed functions
 theme_set(theme_bw())
-
 source('functions.R')
 ```
 
@@ -147,7 +143,7 @@ if(!file.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
 ```
 
 
-### Method
+## Method
 
 ```{r load data}
 # input data
@@ -239,6 +235,18 @@ SOC <- read.table(paste0(DATA_DIR,'/', 'SOC_Point.txt'), header = T, sep = ",")
 srdb_v4 %>% 
   select(Study_number, Biome, Ecosystem_type, Leaf_habit, Latitude, Longitude, RC_annual, Ra_annual, Rh_annual) %>% 
   filter(RC_annual > 0 & RC_annual < 1) -> sub_srdb
+
+# calculate Froot
+Froot <- cal_Froot(FlFsFr, srdb_v4) 
+# class(Froot$IGBP)
+# check whether Froot + Fshoot = 1
+
+Froot %>% mutate(IGBP2 = case_when( 
+                                    IGBP %in% c('DBF', 'Deciduous') & Ecosystem == 'Forest' ~ "DF",
+                                    IGBP %in% c('EBF', 'ENF', 'Evergreen') & Ecosystem == 'Forest' ~ "EF",
+                                    IGBP %in% c('MF', 'Mixed') & Ecosystem == 'Forest' ~ "MF",
+                                    TRUE ~ "Other"
+                                    )) -> Froot
 ```
 
 
@@ -250,30 +258,8 @@ plot_sites(srdb_v4, FlFsFr)
 ```
 
 
-```{r get Froot data}
-# Get Froot and Fshoot information from FlFsFr dataset and srdb_v4, see cal_Froot() in functions for more information
-Froot <- cal_Froot(FlFsFr, srdb_v4) 
-# class(Froot$IGBP)
-# check whether Froot + Fshoot = 1
-Froot %>% transmute (check = Froot + Fshoot) %>% max
-Froot %>% transmute (check = Froot + Fshoot) %>% min
-Froot %>% group_by(Ecosystem) %>% summarise(count = n())
-
-Froot %>% mutate(IGBP2 = case_when( 
-                                    IGBP %in% c('DBF', 'Deciduous') & Ecosystem == 'Forest' ~ "DF",
-                                    IGBP %in% c('EBF', 'ENF', 'Evergreen') & Ecosystem == 'Forest' ~ "EF",
-                                    IGBP %in% c('MF', 'Mixed') & Ecosystem == 'Forest' ~ "MF",
-                                    TRUE ~ "Other"
-                                    )) -> Froot
-
-Froot %>% count(IGBP2) 
-Froot %>% count(Ecosystem) 
-mean(Froot$Froot)
-
-```
-
-
-** GPP plot
+## Ratio by vegetation types {.tabset .tabset-fade .tabset-pills}
+### GPP plot
 ```{r plot GPP and RSG, fig.height = 6, fig.width = 8}
 # panel (a). all 65 GPP estimates
 # panel (b). GPP vs year, the red dots in panel c are calculated trend from panel b (increase rate = 0.2 if outliers removed, increase rate = 0.42 if outlers kept)
@@ -283,9 +269,10 @@ ggsave("outputs/FigureS1.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
 
+### Plot Rroot-Rs ratio
 
-** Plot global Rs, NPP, Fire-burned Carbon, and RC by ecosystem (root respiration to soil respiration ratio)
 ```{r plot RC, fig.height=6, fig.width=8}
+# Plot global Rs, NPP, Fire-burned Carbon, and RC by ecosystem (root respiration to soil respiration ratio)
 # more details please see function plot_Rroot_Rs()
 # prepare data first
 sub_srdb %>% select(Leaf_habit) %>% group_by(Leaf_habit) %>% summarise(count = n())
@@ -302,7 +289,7 @@ plot_Rroot_Rs (GlobalRs, sub_srdb, NPP)
 ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
-** Plot Froot by ecosystem type
+### Plot Froot by ecosystem type
 ```{r plot Rroot-Ra ratio, fig.height = 4, fig.width = 6}
 # potential issue: only two points from grassland
 # no point from tundra 
@@ -313,7 +300,7 @@ ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
 
 
 
-** Plot Ra to GPP ratio
+### Plot Ra to GPP ratio
 ```{r plot Ra-GPP ratio}
 # only one point from tundra
 var_RaGpp <- prep_RaGpp()
@@ -393,7 +380,8 @@ var_GPP <- GPP[is.na(GPP$SD),]$GPP
 ```
 
 
-```{r using boostrap prepare data for GPP bottom-up and top-down comparison}
+## Bootstrapping GPP
+```{r using boostrapping prepare data for GPP bottom-up and top-down comparison}
 # Bottom-up approache to stimate GPP
 # Rroot = Rs * RC (Rroot to Rs ratio, from srdb)
 # Froot = Rroot / Ra (root autotrophic respiration to total autotrophic respiration fraction/ratio, calculation please see plot_froot function)
@@ -504,43 +492,52 @@ gpp_results <- tibble(
 ```
 
 
-
+## GPP results diagnose {.tabset .tabset-fade .tabset-pills}
+### senario 1 - ratio __not__ weighted by ecosystem
 ```{r plot GPP comparison}
 # hist(gpp_results$GPP) + abline (v = quantile (gpp_results$GPP, c(0.025, 0.5, 0.975)), col = "red", lty = "dashed")
 # mean(gpp_results$GPP)
 # max(gpp_results$GPP)
 
 # senario 1
-var_CI <- quantile(gpp_results$GPP, c(0.025, 0.5, 0.975)) %>% round(0)
-var_CI_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+gpp_qt <- quantile(gpp_results$GPP, c(0.025, 0.5, 0.975)) %>% round(0)
+gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 gpp_results %>% ggplot() + aes(GPP) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
   geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) ) +
   # geom_histogram(aes(GPP_raw), col = "blue", fill = "blue", bins = 30, alpha = 0.35) +
   geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
   # geom_vline(xintercept = c(quantile (gpp_results$GPP_raw, c(0.025, 0.975))),col = "gray", linetype = 2, size = 1) +
-  annotate("text", x = 150, y = 0.035, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")")
+  annotate("text", x = 150, y = 0.035, label = paste0("2.5%, 50%, 97.5% quantile (", gpp_qt[1],", ", gpp_qt[2], ", ", gpp_qt[3], ")")
            , hjust = 0, col = rgb(1,0,1)) +
-  annotate("text", x = 150, y = 0.025, label = paste0("2.5%,50%,97.5% quantile (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
+  annotate("text", x = 150, y = 0.025, label = paste0("2.5%,50%,97.5% quantile (", gpp_qt_raw[1],", ", gpp_qt_raw[2], ", ", gpp_qt_raw[3], ")")
            , hjust = 0, col = rgb(0,1,1)) +
   xlab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
 
 # ggsave("outputs/Figure2.jpg", width = 6, height = 4, dpi = 300, units = "in")
 
+```
+
+### Sematio 2 - ratio weighted by ecosystem
+```{r}
 # senario 2
-var_CI <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
-var_CI_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+rsg_qt <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
+gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 ggplot(gpp_results) + aes(GPP2) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
   geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) ) +
   # geom_histogram(aes(GPP_raw), col = "blue", fill = "blue", bins = 30, alpha = 0.35) +
   geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
   # geom_vline(xintercept = c(quantile (gpp_results$GPP_raw, c(0.025, 0.975))),col = "gray", linetype = 2, size = 1) +
-  annotate("text", x = 150, y = 0.035, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")")
+  annotate("text", x = 150, y = 0.035, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")")
            , hjust = 0, col = rgb(1,0,1)) +
-  annotate("text", x = 150, y = 0.025, label = paste0("2.5%,50%,97.5% quantile (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
+  annotate("text", x = 150, y = 0.025, label = paste0("2.5%,50%,97.5% quantile (", gpp_qt_raw[1],", ", gpp_qt_raw[2], ", ", gpp_qt_raw[3], ")")
            , hjust = 0, col = rgb(0,1,1)) +
   xlab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
+```
+
+### GPP vs components relationships
+```{r}
 
 gpp_results %>% ggplot() + aes(Rc) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
@@ -604,15 +601,16 @@ ggplot(gpp_results) +
   ylab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
 ```
 
+### prototion of aggrement
 ```{r compute propotion of aggrement between top-down RSG and bottom-up GPP}
 # Quantify the probability GPP following (107, 133)
 # about 29% chance GPP will between (107-133)
 y <- mean(gpp_results$GPP)
 s <- sd(gpp_results$GPP)
 # accume GPP following normal distribution, with mean = y and sd = s, we can calculate the properbility of GPP following (107-133) 95%CI
-p_gpp_less_than_133 <- pnorm ((134 - y) / (s))
-p_gpp_less_than_107 <- pnorm ((111 - y) / (s))
-p_gpp <- p_gpp_less_than_133 -p_gpp_less_than_107
+p_gpp_high <- pnorm ((gpp_qt_raw[3] - y) / (s))
+p_gpp_low <- pnorm ((gpp_qt_raw[1] - y) / (s))
+p_gpp <- p_gpp_high - p_gpp_low
 p_gpp
 # pnorm (-0.329)
 
@@ -620,15 +618,14 @@ p_gpp
 # about 18%
 y <- mean(gpp_results$GPP2)
 s <- sd(gpp_results$GPP2)
-p_gpp_less_than_133 <- pnorm ((133 - y) / (s))
-p_gpp_less_than_107 <- pnorm ((107 - y) / (s))
-p_gpp <- p_gpp_less_than_133 -p_gpp_less_than_107
+p_gpp_high <- pnorm ((gpp_qt_raw[3] - y) / (s))
+p_gpp_low <- pnorm ((gpp_qt_raw[1] - y) / (s))
+p_gpp <- p_gpp_high - p_gpp_low
 p_gpp
 ```
 
 
-
-```{r prepare variables fro top-down approach}
+```{r prepare variables fro RSG boostrapping}
 # Froot used the same data as bottom-up approach
 var_Fire <- c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)
 # prepare RaGPP ratio data
@@ -641,7 +638,7 @@ var_RaGpp_gra = var_RaGpp[var_RaGpp$Ecosystem == "Grassland", ]$RaGPP_ratio
 
 ```
 
-
+## Bootstrapping RSG
 ```{r using boostrap prepare data for RSG bottom-up and top-down comparison}
 # topdowm approach to eatimate Rs
 # Ra = GPP * Ra_GPP_ratio (calculated based on data from a summary paper and from srdb, see plot_RaGPP function)
@@ -732,43 +729,51 @@ rs_results <- tibble(
 ```
 
 
-### RSG results diagnose
+## RSG results diagnose {.tabset .tabset-fade .tabset-pills}
+### Scenario 1 - ratio not weighted by ecosystem
 ```{r plot RSG results}
 # mean(rs_results$Rs)
 # max(rs_results$Rs)
 
 # scenatio 1. RaGPP ratio not seperated
-var_CI <- quantile(rs_results$Rs_topdown, c(0.025, 0.5, 0.975)) %>% round(0)
-var_CI_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+rsg_qt <- quantile(rs_results$Rs_topdown, c(0.025, 0.5, 0.975)) %>% round(0)
+rsg_qt_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 ggplot(rs_results) + aes(Rs_topdown) + 
   geom_density(col = "gray", fill = rgb(1,0,1, alpha = 0.25)) + 
   geom_density(aes(Rs_raw), col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
   # geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
-  annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")")
+  annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")")
            , hjust = 0, col = rgb(1,0,1)) +
-  annotate("text", x = 100, y = 0.03, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
-           , hjust = 0, col = rgb(0,1,1)) +
-  ylab(expression(count))
-
-# senario 2. RaGPP ratio seperated into 2 groups
-var_CI <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)
-var_CI_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
-ggplot(rs_results) + aes(Rs_topdown2) + 
-  geom_density(col = "gray", fill = rgb(1,0,1, alpha = 0.25)) + 
-  geom_density(aes(Rs_raw), col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
-  # geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
-  annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")")
-           , hjust = 0, col = rgb(1,0,1)) +
-  annotate("text", x = 100, y = 0.03, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
+  annotate("text", x = 100, y = 0.03, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt_raw[1],", ", rsg_qt_raw[2], ", ", rsg_qt_raw[3], ")")
            , hjust = 0, col = rgb(0,1,1)) +
   ylab(expression(count))
 
 # Rs raw data plot
-# var_CI <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+# rsg_qt <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 # plot_rs_raw <- ggplot(rs_results) + aes(Rs_raw) + geom_histogram(col = "black", fill = "gray", bins = 30) + 
 #   geom_vline(xintercept = c(quantile (rs_results$Rs, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
-#   annotate("text", x = quantile(rs_results$Rs, 0.98), y = 5000, label = paste0("95%CI (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")"), hjust = 0)
+#   annotate("text", x = quantile(rs_results$Rs, 0.98), y = 5000, label = paste0("95%CI (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")"), hjust = 0)
 
+```
+
+### Scenario 2 - ratio not weighted by ecosystem
+```{r}
+# senario 2. RaGPP ratio seperated into 2 groups
+rsg_qt <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)
+rsg_qt_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+ggplot(rs_results) + aes(Rs_topdown2) + 
+  geom_density(col = "gray", fill = rgb(1,0,1, alpha = 0.25)) + 
+  geom_density(aes(Rs_raw), col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
+  # geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
+  annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")")
+           , hjust = 0, col = rgb(1,0,1)) +
+  annotate("text", x = 100, y = 0.03, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt_raw[1],", ", rsg_qt_raw[2], ", ", rsg_qt_raw[3], ")")
+           , hjust = 0, col = rgb(0,1,1)) +
+  ylab(expression(count))
+```
+
+### RSG and components relationship
+```{r}
 # Ra1 ~ Ra2
 ggplot(rs_results) +
   aes(x = Ra1) + geom_histogram(col = "black", fill = "gray", bins = 30) +
@@ -822,55 +827,56 @@ ggplot(rs_results) +
   ylab(expression(R[S]~"("~Pg~C~yr^{-1}~")"))
 ```
 
+### RSG propotion of aggrement
 ```{r compute propotion of aggrement between top-down RSG and bottom-up RSG}
 # accume Rs following normal distribution, with mean = y and sd = s, we can calculate the properbility of Rs following (80-92) 95%CI
 # about 28% chance Rs will be between (80-92)
 y <- mean(rs_results$Rs_topdown)
 s <- sd(rs_results$Rs_topdown)
-p_Rs_higher_than_80 <- pnorm ((y - 80)/(s))
-p_Rs_higher_than_92 <- pnorm ((y - 92)/(s))
-p_Rs <- p_Rs_higher_than_80 -p_Rs_higher_than_92
+p_Rs_high <- pnorm ((y - rsg_qt_raw[1])/(s))
+p_Rs_low <- pnorm ((y - rsg_qt_raw[3])/(s))
+p_Rs <- p_Rs_high - p_Rs_low
 p_Rs
 
 # Senario 2: about 23% chance Rs will be between (80-92)
 y <- mean(rs_results$Rs_topdown2)
 s <- sd(rs_results$Rs_topdown2)
-p_Rs_higher_than_80 <- pnorm ((y - 80)/(s))
-p_Rs_higher_than_92 <- pnorm ((y - 92)/(s))
-p_Rs <- p_Rs_higher_than_80 -p_Rs_higher_than_92
+p_Rs_high <- pnorm ((y - rsg_qt_raw[1])/(s))
+p_Rs_low <- pnorm ((y - rsg_qt_raw[3])/(s))
+p_Rs <- p_Rs_high - p_Rs_low
 p_Rs
 ```
 
 
-
+## Topdown and bottomup comparison - Figure 1
 ```{r combine GPP and RSG comparison into figure 2, fig.height=8, fig.width=6}
 # senario 2, RC seperate into 4 groups, and Froot seperate into 2 groups
-var_CI <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
-var_CI_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+gpp_qt <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
+gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 ggplot(gpp_results) + aes(GPP2) + 
   geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) ) +
   geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
   # geom_vline(xintercept = c(quantile (gpp_results$GPP_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
-  annotate("text", x = 150, y = 0.035, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")")
+  annotate("text", x = 150, y = 0.035, label = paste0("2.5%, 50%, 97.5% quantile (", gpp_qt[1],", ", gpp_qt[2], ", ", gpp_qt[3], ")")
            , hjust = 0, col = rgb(1,0,1)) +
-  annotate("text", x = 150, y = 0.025, label = paste0("2.5%,50%,97.5% quantile (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
+  annotate("text", x = 150, y = 0.025, label = paste0("2.5%,50%,97.5% quantile (", gpp_qt_raw[1],", ", gpp_qt_raw[2], ", ", gpp_qt_raw[3], ")")
            , hjust = 0, col = rgb(0,1,1)) +
   # annotate("text", x = 150, y = 0.045, label = expression("Rroot-to-R"[S]~"seperated into 4 groups")
   #          , hjust = 0) +
   xlab(expression(GPP~"("~Pg~C~yr^{-1}~")")) -> p1
 
 # senario two
-var_CI <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)
-var_CI_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+rsg_qt <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)
+rsg_qt_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 ggplot(rs_results) + aes(Rs_topdown2) + 
   geom_density(col = "gray", fill = rgb(1,0,1, alpha = 0.5)) + 
   geom_density(aes(Rs_raw), col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
   # geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
   # annotate("text", x = 100, y = 0.08, label = expression("Rroot-to-Ra ratio seperated into 4 groups")
   #          , hjust = 0) +
-  annotate("text", x = 100, y = 0.06, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI[1],", ", var_CI[2], ", ", var_CI[3], ")")
+  annotate("text", x = 100, y = 0.06, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")")
            , hjust = 0, col = rgb(1,0,1)) +
-  annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", var_CI_raw[1],", ", var_CI_raw[2], ", ", var_CI_raw[3], ")")
+  annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt_raw[1],", ", rsg_qt_raw[2], ", ", rsg_qt_raw[3], ")")
            , hjust = 0, col = rgb(0,1,1)) +
   ylab(expression(count)) +
   xlab(expression(Global~R[S]~"("~Pg~C~yr^{-1}~")")) -> p2
@@ -882,29 +888,38 @@ ggsave("outputs/Figure2.jpg", width = 6, height = 8, dpi = 300, units = "in")
 ```
 
 
-
+## Other diagnose
 ```{r diagnose}
 # check
 gpp_results %>% transmute(check = (1 - Froot) / Froot - FsFr)
 
 rs_results$Ra2 %>% min(na.rm = TRUE)
 rs_results$Ra3 %>% min(na.rm = TRUE)
+
+# check Froot (root-to-Rs ratio)
+Froot %>% transmute (check = Froot + Fshoot) %>% max
+Froot %>% transmute (check = Froot + Fshoot) %>% min
+Froot %>% group_by(Ecosystem) %>% summarise(count = n())
+
+Froot %>% count(IGBP2) 
+Froot %>% count(Ecosystem) 
+mean(Froot$Froot)
 ```
 
 
-
+## Discard codes
 ```{r not used}
 # Each row get the closese latitude and longitude values to AGB and SOC data
-AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
-Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Longitude*2, 0)/2-0.25) -> Froot
+# AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
+# Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Longitude*2, 0)/2-0.25) -> Froot
 # there are no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
-left_join(Froot, AGB) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
-left_join(Froot, SOC) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
+# left_join(Froot, AGB) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
+# left_join(Froot, SOC) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
 
 # Each row get the closese latitude and longitude values to AGB and SOC data
-AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
-Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Longitude*2, 0)/2-0.25) -> Froot
+# AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
+# Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Longitude*2, 0)/2-0.25) -> Froot
 # there are no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
-left_join(Froot, AGB) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
-left_join(Froot, SOC) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
+# left_join(Froot, AGB) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
+# left_join(Froot, SOC) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
 ```
