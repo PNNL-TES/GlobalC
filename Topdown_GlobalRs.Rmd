@@ -27,22 +27,22 @@ output:
 
 ## Assumptions
 * __Bottom-up approach:__ 
-  1. We collected published global soil respiration estimates (mostly is based on bottom up field Rs measurements)
-  2. We then partition Rs into root respiration and belowground heterotrophic resipiration
-  3. We also collected published NPP estimates in the past decades from ITO et al. (2011)
-  4. We then collected (and calculated) Rroot/Ra ratio, according to the root respiration, GPP can be calculates as (NPP + Rroot + Rshoot)
-  5. We then compare this bottomup GPP with published GPP in the past decades (n=65) to see how much probability they will match
+1. We collected published global soil respiration estimates (mostly is based on bottom up field Rs measurements)
+2. We then partition Rs into root respiration and belowground heterotrophic resipiration
+3. We also collected published NPP estimates in the past decades from ITO et al. (2011)
+4. We then collected (and calculated) Rroot/Ra ratio, according to the root respiration, GPP can be calculates as (NPP + Rroot + Rshoot)
+5. We then compare this bottomup GPP with published GPP in the past decades (n=65) to see how much probability they will match
 
 * __Top-down approach:__
-  1. We first collect global GPP estimates in the past decades (most is top-dow remote sensing estimates)
-  2. We then estimate Ra according to Ra/GPP ratio and GPP-NPP
-  3. Heterotrophic respiration was estimated according to Rh = NPP - HerbComsum - Fire - Csink (NEP)
-  4. Rs_topdown =  Rh + Rroot
-  5. We then compare this top-down Rs with published Rs in the past decades (n=27)n to see how much probability they will match
-  
+1. We first collect global GPP estimates in the past decades (most is top-dow remote sensing estimates)
+2. We then estimate Ra according to Ra/GPP ratio and GPP-NPP
+3. Heterotrophic respiration was estimated according to Rh = NPP - HerbComsum - Fire - Csink (NEP)
+4. Rs_topdown =  Rh + Rroot
+5. We then compare this top-down Rs with published Rs in the past decades (n=27)n to see how much probability they will match
+
 ## Questions and more anlysis in the future
 * How unlikely is it that we can reconcile current Rs and GPP estimates? 
-  E.g. what % of the distribution of each 'allows' us to match the central estimate of the other? (<30%)
+E.g. what % of the distribution of each 'allows' us to match the central estimate of the other? (<30%)
 * What is driving the differences between botton-up GPP and reported GPP and top-down Rs and reported Rs?
 * How do we resolve this? Where is better/more data needed? 
 * These questions all resolve around influence x uncertainty = importance, right? This is basically the 'Dietze graph'.
@@ -53,7 +53,7 @@ output:
 ## Importance/implication/benifits
 * Provide another way to estimate GPP and Rs
 * Provide a method to compare bottom-up GPP (start from field Rs/Froot/RC/Rroot measurements, then modelling to estimate GPP) with remote sensing or land model GPP.
-* Provide a method to compare top-down Rs (Rs seperated from remote sensing land model based GPP) with filed experiment based Rs (field Rs measurement, then modeling).
+* Provide a method to compare top-down Rs (Rs separated from remote sensing land model based GPP) with filed experiment based Rs (field Rs measurement, then modeling).
 
 
 ```{r load packages, message=FALSE, echo=FALSE}
@@ -160,69 +160,72 @@ GlobalRs %>% filter(Year > 1980) -> GlobalRs
 RaGPP <- read.csv(file.path(DATA_DIR, 'RaGPP.csv')) 
 IGBP <- read.table(file.path(DATA_DIR, 'IGBP.txt'), header = TRUE, sep = ",")
 # sort(unique(IGBP$IGBP2001Pr))
-# There are 16 IGBP group
-IGBP %>% mutate(IGBP = case_when( IGBP2001Pr == 0 ~ "WAT",
-                                  IGBP2001Pr == 1 ~ "ENF",
-                                  IGBP2001Pr == 2 ~ "EBF",
-                                  IGBP2001Pr == 3 ~ "DNF",
-                                  IGBP2001Pr == 4 ~ "DBF",
-                                  IGBP2001Pr == 5 ~ "MF",
-                                  IGBP2001Pr == 6 ~ "CSH",
-                                  IGBP2001Pr == 7 ~ "OSH",
-                                  IGBP2001Pr == 8 ~ "WSA",
-                                  IGBP2001Pr == 9 ~ "SAV",
-                                  IGBP2001Pr == 10 ~ "GRA",
-                                  IGBP2001Pr == 11 ~ "WET",
-                                  IGBP2001Pr == 12 ~ "CRO",
-                                  IGBP2001Pr == 13 ~ "URB",
-                                  IGBP2001Pr == 14 ~ "CVM",
-                                  IGBP2001Pr == 15 ~ "SNO",
-                                  IGBP2001Pr == 16 ~ "BSV",
-                                  TRUE ~ "UNC" ) ) -> IGBP
+# There are 16 IGBP groups
+IGBP %>% 
+  mutate(IGBP = case_when( IGBP2001Pr == 0 ~ "WAT",
+                           IGBP2001Pr == 1 ~ "ENF",
+                           IGBP2001Pr == 2 ~ "EBF",
+                           IGBP2001Pr == 3 ~ "DNF",
+                           IGBP2001Pr == 4 ~ "DBF",
+                           IGBP2001Pr == 5 ~ "MF",
+                           IGBP2001Pr == 6 ~ "CSH",
+                           IGBP2001Pr == 7 ~ "OSH",
+                           IGBP2001Pr == 8 ~ "WSA",
+                           IGBP2001Pr == 9 ~ "SAV",
+                           IGBP2001Pr == 10 ~ "GRA",
+                           IGBP2001Pr == 11 ~ "WET",
+                           IGBP2001Pr == 12 ~ "CRO",
+                           IGBP2001Pr == 13 ~ "URB",
+                           IGBP2001Pr == 14 ~ "CVM",
+                           IGBP2001Pr == 15 ~ "SNO",
+                           IGBP2001Pr == 16 ~ "BSV",
+                           TRUE ~ "UNC" ) ) -> IGBP
 # BBL: Interesting; I didn't know case_when! Aanother way to do this would be 
 # IGBP_list <- c("WAT", "ENF", ...)
 # IGBP$IGBP <- IGBP_list[IGBP$IGBP2001Pr]
 # 16 IGBP group into 10 Ecosystems
-IGBP %>% mutate (Ecosystem = case_when( IGBP2001Pr == 0 ~ "Water",
-                                        IGBP2001Pr == 1 ~ "Forest",
-                                        IGBP2001Pr == 2 ~ "Forest",
-                                        IGBP2001Pr == 3 ~ "Forest",
-                                        IGBP2001Pr == 4 ~ "Forest",
-                                        IGBP2001Pr == 5 ~ "Forest",
-                                        IGBP2001Pr == 6 ~ "Shrubland",
-                                        IGBP2001Pr == 7 ~ "Shrubland",
-                                        IGBP2001Pr == 8 ~ "Savanna",
-                                        IGBP2001Pr == 9 ~ "Savanna",
-                                        IGBP2001Pr == 10 ~ "Grassland",
-                                        IGBP2001Pr == 11 ~ "Wetland",
-                                        IGBP2001Pr == 12 ~ "Agriculture",
-                                        IGBP2001Pr == 13 ~ "Urbland",
-                                        IGBP2001Pr == 14 ~ "Agriculture",
-                                        IGBP2001Pr == 15 ~ "Snow",
-                                        IGBP2001Pr == 16 ~ "Desert",
-                                        TRUE ~ "Unclassified")) -> IGBP
+IGBP %>% 
+  mutate (Ecosystem = case_when( IGBP2001Pr == 0 ~ "Water",
+                                 IGBP2001Pr == 1 ~ "Forest",
+                                 IGBP2001Pr == 2 ~ "Forest",
+                                 IGBP2001Pr == 3 ~ "Forest",
+                                 IGBP2001Pr == 4 ~ "Forest",
+                                 IGBP2001Pr == 5 ~ "Forest",
+                                 IGBP2001Pr == 6 ~ "Shrubland",
+                                 IGBP2001Pr == 7 ~ "Shrubland",
+                                 IGBP2001Pr == 8 ~ "Savanna",
+                                 IGBP2001Pr == 9 ~ "Savanna",
+                                 IGBP2001Pr == 10 ~ "Grassland",
+                                 IGBP2001Pr == 11 ~ "Wetland",
+                                 IGBP2001Pr == 12 ~ "Agriculture",
+                                 IGBP2001Pr == 13 ~ "Urbland",
+                                 IGBP2001Pr == 14 ~ "Agriculture",
+                                 IGBP2001Pr == 15 ~ "Snow",
+                                 IGBP2001Pr == 16 ~ "Desert",
+                                 TRUE ~ "Unclassified")) -> IGBP
 
-IGBP %>% mutate(IGBP_group = case_when( IGBP2001Pr == 0 ~ "WAT",
-                                  IGBP2001Pr == 1 ~ "EF",
-                                  IGBP2001Pr == 2 ~ "EF",
-                                  IGBP2001Pr == 3 ~ "DF",
-                                  IGBP2001Pr == 4 ~ "DF",
-                                  IGBP2001Pr == 5 ~ "MF",
-                                  IGBP2001Pr == 6 ~ "SH",
-                                  IGBP2001Pr == 7 ~ "SH",
-                                  IGBP2001Pr == 8 ~ "GRA",
-                                  IGBP2001Pr == 9 ~ "GRA",
-                                  IGBP2001Pr == 10 ~ "GRA",
-                                  IGBP2001Pr == 11 ~ "WET",
-                                  IGBP2001Pr == 12 ~ "CRO",
-                                  IGBP2001Pr == 13 ~ "URB",
-                                  IGBP2001Pr == 14 ~ "CRO",
-                                  IGBP2001Pr == 15 ~ "SNO",
-                                  IGBP2001Pr == 16 ~ "BSV",
-                                  TRUE ~ "UNC" ) ) -> IGBP
+IGBP %>% 
+  mutate(IGBP_group = case_when( IGBP2001Pr == 0 ~ "WAT",
+                                 IGBP2001Pr == 1 ~ "EF",
+                                 IGBP2001Pr == 2 ~ "EF",
+                                 IGBP2001Pr == 3 ~ "DF",
+                                 IGBP2001Pr == 4 ~ "DF",
+                                 IGBP2001Pr == 5 ~ "MF",
+                                 IGBP2001Pr == 6 ~ "SH",
+                                 IGBP2001Pr == 7 ~ "SH",
+                                 IGBP2001Pr == 8 ~ "GRA",
+                                 IGBP2001Pr == 9 ~ "GRA",
+                                 IGBP2001Pr == 10 ~ "GRA",
+                                 IGBP2001Pr == 11 ~ "WET",
+                                 IGBP2001Pr == 12 ~ "CRO",
+                                 IGBP2001Pr == 13 ~ "URB",
+                                 IGBP2001Pr == 14 ~ "CRO",
+                                 IGBP2001Pr == 15 ~ "SNO",
+                                 IGBP2001Pr == 16 ~ "BSV",
+                                 TRUE ~ "UNC" ) ) -> IGBP
 
 # DGRsD <- read.csv(paste0(DATA_DIR,'/', 'DGRsD.csv'), header = TRUE)
-AGB <- read.table(paste0(DATA_DIR,'/', 'GLC2000_Point.txt'), header = T, sep = ",")
+AGB <- read.table(paste0(DATA_DIR,'/', 'GLC2000_Point.txt'), header = TRUE, sep = ",")
 AGB %>% filter(RASTERVALU != -9999) -> AGB
 
 # head(AGB)
@@ -232,10 +235,11 @@ AGB %>% filter(RASTERVALU != -9999) -> AGB
 # max(SOC$RASTERVALU)
 # min(SOC$RASTERVALU)
 
-SOC <- read.table(paste0(DATA_DIR,'/', 'SOC_Point.txt'), header = T, sep = ",")
+SOC <- read.table(paste0(DATA_DIR,'/', 'SOC_Point.txt'), header = TRUE, sep = ",")
 
 srdb_v4 %>% 
-  select(Study_number, Biome, Ecosystem_type, Leaf_habit, Latitude, Longitude, RC_annual, Ra_annual, Rh_annual) %>% 
+  select(Study_number, Biome, Ecosystem_type, Leaf_habit, 
+         Latitude, Longitude, RC_annual, Ra_annual, Rh_annual) %>% 
   filter(RC_annual > 0 & RC_annual < 1) -> sub_srdb
 
 # calculate Froot
@@ -244,11 +248,11 @@ Froot <- cal_Froot(FlFsFr, srdb_v4)
 # check whether Froot + Fshoot = 1
 
 Froot %>% mutate(IGBP2 = case_when( 
-                                    IGBP %in% c('DBF', 'Deciduous') & Ecosystem == 'Forest' ~ "DF",
-                                    IGBP %in% c('EBF', 'ENF', 'Evergreen') & Ecosystem == 'Forest' ~ "EF",
-                                    IGBP %in% c('MF', 'Mixed') & Ecosystem == 'Forest' ~ "MF",
-                                    TRUE ~ "Other"
-                                    )) -> Froot
+  IGBP %in% c('DBF', 'Deciduous') & Ecosystem == 'Forest' ~ "DF",
+  IGBP %in% c('EBF', 'ENF', 'Evergreen') & Ecosystem == 'Forest' ~ "EF",
+  IGBP %in% c('MF', 'Mixed') & Ecosystem == 'Forest' ~ "MF",
+  TRUE ~ "Other"
+)) -> Froot
 ```
 
 
@@ -264,7 +268,7 @@ plot_sites(srdb_v4, FlFsFr)
 ### Plot GPP
 ```{r plot GPP and RSG, fig.height = 6, fig.width = 8}
 # panel (a). all 65 GPP estimates
-# panel (b). GPP vs year, the red dots in panel c are calculated trend from panel b (increase rate = 0.2 if outliers removed, increase rate = 0.42 if outlers kept)
+# panel (b). GPP vs year, the red dots in panel c are calculated trend from panel b (increase rate = 0.2 if outliers removed, increase rate = 0.42 if outliers kept)
 # panel (c). 16 GPP estimates reported GPP increase trend
 plot_GPP(GPP, GlobalRs)
 ggsave("outputs/FigureS1.jpg", width = 8, height = 6, dpi = 300, units = "in")
@@ -277,15 +281,22 @@ ggsave("outputs/FigureS1.jpg", width = 8, height = 6, dpi = 300, units = "in")
 # Plot global Rs, NPP, Fire-burned Carbon, and RC by ecosystem (root respiration to soil respiration ratio)
 # more details please see function plot_Rroot_Rs()
 # prepare data first
-sub_srdb %>% select(Leaf_habit) %>% group_by(Leaf_habit) %>% summarise(count = n())
-sub_srdb %>% mutate(IGBP2 = case_when( Ecosystem_type == "Agriculture" ~ "Agriculture"
-                                       , Ecosystem_type == "Grassland" ~ "Grassland"
-                                       , Ecosystem_type %in% c("Savanna", "Shrubland") ~ "Shrubland"
-                                       , Ecosystem_type == "Forest" & Leaf_habit == 'Deciduous' ~ "DF"
-                                       , Ecosystem_type == "Forest" & Leaf_habit == 'Evergreen' ~ "EF"
-                                       , Ecosystem_type == "Forest" & Leaf_habit == 'Mixed' ~ "Mixed"
-                                       , TRUE ~ "Other" )) -> sub_srdb
-sub_srdb %>% group_by(Ecosystem_type) %>% summarise(count = n())
+sub_srdb %>% 
+  select(Leaf_habit) %>% 
+  group_by(Leaf_habit) %>% 
+  summarise(count = n())
+
+sub_srdb %>% 
+  mutate(IGBP2 = case_when( Ecosystem_type == "Agriculture" ~ "Agriculture"
+                            , Ecosystem_type == "Grassland" ~ "Grassland"
+                            , Ecosystem_type %in% c("Savanna", "Shrubland") ~ "Shrubland"
+                            , Ecosystem_type == "Forest" & Leaf_habit == 'Deciduous' ~ "DF"
+                            , Ecosystem_type == "Forest" & Leaf_habit == 'Evergreen' ~ "EF"
+                            , Ecosystem_type == "Forest" & Leaf_habit == 'Mixed' ~ "Mixed"
+                            , TRUE ~ "Other" )) -> sub_srdb
+sub_srdb %>% 
+  group_by(Ecosystem_type) %>% 
+  summarise(count = n())
 
 plot_Rroot_Rs (GlobalRs, sub_srdb, NPP) 
 ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
@@ -309,13 +320,14 @@ var_RaGpp <- prep_RaGpp()
 var_RaGpp %>% count(Ecosystem)
 var_RaGpp %>% count(Leaf_habit)
 
-var_RaGpp %>% mutate(IGBP2 = case_when( Ecosystem %in% c( "Crop", "Tundra", "Wetland", "Agriculture" ) ~ "Other"
-                                         , Ecosystem %in% c("Grassland", "Savanna") ~ "Grassland" 
-                                         , Ecosystem == "Forest" & Leaf_habit == "Deciduous" ~ "Deciduous"
-                                         , Ecosystem == "Forest" & Leaf_habit == "Evergreen" ~ "Evergreen"
-                                         , Ecosystem == "Forest" & Leaf_habit == "Forest" ~ "Forest"
-                                         , Ecosystem == "Forest" & Leaf_habit == "Mixed" ~ "Forest"
-                                         , TRUE ~ "NOTA" )) -> var_RaGpp
+var_RaGpp %>% 
+  mutate(IGBP2 = case_when( Ecosystem %in% c( "Crop", "Tundra", "Wetland", "Agriculture" ) ~ "Other"
+                            , Ecosystem %in% c("Grassland", "Savanna") ~ "Grassland" 
+                            , Ecosystem == "Forest" & Leaf_habit == "Deciduous" ~ "Deciduous"
+                            , Ecosystem == "Forest" & Leaf_habit == "Evergreen" ~ "Evergreen"
+                            , Ecosystem == "Forest" & Leaf_habit == "Forest" ~ "Forest"
+                            , Ecosystem == "Forest" & Leaf_habit == "Mixed" ~ "Forest"
+                            , TRUE ~ "NOTA" )) -> var_RaGpp
 
 var_RaGpp %>% count(IGBP2)
 var_RaGpp %>% count(Ecosystem)
@@ -348,10 +360,12 @@ shr_area <- IGBP_summary[IGBP_summary$IGBP_group == "SH",]$percent
 
 ```{r prepare variables for boostrapping}
 # 1. prepare RC (Rroot-to-Rs ratio data) **********
-# get subset data for Bottom-up approache to estimate GPP, seperate into 7 groups
-var_RC <- sub_srdb %>% select(RC_annual, Ecosystem_type, IGBP2) %>% filter(RC_annual > 0.01 & RC_annual < 0.99 & !is.na(RC_annual)) # dataset contain RC records
+# get subset data for Bottom-up approache to estimate GPP, separate into 7 groups
+var_RC <- sub_srdb %>% 
+  select(RC_annual, Ecosystem_type, IGBP2) %>% 
+  filter(RC_annual > 0.01 & RC_annual < 0.99 & !is.na(RC_annual)) # dataset contain RC records
 var_for_rc <- var_RC %>% filter (Ecosystem_type == "Forest") # dataset contain RC records only for Forest ecosystem
-# forest further seperate into 3 groups
+# forest further separate into 3 groups
 var_df_rc <- var_RC %>% filter (IGBP2 == "DF") # dataset contain RC records only for DF
 var_ef_rc <- var_RC %>% filter (IGBP2 == "EF") # dataset contain RC records only for EF ecosystem
 var_mf_rc <- var_RC %>% filter (IGBP2 == "Mixed") # dataset contain RC records only for MF ecosystem
@@ -369,7 +383,7 @@ var_gra_froot = Froot[Froot$Ecosystem == "Grassland",]$Froot # samples of Froot 
 var_sav_froot = Froot[Froot$Ecosystem == "Savanna",]$Froot # samples of Froot for savanna
 var_wet_froot = Froot[Froot$Ecosystem == "Wetland",]$Froot # samples of Froot for agriculture
 var_rest_froot = Froot$Froot # for those ecosystems has no data, use all data from Froot
-# only seperate into ef and the rest
+# only separate into ef and the rest
 var_ef_froot = Froot[Froot$IGBP2 == "EF",]$Froot # Froot data for ef
 var_df_froot = Froot[Froot$IGBP2 == "DF",]$Froot # Froot data for df
 var_mf_froot = Froot[Froot$IGBP2 == "MF",]$Froot # Froot data for mf
@@ -439,7 +453,7 @@ gpp_results <- tibble(
   
   # Step 4. sampling Rroot-to Rs ratio (RC)
   Rc_agr = sample(var_agr_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for agriculture, repeat 50000 times
-  # forest further seperate into 3 groups
+  # forest further separate into 3 groups
   Rc_df = sample(var_df_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for df, repeat 50000 times
   Rc_ef = sample(var_ef_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for df, repeat 50000 times
   Rc_mf = sample(var_mf_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for df, repeat 50000 times
@@ -458,12 +472,12 @@ gpp_results <- tibble(
   Froot_rest = sample(var_rest_froot, n_samp, replace = TRUE),
   
   # Step 6. calculation ********************
-  # Rc = replicate( n_rep, var_RC$RC_annual, n_samp, replace = TRUE) %>% mean() ), # senario 0: Rc not seperate into different ecosystems, not used
+  # Rc = replicate( n_rep, var_RC$RC_annual, n_samp, replace = TRUE) %>% mean() ), # senario 0: Rc not separate into different ecosystems, not used
   Rc = sample(var_RC$RC_annual, n_samp, replace = TRUE),
   # Rc = Rc_df*df_area + Rc_ef*ef_area + Rc_mf*mf_area + Rc_rest*1-(df_area + ef_area + mf_area), 
   
-  # Senario 2: Rc seperate into 4 groups: agriculture, forest, grassland, and rest (all other ecosystems with obs<40, take samples from all RC records)
-  # only seperate into four groups, agriculture, forest, grassland and the rest
+  # Senario 2: Rc separate into 4 groups: agriculture, forest, grassland, and rest (all other ecosystems with obs<40, take samples from all RC records)
+  # only separate into four groups, agriculture, forest, grassland and the rest
   # 1-(0.191 + 0.214 + 0.153 + 0.268)
   Rc2 = (Rc_agr*ag_area + Rc_df*df_area + Rc_ef*ef_area + Rc_mf*mf_area + Rc_gra*gra_area + Rc_shr*shr_area 
          + Rc_rest*(1-ag_area-df_area-ef_area-mf_area-gra_area-shr_area)), 
@@ -471,8 +485,8 @@ gpp_results <- tibble(
   # sample(var_df$RC_annual, n_samp, replace = TRUE) %>% mean
   # sample(var_ef$RC_annual, n_samp, replace = TRUE) %>% mean
   # sample(var_mf$RC_annual, n_samp, replace = TRUE) %>% mean
-    
-  # senario1: Froot not seperate into different ecosystems
+  
+  # senario1: Froot not separate into different ecosystems
   Froot = sample(Froot$Froot, n_samp, replace = TRUE) ,
   
   FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of senario 1
@@ -480,7 +494,7 @@ gpp_results <- tibble(
   Rroot = Rs * Rc, # calculate root respiration
   Rshoot = Rroot * FsFr, # calculate shoot respiration
   
-  # Senario 2: seperate into 2 ecosystems and weighted by area
+  # Senario 2: separate into 2 ecosystems and weighted by area
   # Froot %>% count(Ecosystem)
   Froot2 = Froot_df*df_area + Froot_ef*ef_area + Froot_mf*mf_area + Froot_rest * (1-df_area-ef_area-mf_area),
   FsFr2 = (1 - Froot2) / Froot2, # calculate Froot to Fshoot ratio of senario 2
@@ -506,14 +520,14 @@ gpp_qt <- quantile(gpp_results$GPP, c(0.025, 0.5, 0.975)) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 gpp_results %>% ggplot() + aes(GPP) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) ) +
+  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) ) +
   # geom_histogram(aes(GPP_raw), col = "blue", fill = "blue", bins = 30, alpha = 0.35) +
-  geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
+  geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0, 1, 1, alpha = 0.5)) +
   # geom_vline(xintercept = c(quantile (gpp_results$GPP_raw, c(0.025, 0.975))),col = "gray", linetype = 2, size = 1) +
   annotate("text", x = 150, y = 0.035, label = paste0("2.5%, 50%, 97.5% quantile (", gpp_qt[1],", ", gpp_qt[2], ", ", gpp_qt[3], ")")
-           , hjust = 0, col = rgb(1,0,1)) +
+           , hjust = 0, col = rgb(1, 0, 1)) +
   annotate("text", x = 150, y = 0.025, label = paste0("2.5%,50%,97.5% quantile (", gpp_qt_raw[1],", ", gpp_qt_raw[2], ", ", gpp_qt_raw[3], ")")
-           , hjust = 0, col = rgb(0,1,1)) +
+           , hjust = 0, col = rgb(0, 1, 1)) +
   xlab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
 
 # ggsave("outputs/Figure2.jpg", width = 6, height = 4, dpi = 300, units = "in")
@@ -527,14 +541,14 @@ rsg_qt <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 ggplot(gpp_results) + aes(GPP2) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) ) +
+  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) ) +
   # geom_histogram(aes(GPP_raw), col = "blue", fill = "blue", bins = 30, alpha = 0.35) +
-  geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
+  geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0, 1, 1, alpha = 0.5)) +
   # geom_vline(xintercept = c(quantile (gpp_results$GPP_raw, c(0.025, 0.975))),col = "gray", linetype = 2, size = 1) +
   annotate("text", x = 150, y = 0.035, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")")
-           , hjust = 0, col = rgb(1,0,1)) +
+           , hjust = 0, col = rgb(1, 0, 1)) +
   annotate("text", x = 150, y = 0.025, label = paste0("2.5%,50%,97.5% quantile (", gpp_qt_raw[1],", ", gpp_qt_raw[2], ", ", gpp_qt_raw[3], ")")
-           , hjust = 0, col = rgb(0,1,1)) +
+           , hjust = 0, col = rgb(0, 1, 1)) +
   xlab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
 ```
 
@@ -542,19 +556,19 @@ ggplot(gpp_results) + aes(GPP2) +
 ```{r}
 gpp_results %>% ggplot() + aes(Rc) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) )
+  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
 
 gpp_results %>% ggplot() + aes(Rc2) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) )
+  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
 
 gpp_results %>% ggplot() + aes(Rroot) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) )
+  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
 
 gpp_results %>% ggplot() + aes(Rroot2) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) )
+  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
 
 # GPP ~ NPP
 ggplot(gpp_results) +
@@ -602,31 +616,31 @@ ggplot(gpp_results) +
   ylab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
 ```
 
-### Probability of aggrement
-```{r compute propotion of aggrement between top-down RSG and bottom-up GPP}
+### Probability of agreement
+```{r compute proportion of agreement between top-down RSG and bottom-up GPP}
 # Quantify the probability GPP following (107, 133)
 # about 29% chance GPP will between (107-133)
 y <- mean(gpp_results$GPP)
 s <- sd(gpp_results$GPP)
 # accume GPP following normal distribution, with mean = y and sd = s, we can calculate the properbility of GPP following (107-133) 95%CI
-p_gpp_high <- pnorm ((gpp_qt_raw[3] - y) / (s))
-p_gpp_low <- pnorm ((gpp_qt_raw[1] - y) / (s))
+p_gpp_high <- pnorm ((gpp_qt_raw[3] - y) / s)
+p_gpp_low <- pnorm ((gpp_qt_raw[1] - y) / s)
 p_gpp1 <- (p_gpp_high - p_gpp_low) %>% round(4)
-print(paste0("The probability of aggrement in scenario 1 is: ", p_gpp1))
+print(paste0("The probability of agreement in scenario 1 is: ", p_gpp1))
 # pnorm (-0.329)
 
 # senario 2 looks like a little bit right tail skew
 # about 18%
 y <- mean(gpp_results$GPP2)
 s <- sd(gpp_results$GPP2)
-p_gpp_high <- pnorm ((gpp_qt_raw[3] - y) / (s))
-p_gpp_low <- pnorm ((gpp_qt_raw[1] - y) / (s))
+p_gpp_high <- pnorm ((gpp_qt_raw[3] - y) / s)
+p_gpp_low <- pnorm ((gpp_qt_raw[1] - y) / s)
 p_gpp2 <- (p_gpp_high - p_gpp_low) %>% round(4)
-print(paste0("The probability of aggrement in scenario 2 is: ", p_gpp2))
+print(paste0("The probability of agreement in scenario 2 is: ", p_gpp2))
 ```
 
-The probability of aggrement in scenario 1 is ```r p_gpp1*100``` %.  
-The probability of aggrement in scenario 2 is ```r p_gpp2*100``` %.
+The probability of agreement in scenario 1 is ```r p_gpp1*100``` %.  
+The probability of agreement in scenario 2 is ```r p_gpp2*100``` %.
 
 
 ```{r prepare variables fro RSG boostrapping}
@@ -739,17 +753,17 @@ rs_results <- tibble(
 # mean(rs_results$Rs)
 # max(rs_results$Rs)
 
-# scenatio 1. RaGPP ratio not seperated
+# scenatio 1. RaGPP ratio not separated
 rsg_qt <- quantile(rs_results$Rs_topdown, c(0.025, 0.5, 0.975)) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 ggplot(rs_results) + aes(Rs_topdown) + 
-  geom_density(col = "gray", fill = rgb(1,0,1, alpha = 0.25)) + 
-  geom_density(aes(Rs_raw), col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
+  geom_density(col = "gray", fill = rgb(1, 0, 1, alpha = 0.25)) + 
+  geom_density(aes(Rs_raw), col = "gray", fill = rgb(0, 1, 1, alpha = 0.5)) +
   # geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
   annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")")
-           , hjust = 0, col = rgb(1,0,1)) +
+           , hjust = 0, col = rgb(1, 0, 1)) +
   annotate("text", x = 100, y = 0.03, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt_raw[1],", ", rsg_qt_raw[2], ", ", rsg_qt_raw[3], ")")
-           , hjust = 0, col = rgb(0,1,1)) +
+           , hjust = 0, col = rgb(0, 1, 1)) +
   ylab(expression(count))
 
 # Rs raw data plot
@@ -762,17 +776,17 @@ ggplot(rs_results) + aes(Rs_topdown) +
 
 ### Scenario 2 - ratio __weighted__ by ecosystem
 ```{r}
-# senario 2. RaGPP ratio seperated into 2 groups
+# senario 2. RaGPP ratio separated into 2 groups
 rsg_qt <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 ggplot(rs_results) + aes(Rs_topdown2) + 
-  geom_density(col = "gray", fill = rgb(1,0,1, alpha = 0.25)) + 
-  geom_density(aes(Rs_raw), col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
+  geom_density(col = "gray", fill = rgb(1, 0, 1, alpha = 0.25)) + 
+  geom_density(aes(Rs_raw), col = "gray", fill = rgb(0, 1, 1, alpha = 0.5)) +
   # geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
   annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")")
-           , hjust = 0, col = rgb(1,0,1)) +
+           , hjust = 0, col = rgb(1, 0, 1)) +
   annotate("text", x = 100, y = 0.03, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt_raw[1],", ", rsg_qt_raw[2], ", ", rsg_qt_raw[3], ")")
-           , hjust = 0, col = rgb(0,1,1)) +
+           , hjust = 0, col = rgb(0, 1, 1)) +
   ylab(expression(count))
 ```
 
@@ -831,45 +845,45 @@ ggplot(rs_results) +
   ylab(expression(R[S]~"("~Pg~C~yr^{-1}~")"))
 ```
 
-### RSG probability of aggrement
+### RSG probability of agreement
 
-```{r compute propotion of aggrement between top-down RSG and bottom-up RSG}
+```{r compute proportion of agreement between top-down RSG and bottom-up RSG}
 # accume Rs following normal distribution, with mean = y and sd = s, we can calculate the properbility of Rs following (80-92) 95%CI
 # about 28% chance Rs will be between (80-92)
 y <- mean(rs_results$Rs_topdown)
 s <- sd(rs_results$Rs_topdown)
-p_Rs_high <- pnorm ((y - rsg_qt_raw[1])/(s))
-p_Rs_low <- pnorm ((y - rsg_qt_raw[3])/(s))
+p_Rs_high <- pnorm ((y - rsg_qt_raw[1]) / s)
+p_Rs_low <- pnorm ((y - rsg_qt_raw[3]) / s)
 p_Rs1 <- (p_Rs_high - p_Rs_low) %>% round(4)
-print(paste0("The probability of aggrement in scenario 1 is: ", p_Rs1))
+print(paste0("The probability of agreement in scenario 1 is: ", p_Rs1))
 
 # Senario 2: about 23% chance Rs will be between (80-92)
 y <- mean(rs_results$Rs_topdown2)
 s <- sd(rs_results$Rs_topdown2)
-p_Rs_high <- pnorm ((y - rsg_qt_raw[1])/(s))
-p_Rs_low <- pnorm ((y - rsg_qt_raw[3])/(s))
+p_Rs_high <- pnorm ((y - rsg_qt_raw[1]) / s)
+p_Rs_low <- pnorm ((y - rsg_qt_raw[3]) / s)
 p_Rs2 <- (p_Rs_high - p_Rs_low) %>% round(4)
-print(paste0("The probability of aggrement in scenario 2 is: ", p_Rs2))
+print(paste0("The probability of agreement in scenario 2 is: ", p_Rs2))
 ```
 
-The probability of aggrement in scenario 1 is ```r p_Rs1*100``` %.  
-The probability of aggrement in scenario 2 is ```r p_Rs2*100``` %.
+The probability of agreement in scenario 1 is ```r p_Rs1*100``` %.  
+The probability of agreement in scenario 2 is ```r p_Rs2*100``` %.
 
 
 ## Topdown and bottomup comparison - Figure 1
 ```{r combine GPP and RSG comparison into figure 2, fig.height=8, fig.width=6}
-# senario 2, RC seperate into 4 groups, and Froot seperate into 2 groups
+# senario 2, RC separate into 4 groups, and Froot separate into 2 groups
 gpp_qt <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 ggplot(gpp_results) + aes(GPP2) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1,0,1, alpha = 0.5) ) +
-  geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
+  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) ) +
+  geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0, 1, 1, alpha = 0.5)) +
   # geom_vline(xintercept = c(quantile (gpp_results$GPP_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
   annotate("text", x = 150, y = 0.035, label = paste0("2.5%, 50%, 97.5% quantile (", gpp_qt[1],", ", gpp_qt[2], ", ", gpp_qt[3], ")")
-           , hjust = 0, col = rgb(1,0,1)) +
+           , hjust = 0, col = rgb(1, 0, 1)) +
   annotate("text", x = 150, y = 0.025, label = paste0("2.5%,50%,97.5% quantile (", gpp_qt_raw[1],", ", gpp_qt_raw[2], ", ", gpp_qt_raw[3], ")")
-           , hjust = 0, col = rgb(0,1,1)) +
-  # annotate("text", x = 150, y = 0.045, label = expression("Rroot-to-R"[S]~"seperated into 4 groups")
+           , hjust = 0, col = rgb(0, 1, 1)) +
+  # annotate("text", x = 150, y = 0.045, label = expression("Rroot-to-R"[S]~"separated into 4 groups")
   #          , hjust = 0) +
   xlab(expression(GPP~"("~Pg~C~yr^{-1}~")")) -> p1
 
@@ -877,15 +891,15 @@ ggplot(gpp_results) + aes(GPP2) +
 rsg_qt <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 ggplot(rs_results) + aes(Rs_topdown2) + 
-  geom_density(col = "gray", fill = rgb(1,0,1, alpha = 0.5)) + 
-  geom_density(aes(Rs_raw), col = "gray", fill = rgb(0,1,1, alpha = 0.5)) +
+  geom_density(col = "gray", fill = rgb(1, 0, 1, alpha = 0.5)) + 
+  geom_density(aes(Rs_raw), col = "gray", fill = rgb(0, 1, 1, alpha = 0.5)) +
   # geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
-  # annotate("text", x = 100, y = 0.08, label = expression("Rroot-to-Ra ratio seperated into 4 groups")
+  # annotate("text", x = 100, y = 0.08, label = expression("Rroot-to-Ra ratio separated into 4 groups")
   #          , hjust = 0) +
   annotate("text", x = 100, y = 0.06, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")")
-           , hjust = 0, col = rgb(1,0,1)) +
+           , hjust = 0, col = rgb(1, 0, 1)) +
   annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt_raw[1],", ", rsg_qt_raw[2], ", ", rsg_qt_raw[3], ")")
-           , hjust = 0, col = rgb(0,1,1)) +
+           , hjust = 0, col = rgb(0, 1, 1)) +
   ylab(expression(count)) +
   xlab(expression(Global~R[S]~"("~Pg~C~yr^{-1}~")")) -> p2
 
@@ -948,7 +962,7 @@ cmip6 <- data.frame(Source = "CMIP6\n(N = 0)", Type = "Models", stringsAsFactors
 
 bind_rows(topdown, srdb, fluxnet, cmip6) %>% 
   mutate(Ratio = Rs / GPP,
-         Source = factor(Source, unique(Source)[c(2,3,1,4)])) ->
+         Source = factor(Source, unique(Source)[c(2,3, 1,4)])) ->
   ratios
 
 p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) + 
