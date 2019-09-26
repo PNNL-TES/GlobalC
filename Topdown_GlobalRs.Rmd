@@ -398,7 +398,7 @@ var_GPP <- GPP[is.na(GPP$SD),]$GPP
 
 ## Bootstrapping GPP
 ```{r using boostrapping prepare data for GPP bottom-up and top-down comparison}
-# Bottom-up approache to stimate GPP
+# Bottom-up approach to estimate GPP
 # Rroot = Rs * RC (Rroot to Rs ratio, from srdb)
 # Froot = Rroot / Ra (root autotrophic respiration to total autotrophic respiration fraction/ratio, calculation please see plot_froot function)
 # Fshoot = 1-Froot
@@ -479,8 +479,9 @@ gpp_results <- tibble(
   # Scenario 2: Rc separate into 4 groups: agriculture, forest, grassland, and rest (all other ecosystems with obs<40, take samples from all RC records)
   # only separate into four groups, agriculture, forest, grassland and the rest
   # 1-(0.191 + 0.214 + 0.153 + 0.268)
-  Rc2 = (Rc_agr*ag_area + Rc_df*df_area + Rc_ef*ef_area + Rc_mf*mf_area + Rc_gra*gra_area + Rc_shr*shr_area 
-         + Rc_rest*(1-ag_area-df_area-ef_area-mf_area-gra_area-shr_area)), 
+  Rc2 = (Rc_agr*ag_area + Rc_df*df_area + Rc_ef*ef_area + Rc_mf*mf_area + 
+           Rc_gra*gra_area + Rc_shr*shr_area 
+         + Rc_rest * (1 - ag_area - df_area - ef_area-mf_area - gra_area - shr_area)), 
   # mean(sample(var_for$RC_annual, n_samp, replace = TRUE))
   # sample(var_df$RC_annual, n_samp, replace = TRUE) %>% mean
   # sample(var_ef$RC_annual, n_samp, replace = TRUE) %>% mean
@@ -496,7 +497,8 @@ gpp_results <- tibble(
   
   # Scenario 2: separate into 2 ecosystems and weighted by area
   # Froot %>% count(Ecosystem)
-  Froot2 = Froot_df*df_area + Froot_ef*ef_area + Froot_mf*mf_area + Froot_rest * (1-df_area-ef_area-mf_area),
+  Froot2 = Froot_df*df_area + Froot_ef*ef_area + Froot_mf*mf_area + 
+    Froot_rest * (1 - df_area - ef_area - mf_area),
   FsFr2 = (1 - Froot2) / Froot2, # calculate Froot to Fshoot ratio of scenario 2
   # # Bottom up estimate of GPP, scenario 2
   Rroot2 = Rs * Rc2,
@@ -524,10 +526,14 @@ gpp_results %>% ggplot() + aes(GPP) +
   # geom_histogram(aes(GPP_raw), col = "blue", fill = "blue", bins = 30, alpha = 0.35) +
   geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0, 1, 1, alpha = 0.5)) +
   # geom_vline(xintercept = c(quantile (gpp_results$GPP_raw, c(0.025, 0.975))),col = "gray", linetype = 2, size = 1) +
-  annotate("text", x = 150, y = 0.035, label = paste0("2.5%, 50%, 97.5% quantile (", gpp_qt[1],", ", gpp_qt[2], ", ", gpp_qt[3], ")")
-           , hjust = 0, col = rgb(1, 0, 1)) +
-  annotate("text", x = 150, y = 0.025, label = paste0("2.5%,50%,97.5% quantile (", gpp_qt_raw[1],", ", gpp_qt_raw[2], ", ", gpp_qt_raw[3], ")")
-           , hjust = 0, col = rgb(0, 1, 1)) +
+  annotate("text", x = 150, y = 0.035, 
+           label = paste0("2.5%, 50%, 97.5% quantile (", gpp_qt[1],", ", gpp_qt[2], ", ", gpp_qt[3], ")"), 
+           hjust = 0, 
+           col = rgb(1, 0, 1)) +
+  annotate("text", x = 150, y = 0.025, 
+           label = paste0("2.5%,50%,97.5% quantile (", gpp_qt_raw[1],", ", gpp_qt_raw[2], ", ", gpp_qt_raw[3], ")"), 
+           hjust = 0, 
+           col = rgb(0, 1, 1)) +
   xlab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
 
 # ggsave("outputs/Figure2.jpg", width = 6, height = 4, dpi = 300, units = "in")

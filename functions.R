@@ -272,7 +272,7 @@ cal_Froot <- function (sdata, sdata2) {
   colnames(sub_srdb) <- colnames(comb_data)
   
   comb_data <- rbind(comb_data, sub_srdb)
-  comb_data[comb_data$Ecosystem  =  =  'Cropland', ]$Ecosystem <- "Agriculture"
+  comb_data[comb_data$Ecosystem  ==  'Cropland', ]$Ecosystem <- "Agriculture"
   return (comb_data)
 }
 
