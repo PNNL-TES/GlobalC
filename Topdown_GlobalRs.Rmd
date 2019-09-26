@@ -520,24 +520,36 @@ gpp_results <- tibble(
 # scenario 1
 gpp_qt <- quantile(gpp_results$GPP, c(0.025, 0.5, 0.975)) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
-gpp_results %>% ggplot() + aes(GPP) + 
-  # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) ) +
-  # geom_histogram(aes(GPP_raw), col = "blue", fill = "blue", bins = 30, alpha = 0.35) +
-  geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0, 1, 1, alpha = 0.5)) +
-  # geom_vline(xintercept = c(quantile (gpp_results$GPP_raw, c(0.025, 0.975))),col = "gray", linetype = 2, size = 1) +
-  annotate("text", x = 150, y = 0.035, 
-           label = paste0("2.5%, 50%, 97.5% quantile (", gpp_qt[1],", ", gpp_qt[2], ", ", gpp_qt[3], ")"), 
-           hjust = 0, 
-           col = rgb(1, 0, 1)) +
-  annotate("text", x = 150, y = 0.025, 
-           label = paste0("2.5%,50%,97.5% quantile (", gpp_qt_raw[1],", ", gpp_qt_raw[2], ", ", gpp_qt_raw[3], ")"), 
-           hjust = 0, 
-           col = rgb(0, 1, 1)) +
-  xlab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
+gpp_results %>%
+  select(`GPP implied by Rs` = GPP, `Top-down GPP` = GPP_raw) %>% 
+  gather(GPP_type) ->
+  gpp_figure_data
 
+gpp_figure_data %>% 
+  ggplot(aes(value, fill = GPP_type)) +
+  geom_density(stat = 'density', alpha = 0.5) +
+  theme(legend.position = c(0.75, 0.75)) +
+  coord_cartesian(xlim = c(25, 400)) +
+  xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
+  gpp_base_figure
+
+annotations <- function(gpp_figure, gpp_qt, gpp_qt_raw) {
+  gpp_figure + 
+    annotate("text", x = 150, y = 0.035, 
+             label = paste0("2.5%, 50%, 97.5% quantile (", 
+                            gpp_qt[1],", ", gpp_qt[2], ", ", gpp_qt[3], ")"), 
+             hjust = 0, 
+             col = rgb(1, 0, 1)) +
+    annotate("text", x = 150, y = 0.025, 
+             label = paste0("2.5%,50%,97.5% quantile (", 
+                            gpp_qt_raw[1],", ", gpp_qt_raw[2], ", ", gpp_qt_raw[3], ")"), 
+             hjust = 0, 
+             col = rgb(0, 1, 1))
+  
+}
+
+annotations(gpp_base_figure, gpp_qt, gpp_qt_raw)
 # ggsave("outputs/Figure2.jpg", width = 6, height = 4, dpi = 300, units = "in")
-
 ```
 
 ### Scenario 2 - ratio __weighted__ by ecosystem
@@ -545,17 +557,13 @@ gpp_results %>% ggplot() + aes(GPP) +
 # scenario 2
 rsg_qt <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
-ggplot(gpp_results) + aes(GPP2) + 
-  # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) ) +
-  # geom_histogram(aes(GPP_raw), col = "blue", fill = "blue", bins = 30, alpha = 0.35) +
-  geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0, 1, 1, alpha = 0.5)) +
-  # geom_vline(xintercept = c(quantile (gpp_results$GPP_raw, c(0.025, 0.975))),col = "gray", linetype = 2, size = 1) +
-  annotate("text", x = 150, y = 0.035, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")")
-           , hjust = 0, col = rgb(1, 0, 1)) +
-  annotate("text", x = 150, y = 0.025, label = paste0("2.5%,50%,97.5% quantile (", gpp_qt_raw[1],", ", gpp_qt_raw[2], ", ", gpp_qt_raw[3], ")")
-           , hjust = 0, col = rgb(0, 1, 1)) +
-  xlab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
+
+gpp_results %>%
+  select(`GPP implied by Rs` = GPP2, `Top-down GPP` = GPP_raw) %>% 
+  gather(GPP_type) ->
+  gpp_figure2_data
+
+annotations(gpp_base_figure %+% gpp_figure2_data, rsg_qt, gpp_qt_raw)
 ```
 
 ### GPP vs components relationships
