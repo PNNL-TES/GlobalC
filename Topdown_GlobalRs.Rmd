@@ -472,11 +472,11 @@ gpp_results <- tibble(
   Froot_rest = sample(var_rest_froot, n_samp, replace = TRUE),
   
   # Step 6. calculation ********************
-  # Rc = replicate( n_rep, var_RC$RC_annual, n_samp, replace = TRUE) %>% mean() ), # senario 0: Rc not separate into different ecosystems, not used
+  # Rc = replicate( n_rep, var_RC$RC_annual, n_samp, replace = TRUE) %>% mean() ), # scenario 0: Rc not separate into different ecosystems, not used
   Rc = sample(var_RC$RC_annual, n_samp, replace = TRUE),
   # Rc = Rc_df*df_area + Rc_ef*ef_area + Rc_mf*mf_area + Rc_rest*1-(df_area + ef_area + mf_area), 
   
-  # Senario 2: Rc separate into 4 groups: agriculture, forest, grassland, and rest (all other ecosystems with obs<40, take samples from all RC records)
+  # Scenario 2: Rc separate into 4 groups: agriculture, forest, grassland, and rest (all other ecosystems with obs<40, take samples from all RC records)
   # only separate into four groups, agriculture, forest, grassland and the rest
   # 1-(0.191 + 0.214 + 0.153 + 0.268)
   Rc2 = (Rc_agr*ag_area + Rc_df*df_area + Rc_ef*ef_area + Rc_mf*mf_area + Rc_gra*gra_area + Rc_shr*shr_area 
@@ -486,19 +486,19 @@ gpp_results <- tibble(
   # sample(var_ef$RC_annual, n_samp, replace = TRUE) %>% mean
   # sample(var_mf$RC_annual, n_samp, replace = TRUE) %>% mean
   
-  # senario1: Froot not separate into different ecosystems
+  # scenario1: Froot not separate into different ecosystems
   Froot = sample(Froot$Froot, n_samp, replace = TRUE) ,
   
-  FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of senario 1
-  # Bottom up estimate of GPP, senario 1
+  FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of scenario 1
+  # Bottom up estimate of GPP, scenario 1
   Rroot = Rs * Rc, # calculate root respiration
   Rshoot = Rroot * FsFr, # calculate shoot respiration
   
-  # Senario 2: separate into 2 ecosystems and weighted by area
+  # Scenario 2: separate into 2 ecosystems and weighted by area
   # Froot %>% count(Ecosystem)
   Froot2 = Froot_df*df_area + Froot_ef*ef_area + Froot_mf*mf_area + Froot_rest * (1-df_area-ef_area-mf_area),
-  FsFr2 = (1 - Froot2) / Froot2, # calculate Froot to Fshoot ratio of senario 2
-  # # Bottom up estimate of GPP, senario 2
+  FsFr2 = (1 - Froot2) / Froot2, # calculate Froot to Fshoot ratio of scenario 2
+  # # Bottom up estimate of GPP, scenario 2
   Rroot2 = Rs * Rc2,
   Rshoot2 = Rroot2 * FsFr2,
   
@@ -509,13 +509,13 @@ gpp_results <- tibble(
 
 
 ## GPP results diagnose {.tabset .tabset-fade .tabset-pills}
-### senario 1 - ratio __not__ weighted by ecosystem
+### Scenario 1 - ratio __not__ weighted by ecosystem
 ```{r plot GPP comparison}
 # hist(gpp_results$GPP) + abline (v = quantile (gpp_results$GPP, c(0.025, 0.5, 0.975)), col = "red", lty = "dashed")
 # mean(gpp_results$GPP)
 # max(gpp_results$GPP)
 
-# senario 1
+# scenario 1
 gpp_qt <- quantile(gpp_results$GPP, c(0.025, 0.5, 0.975)) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 gpp_results %>% ggplot() + aes(GPP) + 
@@ -534,9 +534,9 @@ gpp_results %>% ggplot() + aes(GPP) +
 
 ```
 
-### Sematio 2 - ratio __weighted__ by ecosystem
+### Scenario 2 - ratio __weighted__ by ecosystem
 ```{r}
-# senario 2
+# scenario 2
 rsg_qt <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 ggplot(gpp_results) + aes(GPP2) + 
@@ -629,7 +629,7 @@ p_gpp1 <- (p_gpp_high - p_gpp_low) %>% round(4)
 print(paste0("The probability of agreement in scenario 1 is: ", p_gpp1))
 # pnorm (-0.329)
 
-# senario 2 looks like a little bit right tail skew
+# scenario 2 looks like a little bit right tail skew
 # about 18%
 y <- mean(gpp_results$GPP2)
 s <- sd(gpp_results$GPP2)
@@ -718,9 +718,9 @@ rs_results <- tibble(
   Froot_rest = sample(var_rest_froot, n_samp, replace = TRUE), 
   
   # Calculation **********
-  # senario 1
+  # scenario 1
   RaGpp = RaGpp_rest,
-  # # senario 2
+  # # scenario 2
   RaGpp2 = RaGpp_df*df_area + RaGpp_ef*ef_area + RaGpp_mf*mf_area + RaGpp_gra*gra_area + RaGpp_rest*(1-df_area-ef_area-mf_area-gra_area),
   # 
   # # # get Froot (Froot2 is better, from bottom-up section, see above results)
@@ -737,7 +737,7 @@ rs_results <- tibble(
   Rshoot = Ra_avg1 * (1 - Froot2),
   Rs_topdown = NPP - HerbComsum - Fire - sink + Rroot,
   # 
-  # # senario2
+  # # scenario2
   Ra4 = GPP_raw * RaGpp2, # first way to calculate Ra, Ra = GPP * RaGPP
   Ra_avg2 = (Ra4 + Ra3) / 2,
   Rroot2 = Ra_avg2 * Froot2,
@@ -776,7 +776,7 @@ ggplot(rs_results) + aes(Rs_topdown) +
 
 ### Scenario 2 - ratio __weighted__ by ecosystem
 ```{r}
-# senario 2. RaGPP ratio separated into 2 groups
+# scenario 2. RaGPP ratio separated into 2 groups
 rsg_qt <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 ggplot(rs_results) + aes(Rs_topdown2) + 
@@ -857,7 +857,7 @@ p_Rs_low <- pnorm ((y - rsg_qt_raw[3]) / s)
 p_Rs1 <- (p_Rs_high - p_Rs_low) %>% round(4)
 print(paste0("The probability of agreement in scenario 1 is: ", p_Rs1))
 
-# Senario 2: about 23% chance Rs will be between (80-92)
+# Scenario 2: about 23% chance Rs will be between (80-92)
 y <- mean(rs_results$Rs_topdown2)
 s <- sd(rs_results$Rs_topdown2)
 p_Rs_high <- pnorm ((y - rsg_qt_raw[1]) / s)
@@ -872,7 +872,7 @@ The probability of agreement in scenario 2 is ```r p_Rs2*100``` %.
 
 ## Topdown and bottomup comparison - Figure 1
 ```{r combine GPP and RSG comparison into figure 2, fig.height=8, fig.width=6}
-# senario 2, RC separate into 4 groups, and Froot separate into 2 groups
+# scenario 2, RC separate into 4 groups, and Froot separate into 2 groups
 gpp_qt <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 ggplot(gpp_results) + aes(GPP2) + 
@@ -887,7 +887,7 @@ ggplot(gpp_results) + aes(GPP2) +
   #          , hjust = 0) +
   xlab(expression(GPP~"("~Pg~C~yr^{-1}~")")) -> p1
 
-# senario two
+# scenario two
 rsg_qt <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 ggplot(rs_results) + aes(Rs_topdown2) + 
