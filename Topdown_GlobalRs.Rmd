@@ -530,25 +530,26 @@ gpp_figure_data %>%
   geom_density(stat = 'density', alpha = 0.5) +
   theme(legend.position = c(0.75, 0.75)) +
   coord_cartesian(xlim = c(25, 400)) +
+  scale_fill_discrete("") +
   xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
   gpp_base_figure
 
-annotations <- function(gpp_figure, gpp_qt, gpp_qt_raw) {
-  gpp_figure + 
-    annotate("text", x = 150, y = 0.035, 
-             label = paste0("2.5%, 50%, 97.5% quantile (", 
-                            gpp_qt[1],", ", gpp_qt[2], ", ", gpp_qt[3], ")"), 
-             hjust = 0, 
-             col = rgb(1, 0, 1)) +
-    annotate("text", x = 150, y = 0.025, 
-             label = paste0("2.5%,50%,97.5% quantile (", 
-                            gpp_qt_raw[1],", ", gpp_qt_raw[2], ", ", gpp_qt_raw[3], ")"), 
-             hjust = 0, 
-             col = rgb(0, 1, 1))
-  
+# We're adding same annotations to each figure so use a function
+annotations <- function(figure, types, x_qt, x_qt_raw, xpos) {
+  lbl <- function(qt_data) {
+    paste0("Mean and 95% CI: ", qt_data[2], " (", qt_data[1], ", ", qt_data[3], ")")
+  }
+  ann_dat <- tibble(Type = types,
+                    GPP_type = NA, Rs_type = NA,
+                    x = xpos, 
+                    y = c(0.035, 0.025),
+                    label = c(lbl(x_qt), lbl(x_qt_raw)))
+  figure + geom_text(data = ann_dat,
+                     aes(x = x, y = y, label = label, color = Type),
+                     hjust = 0, show.legend = FALSE)
 }
 
-annotations(gpp_base_figure, gpp_qt, gpp_qt_raw)
+annotations(gpp_base_figure, unique(gpp_figure_data$GPP_type), gpp_qt, gpp_qt_raw, 150)
 # ggsave("outputs/Figure2.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
 
@@ -563,7 +564,8 @@ gpp_results %>%
   gather(GPP_type) ->
   gpp_figure2_data
 
-annotations(gpp_base_figure %+% gpp_figure2_data, rsg_qt, gpp_qt_raw)
+annotations(gpp_base_figure %+% gpp_figure2_data,
+            unique(gpp_figure2_data$GPP_type),rsg_qt, gpp_qt_raw)
 ```
 
 ### GPP vs components relationships
@@ -657,7 +659,7 @@ The probability of agreement in scenario 1 is ```r p_gpp1*100``` %.
 The probability of agreement in scenario 2 is ```r p_gpp2*100``` %.
 
 
-```{r prepare variables fro RSG boostrapping}
+```{r prepare variables for RSG boostrapping}
 # Froot used the same data as bottom-up approach
 var_Fire <- c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)
 # prepare RaGPP ratio data
@@ -767,18 +769,25 @@ rs_results <- tibble(
 # mean(rs_results$Rs)
 # max(rs_results$Rs)
 
-# scenatio 1. RaGPP ratio not separated
+# scenario 1. RaGPP ratio not separated
 rsg_qt <- quantile(rs_results$Rs_topdown, c(0.025, 0.5, 0.975)) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
-ggplot(rs_results) + aes(Rs_topdown) + 
-  geom_density(col = "gray", fill = rgb(1, 0, 1, alpha = 0.25)) + 
-  geom_density(aes(Rs_raw), col = "gray", fill = rgb(0, 1, 1, alpha = 0.5)) +
-  # geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
-  annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")")
-           , hjust = 0, col = rgb(1, 0, 1)) +
-  annotate("text", x = 100, y = 0.03, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt_raw[1],", ", rsg_qt_raw[2], ", ", rsg_qt_raw[3], ")")
-           , hjust = 0, col = rgb(0, 1, 1)) +
-  ylab(expression(count))
+
+rs_results %>%
+  select(`Rs implied by GPP` = Rs_topdown, `Bottom-up Rs` = Rs_raw) %>% 
+  gather(Rs_type) ->
+  rs_figure_data
+
+rs_figure_data %>% 
+  ggplot(aes(value, fill = Rs_type)) +
+  geom_density(stat = 'density', alpha = 0.5) +
+  theme(legend.position = c(0.75, 0.75)) +
+  coord_cartesian(xlim = c(25, 200)) +
+  scale_fill_discrete("") +
+  xlab(expression(R[S]~(Pg~C~yr^{-1}))) ->
+  rs_base_figure
+
+annotations(rs_base_figure, types = unique(rs_figure_data$Rs_type), rsg_qt, rsg_qt_raw, 100)
 
 # Rs raw data plot
 # rsg_qt <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
@@ -793,15 +802,14 @@ ggplot(rs_results) + aes(Rs_topdown) +
 # scenario 2. RaGPP ratio separated into 2 groups
 rsg_qt <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
-ggplot(rs_results) + aes(Rs_topdown2) + 
-  geom_density(col = "gray", fill = rgb(1, 0, 1, alpha = 0.25)) + 
-  geom_density(aes(Rs_raw), col = "gray", fill = rgb(0, 1, 1, alpha = 0.5)) +
-  # geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
-  annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")")
-           , hjust = 0, col = rgb(1, 0, 1)) +
-  annotate("text", x = 100, y = 0.03, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt_raw[1],", ", rsg_qt_raw[2], ", ", rsg_qt_raw[3], ")")
-           , hjust = 0, col = rgb(0, 1, 1)) +
-  ylab(expression(count))
+
+rs_results %>%
+  select(`Rs implied by GPP` = Rs_topdown2, `Bottom-up Rs` = Rs_raw) %>% 
+  gather(Rs_type) ->
+  rs_figure_data
+
+annotations(rs_base_figure %+% rs_figure_data, 
+            types = unique(rs_figure_data$Rs_type), rsg_qt, rsg_qt_raw, 100)
 ```
 
 ### RSG and components relationship
@@ -889,21 +897,28 @@ The probability of agreement in scenario 2 is ```r p_Rs2*100``` %.
 # scenario 2, RC separate into 4 groups, and Froot separate into 2 groups
 gpp_qt <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
-ggplot(gpp_results) + aes(GPP2) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) ) +
-  geom_density(aes(GPP_raw), stat = "density", col = "gray", fill = rgb(0, 1, 1, alpha = 0.5)) +
-  # geom_vline(xintercept = c(quantile (gpp_results$GPP_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
-  annotate("text", x = 150, y = 0.035, label = paste0("2.5%, 50%, 97.5% quantile (", gpp_qt[1],", ", gpp_qt[2], ", ", gpp_qt[3], ")")
-           , hjust = 0, col = rgb(1, 0, 1)) +
-  annotate("text", x = 150, y = 0.025, label = paste0("2.5%,50%,97.5% quantile (", gpp_qt_raw[1],", ", gpp_qt_raw[2], ", ", gpp_qt_raw[3], ")")
-           , hjust = 0, col = rgb(0, 1, 1)) +
-  # annotate("text", x = 150, y = 0.045, label = expression("Rroot-to-R"[S]~"separated into 4 groups")
-  #          , hjust = 0) +
-  xlab(expression(GPP~"("~Pg~C~yr^{-1}~")")) -> p1
+
+gpp_results %>%
+  select(`GPP implied by Rs` = GPP2, `Top-down GPP` = GPP_raw) %>% 
+  gather(GPP_type) ->
+  gpp_figure_data
+
+gpp_figure_data %>% 
+  ggplot(aes(value, fill = GPP_type)) +
+  geom_density(stat = 'density', alpha = 0.5) +
+  theme(legend.position = c(0.75, 0.75)) +
+  coord_cartesian(xlim = c(25, 400)) +
+  scale_fill_discrete("") +
+  xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
+  gpp_base_figure
+
+p1 <- annotations(gpp_base_figure, 
+            unique(gpp_figure_data$GPP_type), gpp_qt, gpp_qt_raw, 150)
 
 # scenario two
 rsg_qt <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+
 ggplot(rs_results) + aes(Rs_topdown2) + 
   geom_density(col = "gray", fill = rgb(1, 0, 1, alpha = 0.5)) + 
   geom_density(aes(Rs_raw), col = "gray", fill = rgb(0, 1, 1, alpha = 0.5)) +
@@ -989,7 +1004,7 @@ print(p_ratios)
 
 
 
-## Discard codes
+## Discarded codes
 ```{r not used}
 # Each row get the closese latitude and longitude values to AGB and SOC data
 # AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
