@@ -510,7 +510,7 @@ gpp_results <- tibble(
 ```
 
 
-## GPP results diagnose {.tabset .tabset-fade .tabset-pills}
+## GPP results {.tabset .tabset-fade .tabset-pills}
 ### Scenario 1 - ratio __not__ weighted by ecosystem
 ```{r plot GPP comparison}
 # hist(gpp_results$GPP) + abline (v = quantile (gpp_results$GPP, c(0.025, 0.5, 0.975)), col = "red", lty = "dashed")
@@ -520,6 +520,7 @@ gpp_results <- tibble(
 # scenario 1
 gpp_qt <- quantile(gpp_results$GPP, c(0.025, 0.5, 0.975)) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+
 gpp_results %>%
   select(`GPP implied by Rs` = GPP, `Top-down GPP` = GPP_raw) %>% 
   gather(GPP_type) ->
@@ -529,7 +530,7 @@ gpp_figure_data %>%
   ggplot(aes(value, fill = GPP_type)) +
   geom_density(stat = 'density', alpha = 0.5) +
   theme(legend.position = c(0.75, 0.75)) +
-  coord_cartesian(xlim = c(25, 400)) +
+  coord_cartesian(xlim = c(25, 350)) +
   scale_fill_discrete("") +
   xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
   gpp_base_figure
@@ -549,14 +550,17 @@ annotations <- function(figure, types, x_qt, x_qt_raw, xpos) {
                      hjust = 0, show.legend = FALSE)
 }
 
-annotations(gpp_base_figure, unique(gpp_figure_data$GPP_type), gpp_qt, gpp_qt_raw, 150)
+p1_gpp <- annotations(gpp_base_figure, 
+                      unique(gpp_figure_data$GPP_type), gpp_qt, gpp_qt_raw, 150)
+print(p1_gpp)
+
 # ggsave("outputs/Figure2.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
 
 ### Scenario 2 - ratio __weighted__ by ecosystem
 ```{r}
 # scenario 2
-rsg_qt <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
+gpp_qt <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 
 gpp_results %>%
@@ -564,8 +568,9 @@ gpp_results %>%
   gather(GPP_type) ->
   gpp_figure2_data
 
-annotations(gpp_base_figure %+% gpp_figure2_data,
-            unique(gpp_figure2_data$GPP_type),rsg_qt, gpp_qt_raw)
+p1_gpp2 <- annotations(gpp_base_figure %+% gpp_figure2_data,
+                       unique(gpp_figure2_data$GPP_type), gpp_qt, gpp_qt_raw, 150)
+print(p1_gpp2)
 ```
 
 ### GPP vs components relationships
@@ -763,7 +768,7 @@ rs_results <- tibble(
 ```
 
 
-## RSG results diagnose {.tabset .tabset-fade .tabset-pills}
+## RSG results {.tabset .tabset-fade .tabset-pills}
 ### Scenario 1 - ratio __not__ weighted by ecosystem
 ```{r plot RSG results}
 # mean(rs_results$Rs)
@@ -782,12 +787,14 @@ rs_figure_data %>%
   ggplot(aes(value, fill = Rs_type)) +
   geom_density(stat = 'density', alpha = 0.5) +
   theme(legend.position = c(0.75, 0.75)) +
-  coord_cartesian(xlim = c(25, 200)) +
+  coord_cartesian(xlim = c(25, 150)) +
   scale_fill_discrete("") +
   xlab(expression(R[S]~(Pg~C~yr^{-1}))) ->
   rs_base_figure
 
-annotations(rs_base_figure, types = unique(rs_figure_data$Rs_type), rsg_qt, rsg_qt_raw, 100)
+p2_rs <- annotations(rs_base_figure, 
+                     types = unique(rs_figure_data$Rs_type), rsg_qt, rsg_qt_raw, 100)
+print(p2_rs)
 
 # Rs raw data plot
 # rsg_qt <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
@@ -808,8 +815,9 @@ rs_results %>%
   gather(Rs_type) ->
   rs_figure_data
 
-annotations(rs_base_figure %+% rs_figure_data, 
-            types = unique(rs_figure_data$Rs_type), rsg_qt, rsg_qt_raw, 100)
+p2_rs2 <- annotations(rs_base_figure %+% rs_figure_data, 
+                      types = unique(rs_figure_data$Rs_type), rsg_qt, rsg_qt_raw, 100)
+print(p2_rs2)
 ```
 
 ### RSG and components relationship
@@ -895,52 +903,13 @@ The probability of agreement in scenario 2 is ```r p_Rs2*100``` %.
 ## Topdown and bottomup comparison - Figure 1
 ```{r combine GPP and RSG comparison into figure 2, fig.height=8, fig.width=6}
 # scenario 2, RC separate into 4 groups, and Froot separate into 2 groups
-gpp_qt <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
-gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
-
-gpp_results %>%
-  select(`GPP implied by Rs` = GPP2, `Top-down GPP` = GPP_raw) %>% 
-  gather(GPP_type) ->
-  gpp_figure_data
-
-gpp_figure_data %>% 
-  ggplot(aes(value, fill = GPP_type)) +
-  geom_density(stat = 'density', alpha = 0.5) +
-  theme(legend.position = c(0.75, 0.75)) +
-  coord_cartesian(xlim = c(25, 400)) +
-  scale_fill_discrete("") +
-  xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
-  gpp_base_figure
-
-p1 <- annotations(gpp_base_figure, 
-            unique(gpp_figure_data$GPP_type), gpp_qt, gpp_qt_raw, 150)
-
-# scenario two
-rsg_qt <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)
-rsg_qt_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
-
-ggplot(rs_results) + aes(Rs_topdown2) + 
-  geom_density(col = "gray", fill = rgb(1, 0, 1, alpha = 0.5)) + 
-  geom_density(aes(Rs_raw), col = "gray", fill = rgb(0, 1, 1, alpha = 0.5)) +
-  # geom_vline(xintercept = c(quantile (rs_results$Rs_raw, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
-  # annotate("text", x = 100, y = 0.08, label = expression("Rroot-to-Ra ratio separated into 4 groups")
-  #          , hjust = 0) +
-  annotate("text", x = 100, y = 0.06, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")")
-           , hjust = 0, col = rgb(1, 0, 1)) +
-  annotate("text", x = 100, y = 0.04, label = paste0("2.5%, 50%, 97.5% quantile (", rsg_qt_raw[1],", ", rsg_qt_raw[2], ", ", rsg_qt_raw[3], ")")
-           , hjust = 0, col = rgb(0, 1, 1)) +
-  ylab(expression(count)) +
-  xlab(expression(Global~R[S]~"("~Pg~C~yr^{-1}~")")) -> p2
-
-plot_grid(p1, p2, ncol=1, labels = c("(a)", "(b)")
-          , hjust = -4, vjust = 4)
-
+plot_grid(p1_gpp2, p2_rs2, ncol=1, labels = c("(a)", "(b)"), hjust = -4, vjust = 4)
 ggsave("outputs/Figure2.jpg", width = 6, height = 8, dpi = 300, units = "in")
 ```
 
 
-## Other diagnose
-```{r diagnose}
+## Other diagnoses
+```{r diagnoses}
 # check
 gpp_results %>% transmute(check = (1 - Froot) / Froot - FsFr)
 
