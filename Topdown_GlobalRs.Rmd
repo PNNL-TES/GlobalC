@@ -102,15 +102,19 @@ prep_RaGpp <- function() {
   # Ra/GPP
   RaGPP$Source <- "Meta-papers"
   RaGPP %>% select(Ecosystem, Leaf_habit, RaGPP_ratio, Source) -> sdata2
+  
   srdb_v4 %>% 
     # select(Study_number, Biome, Ecosystem_type, Leaf_habit, Latitude, Longitude, Ra_annual, ER, GPP, NPP) %>% 
     select(Ecosystem_type, Leaf_habit, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>% 
     filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER) ) -> sub_srdb
-  sub_srdb$ER <- ifelse(is.na(sub_srdb$ER), sub_srdb$GPP, sub_srdb$ER) # assume NEP very small
-  sub_srdb$RaGPP_ratio <- (sub_srdb$ER - sub_srdb$NPP)/sub_srdb$GPP
-  sub_srdb %>% filter (RaGPP_ratio > 0 & RaGPP_ratio <1 & !is.na(Ecosystem_type)) -> sub_srdb
-  sub_srdb$Source <- "srdb_v4"
-  sub_srdb %>% select(Ecosystem_type, Leaf_habit, RaGPP_ratio, Source) -> sub_srdb
+  
+  sub_srdb %>% 
+    mutate(ER = if_else(is.na(ER), GPP, ER), # assume NEP very small
+           RaGPP_ratio = (ER - NPP) / GPP,
+           Source = "srdb_v4") %>% 
+    filter (RaGPP_ratio > 0, RaGPP_ratio <1, !is.na(Ecosystem_type)) %>%
+    select(Ecosystem_type, Leaf_habit, RaGPP_ratio, Source) -> 
+    sub_srdb
   colnames(sub_srdb) <- colnames(sdata2)
   
   sdata2 <- rbind(sdata2, sub_srdb)
@@ -140,7 +144,8 @@ plot_froot <- function (sdata) {
 ```{r preliminaries, echo=FALSE}
 # message=FALSE, include=FALSE, echo=FALSE, cache=TRUE
 # Set chunks defaults; these options will be applied to all subsequent chunks
-knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, echo = FALSE, warning = FALSE,
+knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, 
+                      echo = FALSE, warning = FALSE,
                       fig.height = 4, fig.width = 8, cache = TRUE)
 ```
 
@@ -240,7 +245,7 @@ SOC <- read.table(paste0(DATA_DIR,'/', 'SOC_Point.txt'), header = TRUE, sep = ",
 srdb_v4 %>% 
   select(Study_number, Biome, Ecosystem_type, Leaf_habit, 
          Latitude, Longitude, RC_annual, Ra_annual, Rh_annual) %>% 
-  filter(RC_annual > 0 & RC_annual < 1) -> sub_srdb
+  filter(RC_annual > 0, RC_annual < 1) -> sub_srdb
 
 # calculate Froot
 Froot <- cal_Froot(FlFsFr, srdb_v4) 
@@ -272,6 +277,23 @@ plot_sites(srdb_v4, FlFsFr)
 # panel (c). 16 GPP estimates reported GPP increase trend
 plot_GPP(GPP, GlobalRs)
 ggsave("outputs/FigureS1.jpg", width = 8, height = 6, dpi = 300, units = "in")
+
+# A couple of simpler figures for Ben's Japan presentation
+library(ggExtra)
+p_gpp <- ggplot(GPP, aes(Year, GPP)) + geom_point() + 
+  geom_errorbar(aes(ymin = GPP - SD, ymax = GPP + SD), na.rm = TRUE) + 
+  geom_smooth(method = "lm") + theme_cowplot() +
+  ylab(expression(GPP~(Pg~C~yr^-1)))
+p_gpp <- ggMarginal(p_gpp, type = "histogram", margins = "y", fill = "red")
+ggsave("outputs/p_gpp.png", plot = p_gpp, width = 8, height = 5)
+
+p_rs <- ggplot(GlobalRs, aes(Year_published, Rs)) + geom_point() + 
+  geom_errorbar(aes(ymin = Rs - SD, ymax = Rs + SD), na.rm = TRUE) + 
+  geom_smooth(method = "lm") + theme_cowplot() +
+  ylab(expression(R[S]~(Pg~C~yr^-1)))
+p_rs <- ggMarginal(p_rs, type = "histogram", margins = "y", fill = "red")
+ggsave("outputs/p_rs.png", plot = p_rs, width = 8, height = 5)
+
 ```
 
 
