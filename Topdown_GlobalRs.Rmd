@@ -338,7 +338,7 @@ var_RaGpp %>% count(Ecosystem)
 var_RaGpp %>% count(Leaf_habit)
 
 var_RaGpp %>% 
-  mutate(IGBP2 = case_when( Ecosystem %in% c( "Crop", "Tundra", "Wetland", "Agriculture" ) ~ "Other"
+  mutate(IGBP2 = case_when( Ecosystem %in% c( "Crop", "Tundra", "Wetland", "Agriculture" ) ~ "Other",
                             Ecosystem %in% c("Grassland", "Savanna") ~ "Grassland",
                             Ecosystem == "Forest" & Leaf_habit == "Deciduous" ~ "Deciduous",
                             Ecosystem == "Forest" & Leaf_habit == "Evergreen" ~ "Evergreen",
