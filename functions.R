@@ -35,7 +35,7 @@ summarySE <- function(data = NULL, measurevar, groupvars = NULL, na.rm = F,
   # Confidence interval multiplier for standard error
   # Calculate t-statistic for confidence interval:
   # e.g., if conf.interval is .95, use .975 (above/below), and use df = N-1
-  ciMult <- qt(conf.interval/2 + .5, datac$N-1)
+  ciMult <- qt(conf.interval / 2 + 0.5, datac$N - 1)
   datac$ci <- datac$se * ciMult
   
   return(datac)
@@ -77,18 +77,20 @@ plot_sites <- function (sdata, sdata2) {
           axis.line = element_line(colour = "black"),
           panel.border = element_rect(colour = "black", fill = NA, size = 1.25))+
     theme(legend.position = "none")+
-    scale_x_continuous(name = "Longitude", breaks = seq(-180,180, 30),labels = seq(-180,180, 30))+
-    scale_y_continuous(name = "Latitude", limits = c(-60,90),breaks = seq(-90,90,15),labels = seq(-90,90,15))+
-    geom_point(data = siteInfor, aes(x = siteInfor$Longitude, y = siteInfor$Latitude), color = "black"
-               ,shape = 18, size = 2, alpha = 1) + 
+    scale_x_continuous(name = "Longitude", breaks = seq(-180, 180, 30),
+                       labels = seq(-180, 180, 30)) +
+    scale_y_continuous(name = "Latitude", limits = c(-60, 90), breaks = seq(-90, 90, 15),
+                       labels = seq(-90,90,15))+
+    geom_point(data = siteInfor, aes(x = siteInfor$Longitude, y = siteInfor$Latitude), 
+               color = "black", shape = 18, size = 2, alpha = 1) + 
     
     
     # Rshoot/Rroot sites
-    geom_point(data = sdata2, aes(x = sdata2$Longitude, y = sdata2$Latitude), color = "red"
-               ,shape = 3, size = 1.5, stroke = 1.5, alpha = 1, fill = "red") +
+    geom_point(data = sdata2, aes(x = sdata2$Longitude, y = sdata2$Latitude), color = "red",
+               shape = 3, size = 1.5, stroke = 1.5, alpha = 1, fill = "red") +
     # legend
-    geom_point(data = cc_legend ,aes(x = cc_legend$x, y = cc_legend$y), shape = c(18, 3), stroke = c(1, 1.5) 
-               , color = c("black", "red"), size = cc_legend$size, alpha = c(1, 1)) +
+    geom_point(data = cc_legend ,aes(x = cc_legend$x, y = cc_legend$y), shape = c(18, 3), 
+               stroke = c(1, 1.5), color = c("black", "red"), size = cc_legend$size, alpha = c(1, 1)) +
     annotate("text", x = -150, y = -10, label = "Legend", size = 4, hjust = 0) +
     annotate("text", x = -150, y = -25, label = "RC sites", size = 4, hjust = 0) +
     annotate("text", x = -150, y = -40, label = "Rroot/Rshoot sites", size = 4, hjust = 0) +
@@ -114,7 +116,7 @@ plot_GPP <- function (sdata, sdata2) {
   # GPP_His <- GPP_His + annotate("text", x = 85, y = 6.5, label = "(a)" , size = 5)
   
   # Trend
-  subGPP <- subset( sdata, sdata$GPP > 90 & sdata$GPP < 180 )
+  subGPP <- subset(sdata, sdata$GPP > 90 & sdata$GPP < 180 )
   Trend_GPP <- ggplot (subGPP, aes(x = Year, y = GPP)) +
     geom_point(col = "gray")
   Trend_GPP <- Trend_GPP + 
@@ -127,8 +129,8 @@ plot_GPP <- function (sdata, sdata2) {
     theme(axis.title.y = element_blank())
   # annotate("text", x = 1958, y = 175, size = 5)
   
-  lm_model1 <- lm(GPP~Year, data = subGPP)
-  lm_model2 <- lm(GPP~Year, data = GPP)
+  lm_model1 <- lm(GPP ~ Year, data = subGPP)
+  lm_model2 <- lm(GPP ~ Year, data = GPP)
   
   print(summary(lm_model1))
   print(summary(lm_model2))
@@ -146,9 +148,9 @@ plot_GPP <- function (sdata, sdata2) {
     ylab(expression(GPP~trend~"("~Pg~yr^{-2}~")"))
   
   print(paste0("median = ", median(sdata$GPP)))
-  se <- sd(sdata$GPP)/sqrt(nrow(sdata))
+  se <- sd(sdata$GPP) / sqrt(nrow(sdata))
   paste0("se = ", se) %>% print()
-  CI <- round(qt(0.975,df = nrow(sdata)-1)*se, 3)
+  CI <- round(qt(0.975, df = nrow(sdata)-1) * se, 3)
   print(paste0("95% CI = ", CI))
   print(paste0("number of trend = ", nrow(GPP[!is.na(GPP$Trend),])))
   
@@ -156,7 +158,7 @@ plot_GPP <- function (sdata, sdata2) {
   # plot global Rs
   p_Rs <- ggplot(sdata2, aes(x = paste0("n = ",nrow(sdata2)), y = Rs)) + geom_violin() +
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
-    geom_boxplot(width = .1) +
+    geom_boxplot(width = 0.1) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     ylab(expression(R[S]~"("~Pg~yr^{-1}~")")) +
     xlab("Global")
@@ -167,7 +169,7 @@ plot_GPP <- function (sdata, sdata2) {
     xlim(min(sdata$Year), max(sdata$Year)) +
     theme(legend.title = element_blank()) +
     theme(axis.title.y = element_blank()) +
-    annotate("text", x = 1962, y = 80, label = expression(Trend~" = 0.52"))
+    annotate("text", x = 1992, y = 80, label = "Trend = 0.52", na.rm = TRUE)
   
   sum_mod <- lm(Rs~Year, data = sdata2)
   slope3 <- coefficients(summary(sum_mod))[2,1]
@@ -177,15 +179,16 @@ plot_GPP <- function (sdata, sdata2) {
   Rs_IRate <- sdata2 %>% filter(!is.na(IncreaseRate)) %>% 
     ggplot(aes(x = "n = 7", y = IncreaseRate)) + geom_violin() +
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
-    geom_boxplot(width = .1) +
+    geom_boxplot(width = 0.1) +
     ylab(expression(R[S]~trend~"("~Pg~yr^{-2}~")")) +
     xlab("Global") +
     geom_point(aes(y = slope3), col = "red", shape = 13)
   
-  plot_grid(p_Rs, Trend_Rs, Rs_IRate, p_GPP, Trend_GPP, p_trend
-            , ncol = 3
-            , labels = c('( a )', '( b )', '( c )', "( d )", "( e )", "( f )")
-            , vjust = c(3), hjust = c(-2.35, -1.5, -2.25, -2.25, -1.5, -2.65))
+  plot_grid(p_Rs, Trend_Rs, Rs_IRate, p_GPP, Trend_GPP, p_trend, 
+            ncol = 3, 
+            labels = c('( a )', '( b )', '( c )', "( d )", "( e )", "( f )"), 
+            vjust = c(3), 
+            hjust = c(-2.35, -1.5, -2.25, -2.25, -1.5, -2.65))
 }
 
 
@@ -199,7 +202,7 @@ plot_RaGPP <- function (sdata2) {
   
   Ra_GPP <- ggplot(sdata2, aes(x = IGBP2, y = RaGPP_ratio)) + geom_violin() +
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
-    geom_boxplot(width = .1) +
+    geom_boxplot(width = 0.1) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     ylab("Ra-GPP ratio") +
     scale_x_discrete(limits = c("Deciduous", "Evergreen", "Forest", "Grassland", "Other"),
@@ -207,9 +210,9 @@ plot_RaGPP <- function (sdata2) {
     theme(axis.title.x = element_blank())
   
   print(mean(sdata2$RaGPP_ratio))
-  se <- sd(sdata2$RaGPP_ratio)/sqrt(nrow(sdata2))
+  se <- sd(sdata2$RaGPP_ratio) / sqrt(nrow(sdata2))
   paste0("Ra/GPP se = ", se) %>% print()
-  CI <- round(qt(0.975,df = nrow(sdata2)-1)*se, 3)
+  CI <- round(qt(0.975, df = nrow(sdata2) - 1) * se, 3)
   paste0("Ra/GPP 95% CI = ", CI) %>% print()
   paste0("Ra/GPP obs = ", nrow(sdata2)) %>% print()
   
@@ -239,12 +242,13 @@ plot_RaGPP <- function (sdata2) {
 cal_Froot <- function (sdata, sdata2) {
   # Froot and Fshoot data from digitized papers
   sdata %>%
-    select(Latitude, Longitude, Fshoot, Froot, Ecosystem, IGBP) ->
+    select(Latitude, Longitude, Fshoot, Froot, Ecosystem, IGBP) %>% 
+    mutate(Fshoot = if_else(is.na(Fshoot), 100 - Froot, Fshoot),
+           Froot =- if_else(is.na(Froot), 100 - Fshoot, Froot),
+           # data in FsFlFr were in percentage, scale to decimal (to match srdb_v4))
+           Froot = Froot / 100,
+           Fshoot = Fshoot / 100) ->
     comb_data
-  comb_data$Fshoot <- ifelse(is.na(comb_data$Fshoot), 100-comb_data$Froot, comb_data$Fshoot) 
-  comb_data$Froot <- ifelse(is.na(comb_data$Froot), 100-comb_data$Fshoot, comb_data$Froot)
-  comb_data$Froot <- comb_data$Froot/100 # data in FsFlFr were in percentage, scale to decimal (to match srdb_v4)
-  comb_data$Fshoot <- comb_data$Fshoot/100 # data in FsFlFr were in percentage, scale to decimal (to match srdb_v4)
   
   # use data from srdb_v4 to calculate Rroot/Ra ratio, Rroot/(RE-NPP)
   # Ra_annual in srdb_v4 is Rroot
@@ -252,17 +256,19 @@ cal_Froot <- function (sdata, sdata2) {
   sdata2 %>% 
     # select(Study_number, Biome, Ecosystem_type, Leaf_habit, Latitude, Longitude, Ra_annual, ER, GPP, NPP) %>% 
     select(Latitude, Longitude, Ecosystem_type, Leaf_habit, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>% 
-    filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER) ) -> 
+    filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER)) %>% 
+    mutate(ER = if_else(is.na(ER), GPP, ER), # If ER not available, use GPP (assume NEP very small)
+           # If Rh_annual not available, use NPP (assume NEP very small)
+           Rh_annual = if_else(is.na(Rh_annual), NPP, Rh_annual),
+           Ra_annual = if_else(is.na(Ra_annual), Rs_annual - Rh_annual, Ra_annual)) -> 
     sub_srdb
-  sub_srdb$ER <- ifelse(is.na(sub_srdb$ER), sub_srdb$GPP, sub_srdb$ER) # IF ER not available, use GPP (assume NEP very small).
-  sub_srdb$Rh_annual <- ifelse(is.na(sub_srdb$Rh_annual), sub_srdb$NPP, sub_srdb$Rh_annual) # IF Rh_annual not available, use NPP (assume NEP very small)
-  sub_srdb$Ra_annual <- ifelse(is.na(sub_srdb$Ra_annual), sub_srdb$Rs_annual - sub_srdb$Rh_annual, sub_srdb$Ra_annual) # When Ra_annual = Rs_annual - Rh_annual
-  # If RE available but Ra_annual not availabel, we could also estimate Ra_annual based on the Bond_Lamberty (2004) model
+  
+  # If RE available but Ra_annual is not, we could also estimate Ra_annual based on the Bond_Lamberty (2004) model
   # We can get 22 more data, but don't know whether should keep those points (it does not change the results too much)
-  # sub_srdb$Ra_annual <- ifelse(is.na(sub_srdb$Ra_annual), (-7.97+0.93*sqrt(sub_srdb$Rs_annual))^2, sub_srdb$Ra_annual )
+  # sub_srdb$Ra_annual <- ifelse(is.na(sub_srdb$Ra_annual), (-7.97+0.93*sqrt(sub_srdb$Rs_annual))^2, sub_srdb$Ra_annual)
   
   # In srdb Ra_annual = Rroot, so Froot = Rroot / Ra (fraction of Rroot to autotrophic respiration)
-  sub_srdb$Froot <- sub_srdb$Ra_annual/(sub_srdb$ER - sub_srdb$Rh_annual)
+  sub_srdb$Froot <- sub_srdb$Ra_annual / (sub_srdb$ER - sub_srdb$Rh_annual)
   sub_srdb <- subset(sub_srdb, !is.na(Froot) & Froot < 0.9 & Froot > 0.1)
   
   # mean(sub_srdb$Froot)
@@ -285,7 +291,7 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
   sub_Rs$label <- paste0("n = ", Rs_obs)
   p_Rs <- ggplot(sub_Rs, aes(x = label, y = Rs)) + geom_violin() +
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
-    geom_boxplot(width = .1) +
+    geom_boxplot(width = 0.1) +
     # geom_point(aes(y = 71.67), col = "red") + geom_point(aes(y = 76.68), col = "red") +
     xlab("Global Rs") + ylab(expression(Rs~"("~Pg~yr^{-1}~")")) +
     theme(axis.title.x = element_blank())
@@ -298,10 +304,9 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
     xlab("Global Rh") + ylab(expression(Rh~"("~Pg~yr^{-1}~")")) +
     theme(axis.title.x = element_blank())
   
-  
   sub_Ra <- subset(sdata, !is.na(sdata$Ra))
   sub_Ra$label <- "n = 1"
-  p_Ra <- ggplot(sub_Ra, aes(x = label, y = Ra)) + geom_boxplot(width = .1) +
+  p_Ra <- ggplot(sub_Ra, aes(x = label, y = Ra)) + geom_boxplot(width = 0.1) +
     geom_point(colour = "gray", size = 2) +
     geom_point(aes(y = 25.20), col = "red") + geom_point(aes(y = 30.21), col = "red") +
     xlab("Global Ra") + ylab(expression(Ra~"("~Pg~yr^{-1}~")")) +
@@ -321,7 +326,7 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
   
   RC_plot <- ggplot(sub_srdb, aes(x = Global, y = RC_annual)) + geom_violin() +
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
-    geom_boxplot(width = .1) +
+    geom_boxplot(width = 0.1) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     ylab("RC") +
     theme(axis.title.x = element_blank())
@@ -329,9 +334,9 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
   # RC by biome
   RC_plot2 <- ggplot(sub_srdb, aes(x = IGBP2, y = RC_annual)) + geom_violin() +
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
-    geom_boxplot(width = .1) +
+    geom_boxplot(width = 0.1) +
     scale_x_discrete(limits = c("Agriculture", "DF", "EF", "Mixed", "Grassland", "Shrubland", "Other"),
-                     labels = c("Agriculture (n = 40)", "DF (n = 189)", "EF (n = 256)", "Mixed (n = 28)", "Grassland (n = 74)", "Shrubland (n = 14)", "Other (n = 16)" ) ) +
+                     labels = c("Agriculture (n = 40)", "DF (n = 189)", "EF (n = 256)", "Mixed (n = 28)", "Grassland (n = 74)", "Shrubland (n = 14)", "Other (n = 16)")) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     ylab("Rroot-R"[S]~"ratio") +
     theme(axis.title.x = element_blank())
@@ -340,7 +345,7 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
   print(mean(sub_srdb$RC_annual))
   se <- sd(sub_srdb$RC_annual)/sqrt(nrow(sub_srdb))
   paste0("RC se = ", se) %>% print()
-  CI <- round(qt(0.975,df = nrow(sub_srdb)-1)*se, 3)
+  CI <- round(qt(0.975, df = nrow(sub_srdb)-1)*se, 3)
   paste0("RC 95% CI = ", CI) %>% print()
   paste0("RC obs = ", nrow(sub_srdb)) %>% print()
   
@@ -348,33 +353,32 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
   sdata3$Global <- "n = 251"
   p_NPP <- ggplot(sdata3, aes(x = Global, y = NPP)) + geom_violin() +
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
-    geom_boxplot(width = .1) +
+    geom_boxplot(width = 0.1) +
     ylab(expression(NPP~"("~Pg~yr^{-1}~")")) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     theme(axis.title.x = element_blank())
   print(median(sdata3$NPP))
-  se <- sd(sdata3$NPP)/sqrt(nrow(sdata3))
+  se <- sd(sdata3$NPP) / sqrt(nrow(sdata3))
   paste0("NPP se = ", se) %>% print()
-  CI <- round(qt(0.975,df = nrow(sdata3)-1)*se, 3)
+  CI <- round(qt(0.975, df = nrow(sdata3) - 1) * se, 3)
   paste0("NPP 95% CI = ", CI) %>% print()
   
   # plot Fire
-  p_fire <- tibble(Fire = c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)) %>% ggplot(., aes(x = "Fire", y = Fire)) + geom_violin() +
+  p_fire <- tibble(Fire = c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)) %>% 
+    ggplot(aes(x = "Fire", y = Fire)) + geom_violin() +
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
-    geom_boxplot(width = .1) +
+    geom_boxplot(width = 0.1) +
     ylab(expression(Fire~burned~"("~Pg~yr^{-1}~")")) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     theme(axis.title.x = element_blank())
   
+  p_mul <- plot_grid(p_NPP, p_fire, 
+                     nrow = 1, labels = c('( a )', '( b )'), 
+                     vjust = c(3), hjust = c(-2.8, -2.8, -2.5)) 
   
-  p_mul <- plot_grid(p_NPP, p_fire, nrow = 1
-                     , labels = c('( a )', '( b )')
-                     , vjust = c(3), hjust = c(-2.8, -2.8, -2.5)) 
-  
-  plot_grid(p_mul, RC_plot2, nrow = 2
-            , labels = c('', '( c )')
-            , vjust = c(3), hjust = c(-2.8) )
-  
+  plot_grid(p_mul, RC_plot2, 
+            nrow = 2, labels = c('', '( c )'),
+            vjust = c(3), hjust = c(-2.8))
 }
 
 
@@ -394,7 +398,7 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
 
 
 # bottom_up <- function () {
-#   var_Rs <- GlobalRs %>% filter(!is.na(Rs) ) %>% select(Rs)
+#   var_Rs <- GlobalRs %>% filter(!is.na(Rs)) %>% select(Rs)
 #   samp_Rs <- sample(var_Rs$Rs, 1, replace = T)
 #   
 #   # RC
