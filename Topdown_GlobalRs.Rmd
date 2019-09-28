@@ -284,14 +284,14 @@ p_gpp <- ggplot(GPP, aes(Year, GPP)) + geom_point() +
   geom_errorbar(aes(ymin = GPP - SD, ymax = GPP + SD), na.rm = TRUE) + 
   geom_smooth(method = "lm") + theme_cowplot() +
   ylab(expression(GPP~(Pg~C~yr^-1)))
-p_gpp <- ggMarginal(p_gpp, type = "histogram", margins = "y", fill = "red")
+p_gpp <- ggMarginal(p_gpp, type = "densigram", margins = "y", fill = "red")
 ggsave("outputs/p_gpp.png", plot = p_gpp, width = 8, height = 5)
 
 p_rs <- ggplot(GlobalRs, aes(Year_published, Rs)) + geom_point() + 
   geom_errorbar(aes(ymin = Rs - SD, ymax = Rs + SD), na.rm = TRUE) + 
   geom_smooth(method = "lm") + theme_cowplot() +
   ylab(expression(R[S]~(Pg~C~yr^-1)))
-p_rs <- ggMarginal(p_rs, type = "histogram", margins = "y", fill = "red")
+p_rs <- ggMarginal(p_rs, type = "densigram", margins = "y", fill = "red")
 ggsave("outputs/p_rs.png", plot = p_rs, width = 8, height = 5)
 
 ```
@@ -576,7 +576,7 @@ p1_gpp <- annotations(gpp_base_figure,
                       unique(gpp_figure_data$GPP_type), gpp_qt, gpp_qt_raw, 150)
 print(p1_gpp)
 
-# ggsave("outputs/Figure2.jpg", width = 6, height = 4, dpi = 300, units = "in")
+ggsave("outputs/Figure2_gpp.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
 ### Scenario 2 - ratio __weighted__ by ecosystem
@@ -817,6 +817,8 @@ rs_figure_data %>%
 p2_rs <- annotations(rs_base_figure, 
                      types = unique(rs_figure_data$Rs_type), rsg_qt, rsg_qt_raw, 100)
 print(p2_rs)
+ggsave("outputs/Figure2_rs.jpg", width = 8, height = 4)
+
 
 # Rs raw data plot
 # rsg_qt <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
