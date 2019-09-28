@@ -224,8 +224,8 @@ IGBP %>%
                                  IGBP2001Pr == 16 ~ "BSV",
                                  TRUE ~ "UNC" ) ) -> IGBP
 
-# DGRsD <- read.csv(paste0(DATA_DIR,'/', 'DGRsD.csv'), header = TRUE)
-AGB <- read.table(paste0(DATA_DIR,'/', 'GLC2000_Point.txt'), header = TRUE, sep = ",")
+# DGRsD <- read.csv(file.path(DATA_DIR, 'DGRsD.csv'), header = TRUE)
+AGB <- read.table(file.path(DATA_DIR, 'GLC2000_Point.txt'), header = TRUE, sep = ",")
 AGB %>% filter(RASTERVALU != -9999) -> AGB
 
 # head(AGB)
@@ -235,7 +235,7 @@ AGB %>% filter(RASTERVALU != -9999) -> AGB
 # max(SOC$RASTERVALU)
 # min(SOC$RASTERVALU)
 
-SOC <- read.table(paste0(DATA_DIR,'/', 'SOC_Point.txt'), header = TRUE, sep = ",")
+SOC <- read.table(file.path(DATA_DIR, 'SOC_Point.txt'), header = TRUE, sep = ",")
 
 srdb_v4 %>% 
   select(Study_number, Biome, Ecosystem_type, Leaf_habit, 
@@ -304,13 +304,13 @@ sub_srdb %>%
   summarise(count = n())
 
 sub_srdb %>% 
-  mutate(IGBP2 = case_when( Ecosystem_type == "Agriculture" ~ "Agriculture"
-                            , Ecosystem_type == "Grassland" ~ "Grassland"
-                            , Ecosystem_type %in% c("Savanna", "Shrubland") ~ "Shrubland"
-                            , Ecosystem_type == "Forest" & Leaf_habit == 'Deciduous' ~ "DF"
-                            , Ecosystem_type == "Forest" & Leaf_habit == 'Evergreen' ~ "EF"
-                            , Ecosystem_type == "Forest" & Leaf_habit == 'Mixed' ~ "Mixed"
-                            , TRUE ~ "Other" )) -> sub_srdb
+  mutate(IGBP2 = case_when( Ecosystem_type == "Agriculture" ~ "Agriculture",
+                            Ecosystem_type == "Grassland" ~ "Grassland",
+                            Ecosystem_type %in% c("Savanna", "Shrubland") ~ "Shrubland",
+                            Ecosystem_type == "Forest" & Leaf_habit == 'Deciduous' ~ "DF",
+                            Ecosystem_type == "Forest" & Leaf_habit == 'Evergreen' ~ "EF",
+                            Ecosystem_type == "Forest" & Leaf_habit == 'Mixed' ~ "Mixed",
+                            TRUE ~ "Other" )) -> sub_srdb
 sub_srdb %>% 
   group_by(Ecosystem_type) %>% 
   summarise(count = n())
@@ -339,12 +339,12 @@ var_RaGpp %>% count(Leaf_habit)
 
 var_RaGpp %>% 
   mutate(IGBP2 = case_when( Ecosystem %in% c( "Crop", "Tundra", "Wetland", "Agriculture" ) ~ "Other"
-                            , Ecosystem %in% c("Grassland", "Savanna") ~ "Grassland" 
-                            , Ecosystem == "Forest" & Leaf_habit == "Deciduous" ~ "Deciduous"
-                            , Ecosystem == "Forest" & Leaf_habit == "Evergreen" ~ "Evergreen"
-                            , Ecosystem == "Forest" & Leaf_habit == "Forest" ~ "Forest"
-                            , Ecosystem == "Forest" & Leaf_habit == "Mixed" ~ "Forest"
-                            , TRUE ~ "NOTA" )) -> var_RaGpp
+                            Ecosystem %in% c("Grassland", "Savanna") ~ "Grassland",
+                            Ecosystem == "Forest" & Leaf_habit == "Deciduous" ~ "Deciduous",
+                            Ecosystem == "Forest" & Leaf_habit == "Evergreen" ~ "Evergreen",
+                            Ecosystem == "Forest" & Leaf_habit == "Forest" ~ "Forest",
+                            Ecosystem == "Forest" & Leaf_habit == "Mixed" ~ "Forest",
+                            TRUE ~ "NOTA" )) -> var_RaGpp
 
 var_RaGpp %>% count(IGBP2)
 var_RaGpp %>% count(Ecosystem)
@@ -352,7 +352,11 @@ var_RaGpp %>% count(Ecosystem)
 plot_RaGPP(var_RaGpp)
 
 ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
-var_RaGpp %>% group_by (Ecosystem) %>% summarise ( count = n() ) %>% mutate (percent = count/sum(count)) %>%  arrange (desc(Ecosystem))
+var_RaGpp %>% 
+  group_by(Ecosystem) %>% 
+  summarise( count = n() ) %>%
+  mutate(percent = count / sum(count)) %>%
+  arrange(desc(Ecosystem))
 ```
 
 
@@ -552,15 +556,15 @@ gpp_figure_data %>%
   xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
   gpp_base_figure
 
-# We're adding same annotations to each figure so use a function to add them
+# We're adding same annotations to each figure so use reusable functions
+make_label <- function(qt_data) {
+  paste0("Mean and 95% CI: ", qt_data[2], " (", qt_data[1], ", ", qt_data[3], ")")
+}
 annotations <- function(figure, types, x_qt, x_qt_raw, xpos) {
-  lbl <- function(qt_data) {
-    paste0("Mean and 95% CI: ", qt_data[2], " (", qt_data[1], ", ", qt_data[3], ")")
-  }
   ann_dat <- tibble(Type = types,
                     GPP_type = NA, Rs_type = NA,
                     x = xpos, y = c(0.035, 0.025),
-                    label = c(lbl(x_qt), lbl(x_qt_raw)))
+                    label = c(make_label(x_qt), make_label(x_qt_raw)))
   figure + geom_text(data = ann_dat,
                      aes(x = x, y = y, label = label, color = Type),
                      hjust = 0, show.legend = FALSE)
@@ -694,15 +698,15 @@ var_RaGpp_gra = var_RaGpp[var_RaGpp$Ecosystem == "Grassland", ]$RaGPP_ratio
 
 ## Bootstrapping RSG
 ```{r using boostrap prepare data for RSG bottom-up and top-down comparison}
-# topdowm approach to eatimate Rs
+# topdowm approach to estimate Rs
 # Ra = GPP * Ra_GPP_ratio (calculated based on data from a summary paper and from srdb, see plot_RaGPP function)
-# Ra = GPP - NPP (two approaches yield a very similar results, we thus used the average of two estimates)
+# Ra = GPP - NPP (two approaches yield very similar results, we thus used the average of two estimates)
 n_samp <- 50000
 
 set.seed(20190827)
 rs_results <- tibble(
   # Step 1. Prepare GPP data
-  gpp1 = rnorm(n = n_samp, mean = 124.6, sd = 2.7), # if gpp have mean and standard diviation, take 50000 samples from the normal distribution
+  gpp1 = rnorm(n = n_samp, mean = 124.6, sd = 2.7), # if gpp have mean and standard deviation, take 50000 samples from the normal distribution
   gpp2 = rnorm(n = n_samp, mean = 135.7, sd = 21.712), # same as above
   gpp3 = rnorm(n = n_samp, mean = 109.29, sd = 27.33), # same as above
   gpp4 = rnorm(n = n_samp, mean = 118, sd = 26), # same as above
@@ -757,16 +761,16 @@ rs_results <- tibble(
   # scenario 1
   RaGpp = RaGpp_rest,
   # # scenario 2
-  RaGpp2 = RaGpp_df*df_area + RaGpp_ef*ef_area + RaGpp_mf*mf_area + RaGpp_gra*gra_area + RaGpp_rest*(1-df_area-ef_area-mf_area-gra_area),
+  RaGpp2 = RaGpp_df * df_area + RaGpp_ef * ef_area + RaGpp_mf * mf_area + 
+    RaGpp_gra * gra_area + RaGpp_rest * (1 - df_area - ef_area - mf_area - gra_area),
   # 
   # # # get Froot (Froot2 is better, from bottom-up section, see above results)
-  Froot2 = Froot_df*df_area + Froot_ef*ef_area + Froot_mf*mf_area + Froot_rest * (1-df_area-ef_area-mf_area),
+  Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area +
+    Froot_rest * (1 - df_area-ef_area-mf_area),
   # 
   Ra1 = GPP_raw * RaGpp, # first way to calculate Ra, Ra = GPP * RaGPP
   Ra2 = GPP_raw - NPP, # second way to calculate Ra, Ra = GPP - NPP
-  # # BBL: what's this comma? Why doesn't it cause an error?
-  # # response: because few Ra2 < 0 (when GPP < NPP), for those estimates, just drop them? or use Ra1 replace them? or keep them?
-  Ra3 = ifelse(Ra2 < 0, Ra1, Ra2),
+  Ra3 = if_else(Ra2 < 0, Ra1, Ra2),
   Ra_avg1 = (Ra1 + Ra3) / 2,
   # # 
   Rroot = Ra_avg1 * Froot2,
@@ -895,7 +899,8 @@ ggplot(rs_results) +
 ### RSG probability of agreement
 
 ```{r compute proportion of agreement between top-down RSG and bottom-up RSG}
-# accume Rs following normal distribution, with mean = y and sd = s, we can calculate the properbility of Rs following (80-92) 95%CI
+# accume Rs following normal distribution, with mean = y and sd = s,
+# we can calculate the probability of Rs following (80-92) 95%CI
 # about 28% chance Rs will be between (80-92)
 y <- mean(rs_results$Rs_topdown)
 s <- sd(rs_results$Rs_topdown)
