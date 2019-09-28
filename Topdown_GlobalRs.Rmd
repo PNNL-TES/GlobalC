@@ -40,7 +40,7 @@ output:
 4. Rs_topdown =  Rh + Rroot
 5. We then compare this top-down Rs with published Rs in the past decades (n=27)n to see how much probability they will match
 
-## Questions and more anlysis in the future
+## Questions and more analysis in the future
 * How unlikely is it that we can reconcile current Rs and GPP estimates? 
 E.g. what % of the distribution of each 'allows' us to match the central estimate of the other? (<30%)
 * What is driving the differences between botton-up GPP and reported GPP and top-down Rs and reported Rs?
@@ -50,7 +50,7 @@ E.g. what % of the distribution of each 'allows' us to match the central estimat
 * Savanna and grassland more than 20% area, but sample numbers are too small for Frrot, RC, and Ra/Gpp ratio
 * Ra < 0 how to resolve this (resolved)
 
-## Importance/implication/benifits
+## Importance/implication/benefits
 * Provide another way to estimate GPP and Rs
 * Provide a method to compare bottom-up GPP (start from field Rs/Froot/RC/Rroot measurements, then modelling to estimate GPP) with remote sensing or land model GPP.
 * Provide a method to compare top-down Rs (Rs separated from remote sensing land model based GPP) with filed experiment based Rs (field Rs measurement, then modeling).
@@ -98,27 +98,22 @@ source('functions.R')
 
 ```{r self defined functions, echo=FALSE}
 # prepare Ra-GPP ratio 
-prep_RaGpp <- function() {
+prep_RaGpp <- function(RaGPP, srdb_v4) {
   # Ra/GPP
-  RaGPP$Source <- "Meta-papers"
-  RaGPP %>% select(Ecosystem, Leaf_habit, RaGPP_ratio, Source) -> sdata2
+  RaGPP %>% 
+    select(Ecosystem, Leaf_habit, RaGPP_ratio) %>% 
+    mutate(Source = "Meta-papers") -> sdata2
   
   srdb_v4 %>% 
     # select(Study_number, Biome, Ecosystem_type, Leaf_habit, Latitude, Longitude, Ra_annual, ER, GPP, NPP) %>% 
     select(Ecosystem_type, Leaf_habit, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>% 
-    filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER) ) -> sub_srdb
-  
-  sub_srdb %>% 
+    filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER)) %>% 
     mutate(ER = if_else(is.na(ER), GPP, ER), # assume NEP very small
            RaGPP_ratio = (ER - NPP) / GPP,
            Source = "srdb_v4") %>% 
-    filter (RaGPP_ratio > 0, RaGPP_ratio <1, !is.na(Ecosystem_type)) %>%
-    select(Ecosystem_type, Leaf_habit, RaGPP_ratio, Source) -> 
-    sub_srdb
-  colnames(sub_srdb) <- colnames(sdata2)
-  
-  sdata2 <- rbind(sdata2, sub_srdb)
-  return (sdata2)
+    filter(RaGPP_ratio > 0, RaGPP_ratio < 1, !is.na(Ecosystem_type)) %>%
+    select(Ecosystem_type, Leaf_habit, RaGPP_ratio, Source) %>% 
+    bind_rows(sdata2)
 }
 
 # plot froot
@@ -338,7 +333,7 @@ ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ### Plot Ra to GPP ratio
 ```{r plot Ra-GPP ratio}
 # only one point from tundra
-var_RaGpp <- prep_RaGpp()
+var_RaGpp <- prep_RaGpp(RaGPP, srdb_v4)
 var_RaGpp %>% count(Ecosystem)
 var_RaGpp %>% count(Leaf_habit)
 
@@ -557,15 +552,14 @@ gpp_figure_data %>%
   xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
   gpp_base_figure
 
-# We're adding same annotations to each figure so use a function
+# We're adding same annotations to each figure so use a function to add them
 annotations <- function(figure, types, x_qt, x_qt_raw, xpos) {
   lbl <- function(qt_data) {
     paste0("Mean and 95% CI: ", qt_data[2], " (", qt_data[1], ", ", qt_data[3], ")")
   }
   ann_dat <- tibble(Type = types,
                     GPP_type = NA, Rs_type = NA,
-                    x = xpos, 
-                    y = c(0.035, 0.025),
+                    x = xpos, y = c(0.035, 0.025),
                     label = c(lbl(x_qt), lbl(x_qt_raw)))
   figure + geom_text(data = ann_dat,
                      aes(x = x, y = y, label = label, color = Type),
@@ -575,7 +569,6 @@ annotations <- function(figure, types, x_qt, x_qt_raw, xpos) {
 p1_gpp <- annotations(gpp_base_figure, 
                       unique(gpp_figure_data$GPP_type), gpp_qt, gpp_qt_raw, 150)
 print(p1_gpp)
-
 ggsave("outputs/Figure2_gpp.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
@@ -665,7 +658,7 @@ ggplot(gpp_results) +
 # about 29% chance GPP will between (107-133)
 y <- mean(gpp_results$GPP)
 s <- sd(gpp_results$GPP)
-# accume GPP following normal distribution, with mean = y and sd = s, we can calculate the properbility of GPP following (107-133) 95%CI
+# assuming GPP follows a normal distribution, with mean = y and sd = s, we can calculate the properbility of GPP following (107-133) 95%CI
 p_gpp_high <- pnorm ((gpp_qt_raw[3] - y) / s)
 p_gpp_low <- pnorm ((gpp_qt_raw[1] - y) / s)
 p_gpp1 <- (p_gpp_high - p_gpp_low) %>% round(4)
@@ -721,8 +714,8 @@ rs_results <- tibble(
   gpp10 = rnorm(n = n_samp, mean = 122, sd = 25), # same as above
   # for those do not have SD information, take 50000 samples using boosting 
   gpp11 = sample(var_GPP, n_samp, replace = TRUE), 
-  # calculate GPP, this is the Top-dowm GPP (collected from previous studies, and resampling)
-  GPP_raw =  (gpp1 + gpp2 + gpp3 + gpp4 + gpp5 + gpp6 + gpp7 + gpp8 + gpp9 + gpp10 + gpp11)/11, 
+  # calculate GPP, this is the Top-down GPP (collected from previous studies, and resampling)
+  GPP_raw =  (gpp1 + gpp2 + gpp3 + gpp4 + gpp5 + gpp6 + gpp7 + gpp8 + gpp9 + gpp10 + gpp11) / 11, 
   
   # Step 2. prepare other components, NPP and NPP consumed by fire etc.
   NPP = sample(NPP$NPP, n_samp, replace = TRUE),
