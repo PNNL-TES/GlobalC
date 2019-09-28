@@ -553,7 +553,7 @@ gpp_figure_data %>%
   geom_density(stat = 'density', alpha = 0.5) +
   theme(legend.position = c(0.75, 0.75)) +
   coord_cartesian(xlim = c(25, 350)) +
-  scale_fill_discrete("") +
+  scale_fill_discrete("") + ylab("Density") +
   xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
   gpp_base_figure
 
@@ -810,7 +810,7 @@ rs_figure_data %>%
   geom_density(stat = 'density', alpha = 0.5) +
   theme(legend.position = c(0.75, 0.75)) +
   coord_cartesian(xlim = c(25, 150)) +
-  scale_fill_discrete("") +
+  scale_fill_discrete("") + ylab("Density") +
   xlab(expression(R[S]~(Pg~C~yr^{-1}))) ->
   rs_base_figure
 
