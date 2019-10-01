@@ -258,7 +258,6 @@ Froot %>% mutate(IGBP2 = case_when(
 
 ## Sites spatial distribution
 ```{r plot sites spatial distribution, echo=FALSE, warning=FALSE}
-# plot sites distribution 
 # Figure. Sites distribution -- FlFsFr sites and RC/HC sites
 plot_sites(srdb_v4, FlFsFr)
 ```
@@ -323,7 +322,6 @@ ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```{r plot Rroot-Ra ratio, fig.height = 4, fig.width = 6}
 # potential issue: only two points from grassland
 # no point from tundra 
-# BBL: difficult to see what's going on here; really needs more comments!
 plot_froot (Froot)
 ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
@@ -385,16 +383,16 @@ shr_area <- IGBP_summary[IGBP_summary$IGBP_group == "SH",]$percent
 var_RC <- sub_srdb %>% 
   select(RC_annual, Ecosystem_type, IGBP2) %>% 
   filter(RC_annual > 0.01 & RC_annual < 0.99 & !is.na(RC_annual)) # dataset contain RC records
-var_for_rc <- var_RC %>% filter (Ecosystem_type == "Forest") # dataset contain RC records only for Forest ecosystem
+var_for_rc <- var_RC %>% filter (Ecosystem_type == "Forest")
 # forest further separate into 3 groups
-var_df_rc <- var_RC %>% filter (IGBP2 == "DF") # dataset contain RC records only for DF
-var_ef_rc <- var_RC %>% filter (IGBP2 == "EF") # dataset contain RC records only for EF ecosystem
-var_mf_rc <- var_RC %>% filter (IGBP2 == "Mixed") # dataset contain RC records only for MF ecosystem
-var_agr_rc <- var_RC %>% filter (Ecosystem_type == "Agriculture") # dataset contain RC records only for agriculture ecosystem
-var_gra_rc <- var_RC %>% filter (Ecosystem_type == "Grassland") # dataset contain RC records only for grassland ecosystem
-var_shr_rc <- var_RC %>% filter (Ecosystem_type %in% c("Shrubland", "Savanna") ) # dataset contain RC records only for grassland ecosystem
+var_df_rc <- var_RC %>% filter (IGBP2 == "DF")
+var_ef_rc <- var_RC %>% filter (IGBP2 == "EF")
+var_mf_rc <- var_RC %>% filter (IGBP2 == "Mixed")
+var_agr_rc <- var_RC %>% filter (Ecosystem_type == "Agriculture")
+var_gra_rc <- var_RC %>% filter (Ecosystem_type == "Grassland")
+var_shr_rc <- var_RC %>% filter (Ecosystem_type %in% c("Shrubland", "Savanna"))
 # Other groups
-var_other_rc <- var_RC %>% filter (Ecosystem_type %in% c("Desert", "Wetland" )) # dataset contain RC records only for Other ecosystem
+var_other_rc <- var_RC %>% filter (Ecosystem_type %in% c("Desert", "Wetland"))
 var_rest_rc <- var_RC # for those ecosystem (e.g., tundra) has no data, use all from RC dataset
 
 # 2. prepare Froot (Rroot-to-Ra ratio data) **********
@@ -410,8 +408,8 @@ var_df_froot = Froot[Froot$IGBP2 == "DF",]$Froot # Froot data for df
 var_mf_froot = Froot[Froot$IGBP2 == "MF",]$Froot # Froot data for mf
 var_other_froot = Froot[Froot$IGBP2 == "Other",]$Froot # samples of Froot for non-ef
 
-# var_rest <- var_RC %>% filter (Ecosystem_type != "Forest") # dataset contain RC records for non-forest ecosystem
-var_Rs <- GlobalRs %>% filter(!is.na(Rs) & is.na(SD) ) # dataset contain global Rs estimates (without standard diviation information)
+# var_rest <- var_RC %>% filter (Ecosystem_type != "Forest") # dataset contain RC records for non-forest of ecosystem
+var_Rs <- GlobalRs %>% filter(!is.na(Rs) & is.na(SD) ) # dataset contain global Rs estimates (without standard deviation information)
 var_GPP <- GPP[is.na(GPP$SD),]$GPP
 
 ```
@@ -434,62 +432,61 @@ n_samp <- 50000 # take 50000 samples
 set.seed(20190827)
 
 gpp_results <- tibble(
-  #Step 1. Prepare Global Rs data
+  # Step 1. Prepare Global Rs data
   # Rs = replicate( n_rep, sample(var_Rs$Rs, n_samp, replace = TRUE) %>% mean() ),
   # Rs1 = rnorm(n = n_samp, mean = 68, sd = 4), # not sure about the SD = 4
-  # for those without SD Rs, randomly take a sample from global Rs estimates, with replace=TRUE, repeat 50000 times
+  # for those without SD Rs, randomly sample from global Rs estimates, with replace=TRUE
   Rs1 = sample(var_Rs$Rs, n_samp, replace = TRUE), 
   # for those studies reported Rs (mean and SD, 9 studies) using rnorm functions
-  Rs2 = rnorm(n = n_samp, mean = 80.4, sd = 16.9), # for those with standard diviation, 50000 samples were take from normal distribution ~ (mean=80.4, sd=16.9)
+  Rs2 = rnorm(n = n_samp, mean = 80.4, sd = 16.9), # for those with standard deviation, n_samp samples were take from normal distribution ~ (mean=80.4, sd=16.9)
   # repeat until all Rs estimates with sd samples were taken and hold in the outputs
-  Rs3 = rnorm(n = n_samp, mean = 98, sd = 12), # same as above
-  Rs4 = rnorm(n = n_samp, mean = 79, sd = 7.65), # same as above
-  Rs5 = rnorm(n = n_samp, mean = 94.4, sd = 4.59), # same as above
-  Rs6 = rnorm(n = n_samp, mean = 91, sd = 2.05), # same as above
-  Rs7 = rnorm(n = n_samp, mean = 94.3, sd = 9.13), # same as above
-  Rs8 = rnorm(n = n_samp, mean = 78.34, sd = 2.25), # same as above
-  Rs9 = rnorm(n = n_samp, mean = 72.55, sd = 7.13), # same as above
-  Rs10 = rnorm(n = n_samp, mean = 93.3, sd = 3.11), # same as above
+  Rs3 = rnorm(n = n_samp, mean = 98, sd = 12),
+  Rs4 = rnorm(n = n_samp, mean = 79, sd = 7.65),
+  Rs5 = rnorm(n = n_samp, mean = 94.4, sd = 4.59),
+  Rs6 = rnorm(n = n_samp, mean = 91, sd = 2.05),
+  Rs7 = rnorm(n = n_samp, mean = 94.3, sd = 9.13),
+  Rs8 = rnorm(n = n_samp, mean = 78.34, sd = 2.25),
+  Rs9 = rnorm(n = n_samp, mean = 72.55, sd = 7.13),
+  Rs10 = rnorm(n = n_samp, mean = 93.3, sd = 3.11),
   # Rs was calculated as the mean of above 10 subsamples
-  Rs = (Rs1 + Rs2 + Rs3 + Rs4 + Rs5 + Rs6 + Rs7 + Rs8 + Rs9 + Rs10)/10,
+  Rs = (Rs1 + Rs2 + Rs3 + Rs4 + Rs5 + Rs6 + Rs7 + Rs8 + Rs9 + Rs10) / 10,
   
   # Step 2. Prepare NPP, boosting from ITO paper
-  NPP = sample(NPP$NPP, n_samp, replace = TRUE) , # take 500000 samples from NPP records
+  NPP = sample(NPP$NPP, n_samp, replace = TRUE),
   
   # Step 3. Prepare GPP (same logic as global Rs)
-  gpp1 = rnorm(n = n_samp, mean = 124.6, sd = 2.7), # if gpp have mean and standard diviation, take 50000 samples from the normal distribution
-  gpp2 = rnorm(n = n_samp, mean = 135.7, sd = 21.712), # same as above
-  gpp3 = rnorm(n = n_samp, mean = 109.29, sd = 27.33), # same as above
-  gpp4 = rnorm(n = n_samp, mean = 118, sd = 26), # same as above
-  gpp5 = rnorm(n = n_samp, mean = 119, sd = 6), # same as above
-  gpp6 = rnorm(n = n_samp, mean = 110.5, sd = 21.3), # same as above
-  gpp7 = rnorm(n = n_samp, mean = 117, sd = 13), # same as above
-  gpp8 = rnorm(n = n_samp, mean = 147, sd = 16), # same as above
-  gpp9 = rnorm(n = n_samp, mean = 119, sd = 6), # same as above
-  gpp10 = rnorm(n = n_samp, mean = 122, sd = 25), # same as above
-  # for those do not have SD information, take 50000 samples using boosting 
+  gpp1 = rnorm(n = n_samp, mean = 124.6, sd = 2.7), # if gpp have mean and standard deviation, take n_samp samples from the normal distribution
+  gpp2 = rnorm(n = n_samp, mean = 135.7, sd = 21.712),
+  gpp3 = rnorm(n = n_samp, mean = 109.29, sd = 27.33),
+  gpp4 = rnorm(n = n_samp, mean = 118, sd = 26),
+  gpp5 = rnorm(n = n_samp, mean = 119, sd = 6),
+  gpp6 = rnorm(n = n_samp, mean = 110.5, sd = 21.3),
+  gpp7 = rnorm(n = n_samp, mean = 117, sd = 13),
+  gpp8 = rnorm(n = n_samp, mean = 147, sd = 16),
+  gpp9 = rnorm(n = n_samp, mean = 119, sd = 6),
+  gpp10 = rnorm(n = n_samp, mean = 122, sd = 25),
+  # for those do not have SD information, sample using boosting 
   gpp11 = sample(var_GPP, n_samp, replace = TRUE), 
   # calculate GPP, this is the Top-dowm GPP (collected from previous studies, and resampling)
   GPP_raw =  (gpp1 + gpp2 + gpp3 + gpp4 + gpp5 + gpp6 + gpp7 + gpp8 + gpp9 + gpp10 + gpp11)/11, 
   
   # Step 4. sampling Rroot-to Rs ratio (RC)
-  Rc_agr = sample(var_agr_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for agriculture, repeat 50000 times
+  Rc_agr = sample(var_agr_rc$RC_annual, n_samp, replace = TRUE),
   # forest further separate into 3 groups
-  Rc_df = sample(var_df_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for df, repeat 50000 times
-  Rc_ef = sample(var_ef_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for df, repeat 50000 times
-  Rc_mf = sample(var_mf_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for df, repeat 50000 times
+  Rc_df = sample(var_df_rc$RC_annual, n_samp, replace = TRUE),
+  Rc_ef = sample(var_ef_rc$RC_annual, n_samp, replace = TRUE),
+  Rc_mf = sample(var_mf_rc$RC_annual, n_samp, replace = TRUE), 
   # other ecosystems
-  Rc_gra = sample(var_gra_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for grassland, repeat 50000 times
-  Rc_shr = sample(var_shr_rc$RC_annual, n_samp, replace = TRUE), # randomly take a sample from RC estimates for grassland, repeat 50000 times
-  # note that for the rest ecosystems we used samples from all RC records rather that from other groups
+  Rc_gra = sample(var_gra_rc$RC_annual, n_samp, replace = TRUE),
+  Rc_shr = sample(var_shr_rc$RC_annual, n_samp, replace = TRUE),
+  # for the rest of ecosystems we use samples from all RC records rather that from other groups
   Rc_rest = sample(var_rest_rc$RC_annual, n_samp, replace = TRUE), 
-  
   
   # Step 5. Sampling Rroot-to-Ra ratio (Froot)
   Froot_df = sample(var_df_froot, n_samp, replace = TRUE),
   Froot_ef = sample(var_ef_froot, n_samp, replace = TRUE),
   Froot_mf = sample(var_mf_froot, n_samp, replace = TRUE),
-  # note that for the rest ecosystems we used samples from all RC records rather that from other groups
+  # for the rest of ecosystems we used samples from all RC records rather from other groups
   Froot_rest = sample(var_rest_froot, n_samp, replace = TRUE),
   
   # Step 6. calculation ********************
@@ -706,17 +703,17 @@ n_samp <- 50000
 set.seed(20190827)
 rs_results <- tibble(
   # Step 1. Prepare GPP data
-  gpp1 = rnorm(n = n_samp, mean = 124.6, sd = 2.7), # if gpp have mean and standard deviation, take 50000 samples from the normal distribution
-  gpp2 = rnorm(n = n_samp, mean = 135.7, sd = 21.712), # same as above
-  gpp3 = rnorm(n = n_samp, mean = 109.29, sd = 27.33), # same as above
-  gpp4 = rnorm(n = n_samp, mean = 118, sd = 26), # same as above
-  gpp5 = rnorm(n = n_samp, mean = 119, sd = 6), # same as above
-  gpp6 = rnorm(n = n_samp, mean = 110.5, sd = 21.3), # same as above
-  gpp7 = rnorm(n = n_samp, mean = 117, sd = 13), # same as above
-  gpp8 = rnorm(n = n_samp, mean = 147, sd = 16), # same as above
-  gpp9 = rnorm(n = n_samp, mean = 119, sd = 6), # same as above
-  gpp10 = rnorm(n = n_samp, mean = 122, sd = 25), # same as above
-  # for those do not have SD information, take 50000 samples using boosting 
+  gpp1 = rnorm(n = n_samp, mean = 124.6, sd = 2.7), # if gpp have mean and standard deviation, take n_samp samples from the normal distribution
+  gpp2 = rnorm(n = n_samp, mean = 135.7, sd = 21.712),
+  gpp3 = rnorm(n = n_samp, mean = 109.29, sd = 27.33),
+  gpp4 = rnorm(n = n_samp, mean = 118, sd = 26),
+  gpp5 = rnorm(n = n_samp, mean = 119, sd = 6),
+  gpp6 = rnorm(n = n_samp, mean = 110.5, sd = 21.3),
+  gpp7 = rnorm(n = n_samp, mean = 117, sd = 13),
+  gpp8 = rnorm(n = n_samp, mean = 147, sd = 16),
+  gpp9 = rnorm(n = n_samp, mean = 119, sd = 6),
+  gpp10 = rnorm(n = n_samp, mean = 122, sd = 25),
+  # for those do not have SD information, take samples using boosting 
   gpp11 = sample(var_GPP, n_samp, replace = TRUE), 
   # calculate GPP, this is the Top-down GPP (collected from previous studies, and resampling)
   GPP_raw =  (gpp1 + gpp2 + gpp3 + gpp4 + gpp5 + gpp6 + gpp7 + gpp8 + gpp9 + gpp10 + gpp11) / 11, 
@@ -746,7 +743,7 @@ rs_results <- tibble(
   RaGpp_ef = sample(var_RaGpp_ef, n_samp, replace = TRUE),
   RaGpp_mf = sample(var_RaGpp_mf, n_samp, replace = TRUE),
   RaGpp_gra = sample(var_RaGpp_gra, n_samp, replace = TRUE),
-  # note that for the rest ecosystems, we used samples from all Froot rather than Other group
+  # for the rest of ecosystems, we use samples from all Froot rather than Other group
   RaGpp_rest = sample(var_RaGpp$RaGPP_ratio, n_samp, replace = TRUE),
   
   # Step 5. Sampling Rroot-to-Ra ratio (Froot)
@@ -754,7 +751,7 @@ rs_results <- tibble(
   Froot_ef = sample(var_ef_froot, n_samp, replace = TRUE),
   Froot_mf = sample(var_mf_froot, n_samp, replace = TRUE),
   Froot_gra = sample(var_gra_froot, n_samp, replace = TRUE),
-  # note that for the rest ecosystems, we used samples from all Froot rather than Other group
+  # for the rest of ecosystems, we use samples from all Froot rather than Other group
   Froot_rest = sample(var_rest_froot, n_samp, replace = TRUE), 
   
   # Calculation **********
@@ -790,8 +787,6 @@ rs_results <- tibble(
 ## RSG results {.tabset .tabset-fade .tabset-pills}
 ### Scenario 1 - ratio __not__ weighted by ecosystem
 ```{r plot RSG results}
-# mean(rs_results$Rs)
-# max(rs_results$Rs)
 
 # scenario 1. RaGPP ratio not separated
 rsg_qt <- quantile(rs_results$Rs_topdown, c(0.025, 0.5, 0.975)) %>% round(0)
@@ -1000,7 +995,7 @@ print(p_ratios)
 
 ## Discarded codes
 ```{r not used}
-# Each row get the closese latitude and longitude values to AGB and SOC data
+# Each row gets the closest latitude and longitude values to AGB and SOC data
 # AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
 # Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Longitude*2, 0)/2-0.25) -> Froot
 # there are no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
