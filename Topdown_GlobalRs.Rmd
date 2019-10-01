@@ -807,6 +807,8 @@ rs_figure_data %>%
   geom_density(stat = 'density', alpha = 0.5) +
   theme(legend.position = c(0.75, 0.75)) +
   coord_cartesian(xlim = c(25, 150)) +
+  # reverse the color scale so that teal (color 1) is always observations, 
+  # while pink is always implied fluxes
   scale_fill_discrete("", h.start = 180) + scale_color_discrete(h.start = 180) +
   ylab("Density") +
   xlab(expression(R[S]~(Pg~C~yr^{-1}))) ->
