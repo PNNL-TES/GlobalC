@@ -243,8 +243,8 @@ cal_Froot <- function (sdata, sdata2) {
   # Froot and Fshoot data from digitized papers
   sdata %>%
     select(Latitude, Longitude, Fshoot, Froot, Ecosystem, IGBP) %>% 
-    mutate(Fshoot = if_else(is.na(Fshoot), 100 - Froot, Fshoot),
-           Froot =- if_else(is.na(Froot), 100 - Fshoot, Froot),
+    mutate(Fshoot = if_else(is.na(Fshoot), 100 - Froot, as.numeric(Fshoot)),
+           Froot = if_else(is.na(Froot), 100 - Fshoot, as.numeric(Froot)),
            # data in FsFlFr were in percentage, scale to decimal (to match srdb_v4))
            Froot = Froot / 100,
            Fshoot = Fshoot / 100) ->
