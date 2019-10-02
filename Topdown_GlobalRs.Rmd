@@ -327,7 +327,6 @@ ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
 
 
-
 ### Plot Ra to GPP ratio
 ```{r plot Ra-GPP ratio}
 # only one point from tundra
@@ -373,7 +372,6 @@ ef_area <- IGBP_summary[IGBP_summary$IGBP_group == "EF",]$percent
 mf_area <- IGBP_summary[IGBP_summary$IGBP_group == "MF",]$percent
 gra_area <- IGBP_summary[IGBP_summary$IGBP_group == "GRA",]$percent
 shr_area <- IGBP_summary[IGBP_summary$IGBP_group == "SH",]$percent
-
 ```
 
 
@@ -425,106 +423,115 @@ var_GPP <- GPP[is.na(GPP$SD),]$GPP
 # Ra = Rroot + Rshoot
 # GPP = NPP + Rroot + Rshoot
 
-n_samp <- 50000 # take 50000 samples
-# n_rep <- 50000 
-
-# bootstrapping
+# Bootstrap settings
+N_SAMPLES <- 50000 # take 50000 samples
 set.seed(20190827)
 
-gpp_results <- tibble(
+# This data frame is used both both Rs and GPP bootstrapping
+bootstrap_data <- tibble(
   # Step 1. Prepare Global Rs data
-  # Rs = replicate( n_rep, sample(var_Rs$Rs, n_samp, replace = TRUE) %>% mean() ),
-  # Rs1 = rnorm(n = n_samp, mean = 68, sd = 4), # not sure about the SD = 4
+  # Rs = replicate( n_rep, sample(var_Rs$Rs, N_SAMPLES, replace = TRUE) %>% mean() ),
+  # Rs1 = rnorm(n = N_SAMPLES, mean = 68, sd = 4), # not sure about the SD = 4
   # for those without SD Rs, randomly sample from global Rs estimates, with replace=TRUE
-  Rs1 = sample(var_Rs$Rs, n_samp, replace = TRUE), 
+  Rs1 = sample(var_Rs$Rs, N_SAMPLES, replace = TRUE), 
   # for those studies reported Rs (mean and SD, 9 studies) using rnorm functions
-  Rs2 = rnorm(n = n_samp, mean = 80.4, sd = 16.9), # for those with standard deviation, n_samp samples were take from normal distribution ~ (mean=80.4, sd=16.9)
+  Rs2 = rnorm(n = N_SAMPLES, mean = 80.4, sd = 16.9), # for those with standard deviation, N_SAMPLES samples were take from normal distribution ~ (mean=80.4, sd=16.9)
   # repeat until all Rs estimates with sd samples were taken and hold in the outputs
-  Rs3 = rnorm(n = n_samp, mean = 98, sd = 12),
-  Rs4 = rnorm(n = n_samp, mean = 79, sd = 7.65),
-  Rs5 = rnorm(n = n_samp, mean = 94.4, sd = 4.59),
-  Rs6 = rnorm(n = n_samp, mean = 91, sd = 2.05),
-  Rs7 = rnorm(n = n_samp, mean = 94.3, sd = 9.13),
-  Rs8 = rnorm(n = n_samp, mean = 78.34, sd = 2.25),
-  Rs9 = rnorm(n = n_samp, mean = 72.55, sd = 7.13),
-  Rs10 = rnorm(n = n_samp, mean = 93.3, sd = 3.11),
-  # Rs was calculated as the mean of above 10 subsamples
-  Rs = (Rs1 + Rs2 + Rs3 + Rs4 + Rs5 + Rs6 + Rs7 + Rs8 + Rs9 + Rs10) / 10,
+  Rs3 = rnorm(n = N_SAMPLES, mean = 98, sd = 12),
+  Rs4 = rnorm(n = N_SAMPLES, mean = 79, sd = 7.65),
+  Rs5 = rnorm(n = N_SAMPLES, mean = 94.4, sd = 4.59),
+  Rs6 = rnorm(n = N_SAMPLES, mean = 91, sd = 2.05),
+  Rs7 = rnorm(n = N_SAMPLES, mean = 94.3, sd = 9.13),
+  Rs8 = rnorm(n = N_SAMPLES, mean = 78.34, sd = 2.25),
+  Rs9 = rnorm(n = N_SAMPLES, mean = 72.55, sd = 7.13),
+  Rs10 = rnorm(n = N_SAMPLES, mean = 93.3, sd = 3.11),
   
-  # Step 2. Prepare NPP, boosting from ITO paper
-  NPP = sample(NPP$NPP, n_samp, replace = TRUE),
-  
-  # Step 3. Prepare GPP (same logic as global Rs)
-  gpp1 = rnorm(n = n_samp, mean = 124.6, sd = 2.7), # if gpp have mean and standard deviation, take n_samp samples from the normal distribution
-  gpp2 = rnorm(n = n_samp, mean = 135.7, sd = 21.712),
-  gpp3 = rnorm(n = n_samp, mean = 109.29, sd = 27.33),
-  gpp4 = rnorm(n = n_samp, mean = 118, sd = 26),
-  gpp5 = rnorm(n = n_samp, mean = 119, sd = 6),
-  gpp6 = rnorm(n = n_samp, mean = 110.5, sd = 21.3),
-  gpp7 = rnorm(n = n_samp, mean = 117, sd = 13),
-  gpp8 = rnorm(n = n_samp, mean = 147, sd = 16),
-  gpp9 = rnorm(n = n_samp, mean = 119, sd = 6),
-  gpp10 = rnorm(n = n_samp, mean = 122, sd = 25),
+  # Step 2. Prepare GPP (same logic as global Rs)
+  gpp1 = rnorm(n = N_SAMPLES, mean = 124.6, sd = 2.7), # if gpp have mean and standard deviation, take N_SAMPLES samples from the normal distribution
+  gpp2 = rnorm(n = N_SAMPLES, mean = 135.7, sd = 21.712),
+  gpp3 = rnorm(n = N_SAMPLES, mean = 109.29, sd = 27.33),
+  gpp4 = rnorm(n = N_SAMPLES, mean = 118, sd = 26),
+  gpp5 = rnorm(n = N_SAMPLES, mean = 119, sd = 6),
+  gpp6 = rnorm(n = N_SAMPLES, mean = 110.5, sd = 21.3),
+  gpp7 = rnorm(n = N_SAMPLES, mean = 117, sd = 13),
+  gpp8 = rnorm(n = N_SAMPLES, mean = 147, sd = 16),
+  gpp9 = rnorm(n = N_SAMPLES, mean = 119, sd = 6),
+  gpp10 = rnorm(n = N_SAMPLES, mean = 122, sd = 25),
   # for those do not have SD information, sample using boosting 
-  gpp11 = sample(var_GPP, n_samp, replace = TRUE), 
-  # calculate GPP, this is the Top-dowm GPP (collected from previous studies, and resampling)
-  GPP_raw =  (gpp1 + gpp2 + gpp3 + gpp4 + gpp5 + gpp6 + gpp7 + gpp8 + gpp9 + gpp10 + gpp11)/11, 
-  
-  # Step 4. sampling Rroot-to Rs ratio (RC)
-  Rc_agr = sample(var_agr_rc$RC_annual, n_samp, replace = TRUE),
-  # forest further separate into 3 groups
-  Rc_df = sample(var_df_rc$RC_annual, n_samp, replace = TRUE),
-  Rc_ef = sample(var_ef_rc$RC_annual, n_samp, replace = TRUE),
-  Rc_mf = sample(var_mf_rc$RC_annual, n_samp, replace = TRUE), 
-  # other ecosystems
-  Rc_gra = sample(var_gra_rc$RC_annual, n_samp, replace = TRUE),
-  Rc_shr = sample(var_shr_rc$RC_annual, n_samp, replace = TRUE),
-  # for the rest of ecosystems we use samples from all RC records rather that from other groups
-  Rc_rest = sample(var_rest_rc$RC_annual, n_samp, replace = TRUE), 
-  
-  # Step 5. Sampling Rroot-to-Ra ratio (Froot)
-  Froot_df = sample(var_df_froot, n_samp, replace = TRUE),
-  Froot_ef = sample(var_ef_froot, n_samp, replace = TRUE),
-  Froot_mf = sample(var_mf_froot, n_samp, replace = TRUE),
-  # for the rest of ecosystems we used samples from all RC records rather from other groups
-  Froot_rest = sample(var_rest_froot, n_samp, replace = TRUE),
-  
-  # Step 6. calculation ********************
-  # Rc = replicate( n_rep, var_RC$RC_annual, n_samp, replace = TRUE) %>% mean() ), # scenario 0: Rc not separate into different ecosystems, not used
-  Rc = sample(var_RC$RC_annual, n_samp, replace = TRUE),
-  # Rc = Rc_df*df_area + Rc_ef*ef_area + Rc_mf*mf_area + Rc_rest*1-(df_area + ef_area + mf_area), 
-  
-  # Scenario 2: Rc separate into 4 groups: agriculture, forest, grassland, and rest (all other ecosystems with obs<40, take samples from all RC records)
-  # only separate into four groups, agriculture, forest, grassland and the rest
-  # 1-(0.191 + 0.214 + 0.153 + 0.268)
-  Rc2 = (Rc_agr*ag_area + Rc_df*df_area + Rc_ef*ef_area + Rc_mf*mf_area + 
-           Rc_gra*gra_area + Rc_shr*shr_area 
-         + Rc_rest * (1 - ag_area - df_area - ef_area-mf_area - gra_area - shr_area)), 
-  # mean(sample(var_for$RC_annual, n_samp, replace = TRUE))
-  # sample(var_df$RC_annual, n_samp, replace = TRUE) %>% mean
-  # sample(var_ef$RC_annual, n_samp, replace = TRUE) %>% mean
-  # sample(var_mf$RC_annual, n_samp, replace = TRUE) %>% mean
-  
-  # scenario1: Froot not separate into different ecosystems
-  Froot = sample(Froot$Froot, n_samp, replace = TRUE) ,
-  
-  FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of scenario 1
-  # Bottom up estimate of GPP, scenario 1
-  Rroot = Rs * Rc, # calculate root respiration
-  Rshoot = Rroot * FsFr, # calculate shoot respiration
-  
-  # Scenario 2: separate into 2 ecosystems and weighted by area
-  # Froot %>% count(Ecosystem)
-  Froot2 = Froot_df*df_area + Froot_ef*ef_area + Froot_mf*mf_area + 
-    Froot_rest * (1 - df_area - ef_area - mf_area),
-  FsFr2 = (1 - Froot2) / Froot2, # calculate Froot to Fshoot ratio of scenario 2
-  # # Bottom up estimate of GPP, scenario 2
-  Rroot2 = Rs * Rc2,
-  Rshoot2 = Rroot2 * FsFr2,
-  
-  GPP = NPP + Rroot + Rshoot, # scenario 1: calculate GPP
-  GPP2 = NPP + Rroot2 + Rshoot2 # scenario 2: calculate GPP2
-)
+  gpp11 = sample(var_GPP, N_SAMPLES, replace = TRUE) 
+) ->
+  bootstrap_data
+
+bootstrap_data %>% 
+  transmute(
+    # Rs was calculated as the mean of above 10 subsamples
+    Rs = rowMeans(select(bootstrap_data, starts_with("Rs"))),
+    # calculate GPP, this is the Top-dowm GPP (collected from previous studies, and resampling)
+    GPP_raw = rowMeans(select(bootstrap_data, starts_with("gpp")))
+  ) ->
+  bootstrap_data
+
+bootstrap_data %>% 
+  mutate(
+    # Step 3. Prepare NPP, boosting from ITO paper
+    NPP = sample(NPP$NPP, N_SAMPLES, replace = TRUE),
+    
+    # Step 4. sampling Rroot-to Rs ratio (RC)
+    Rc_agr = sample(var_agr_rc$RC_annual, N_SAMPLES, replace = TRUE),
+    # forest further separate into 3 groups
+    Rc_df = sample(var_df_rc$RC_annual, N_SAMPLES, replace = TRUE),
+    Rc_ef = sample(var_ef_rc$RC_annual, N_SAMPLES, replace = TRUE),
+    Rc_mf = sample(var_mf_rc$RC_annual, N_SAMPLES, replace = TRUE), 
+    # other ecosystems
+    Rc_gra = sample(var_gra_rc$RC_annual, N_SAMPLES, replace = TRUE),
+    Rc_shr = sample(var_shr_rc$RC_annual, N_SAMPLES, replace = TRUE),
+    # for the rest of ecosystems we use samples from all RC records rather that from other groups
+    Rc_rest = sample(var_rest_rc$RC_annual, N_SAMPLES, replace = TRUE), 
+    
+    # Step 5. Sampling Rroot-to-Ra ratio (Froot)
+    Froot_df = sample(var_df_froot, N_SAMPLES, replace = TRUE),
+    Froot_ef = sample(var_ef_froot, N_SAMPLES, replace = TRUE),
+    Froot_mf = sample(var_mf_froot, N_SAMPLES, replace = TRUE),
+    # for the rest of ecosystems we used samples from all RC records rather from other groups
+    Froot_rest = sample(var_rest_froot, N_SAMPLES, replace = TRUE),
+    
+    # Step 6. calculation ********************
+    # Rc = replicate( n_rep, var_RC$RC_annual, N_SAMPLES, replace = TRUE) %>% mean() ), # scenario 0: Rc not separate into different ecosystems, not used
+    Rc = sample(var_RC$RC_annual, N_SAMPLES, replace = TRUE),
+    # Rc = Rc_df*df_area + Rc_ef*ef_area + Rc_mf*mf_area + Rc_rest*1-(df_area + ef_area + mf_area), 
+    
+    # Scenario 2: Rc separate into 4 groups: agriculture, forest, grassland, and rest (all other ecosystems with obs<40, take samples from all RC records)
+    # only separate into four groups, agriculture, forest, grassland and the rest
+    # 1-(0.191 + 0.214 + 0.153 + 0.268)
+    Rc2 = (Rc_agr*ag_area + Rc_df*df_area + Rc_ef*ef_area + Rc_mf*mf_area + 
+             Rc_gra*gra_area + Rc_shr*shr_area 
+           + Rc_rest * (1 - ag_area - df_area - ef_area-mf_area - gra_area - shr_area)), 
+    # mean(sample(var_for$RC_annual, N_SAMPLES, replace = TRUE))
+    # sample(var_df$RC_annual, N_SAMPLES, replace = TRUE) %>% mean
+    # sample(var_ef$RC_annual, N_SAMPLES, replace = TRUE) %>% mean
+    # sample(var_mf$RC_annual, N_SAMPLES, replace = TRUE) %>% mean
+    
+    # scenario1: Froot not separate into different ecosystems
+    Froot = sample(Froot$Froot, N_SAMPLES, replace = TRUE) ,
+    
+    FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of scenario 1
+    # Bottom up estimate of GPP, scenario 1
+    Rroot = Rs * Rc, # calculate root respiration
+    Rshoot = Rroot * FsFr, # calculate shoot respiration
+    
+    # Scenario 2: separate into 2 ecosystems and weighted by area
+    # Froot %>% count(Ecosystem)
+    Froot2 = Froot_df*df_area + Froot_ef*ef_area + Froot_mf*mf_area + 
+      Froot_rest * (1 - df_area - ef_area - mf_area),
+    FsFr2 = (1 - Froot2) / Froot2, # calculate Froot to Fshoot ratio of scenario 2
+    # # Bottom up estimate of GPP, scenario 2
+    Rroot2 = Rs * Rc2,
+    Rshoot2 = Rroot2 * FsFr2,
+    
+    GPP = NPP + Rroot + Rshoot, # scenario 1: calculate GPP
+    GPP2 = NPP + Rroot2 + Rshoot2 # scenario 2: calculate GPP2
+  ) ->
+  gpp_results
 ```
 
 
@@ -588,6 +595,13 @@ p1_gpp2 <- annotations(gpp_base_figure %+% gpp_figure2_data,
                        unique(gpp_figure2_data$GPP_type), gpp_qt, gpp_qt_raw, 150)
 print(p1_gpp2)
 ```
+
+### Scenario 3 - SRDB Rs:GPP ratios
+```{r, SRDB Rs:GPP ratios}
+gpp_results %>% 
+  select(Rs, GPP_raw)
+```
+
 
 ### GPP vs components relationships
 ```{r}
@@ -698,91 +712,60 @@ var_RaGpp_gra = var_RaGpp[var_RaGpp$Ecosystem == "Grassland", ]$RaGPP_ratio
 # topdowm approach to estimate Rs
 # Ra = GPP * Ra_GPP_ratio (calculated based on data from a summary paper and from srdb, see plot_RaGPP function)
 # Ra = GPP - NPP (two approaches yield very similar results, we thus used the average of two estimates)
-n_samp <- 50000
-
-set.seed(20190827)
-rs_results <- tibble(
-  # Step 1. Prepare GPP data
-  gpp1 = rnorm(n = n_samp, mean = 124.6, sd = 2.7), # if gpp have mean and standard deviation, take n_samp samples from the normal distribution
-  gpp2 = rnorm(n = n_samp, mean = 135.7, sd = 21.712),
-  gpp3 = rnorm(n = n_samp, mean = 109.29, sd = 27.33),
-  gpp4 = rnorm(n = n_samp, mean = 118, sd = 26),
-  gpp5 = rnorm(n = n_samp, mean = 119, sd = 6),
-  gpp6 = rnorm(n = n_samp, mean = 110.5, sd = 21.3),
-  gpp7 = rnorm(n = n_samp, mean = 117, sd = 13),
-  gpp8 = rnorm(n = n_samp, mean = 147, sd = 16),
-  gpp9 = rnorm(n = n_samp, mean = 119, sd = 6),
-  gpp10 = rnorm(n = n_samp, mean = 122, sd = 25),
-  # for those do not have SD information, take samples using boosting 
-  gpp11 = sample(var_GPP, n_samp, replace = TRUE), 
-  # calculate GPP, this is the Top-down GPP (collected from previous studies, and resampling)
-  GPP_raw =  (gpp1 + gpp2 + gpp3 + gpp4 + gpp5 + gpp6 + gpp7 + gpp8 + gpp9 + gpp10 + gpp11) / 11, 
-  
-  # Step 2. prepare other components, NPP and NPP consumed by fire etc.
-  NPP = sample(NPP$NPP, n_samp, replace = TRUE),
-  HerbComsum = rnorm(n = n_samp, mean = 2.2, sd = 0.2),
-  Fire = sample(var_Fire, n_samp, replace = TRUE),
-  sink = rnorm(n = n_samp, mean = 2.10, sd = 0.28),
-  
-  # Step 3. prepare Rs data
-  Rs1 = sample(var_Rs$Rs, n_samp, replace = TRUE),
-  Rs2 = rnorm(n = n_samp, mean = 80.4, sd = 16.9),
-  Rs3 = rnorm(n = n_samp, mean = 98, sd = 12),
-  Rs4 = rnorm(n = n_samp, mean = 79, sd = 7.65),
-  Rs5 = rnorm(n = n_samp, mean = 94.4, sd = 4.59),
-  Rs6 = rnorm(n = n_samp, mean = 91, sd = 2.05),
-  Rs7 = rnorm(n = n_samp, mean = 94.3, sd = 9.13),
-  Rs8 = rnorm(n = n_samp, mean = 78.34, sd = 2.25),
-  Rs9 = rnorm(n = n_samp, mean = 72.55, sd = 7.13),
-  Rs10 = rnorm(n = n_samp, mean = 93.3, sd = 3.11),
-  Rs_raw = (Rs1 + Rs2 + Rs3 + Rs4 + Rs5 + Rs6 + Rs7 + Rs8 + Rs9 + Rs10)/10,
-  
-  # Step 4. Ra-to-GPP ratio boosting
-  # RaGpp = sample(var_RaGpp$RaGPP_ratio, n_samp, replace = TRUE),
-  RaGpp_df = sample(var_RaGpp_df, n_samp, replace = TRUE),
-  RaGpp_ef = sample(var_RaGpp_ef, n_samp, replace = TRUE),
-  RaGpp_mf = sample(var_RaGpp_mf, n_samp, replace = TRUE),
-  RaGpp_gra = sample(var_RaGpp_gra, n_samp, replace = TRUE),
-  # for the rest of ecosystems, we use samples from all Froot rather than Other group
-  RaGpp_rest = sample(var_RaGpp$RaGPP_ratio, n_samp, replace = TRUE),
-  
-  # Step 5. Sampling Rroot-to-Ra ratio (Froot)
-  Froot_df = sample(var_df_froot, n_samp, replace = TRUE),
-  Froot_ef = sample(var_ef_froot, n_samp, replace = TRUE),
-  Froot_mf = sample(var_mf_froot, n_samp, replace = TRUE),
-  Froot_gra = sample(var_gra_froot, n_samp, replace = TRUE),
-  # for the rest of ecosystems, we use samples from all Froot rather than Other group
-  Froot_rest = sample(var_rest_froot, n_samp, replace = TRUE), 
-  
-  # Calculation **********
-  # scenario 1
-  RaGpp = RaGpp_rest,
-  # # scenario 2
-  RaGpp2 = RaGpp_df * df_area + RaGpp_ef * ef_area + RaGpp_mf * mf_area + 
-    RaGpp_gra * gra_area + RaGpp_rest * (1 - df_area - ef_area - mf_area - gra_area),
-  # 
-  # # # get Froot (Froot2 is better, from bottom-up section, see above results)
-  Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area +
-    Froot_rest * (1 - df_area-ef_area-mf_area),
-  # 
-  Ra1 = GPP_raw * RaGpp, # first way to calculate Ra, Ra = GPP * RaGPP
-  Ra2 = GPP_raw - NPP, # second way to calculate Ra, Ra = GPP - NPP
-  Ra3 = if_else(Ra2 < 0, Ra1, Ra2),
-  Ra_avg1 = (Ra1 + Ra3) / 2,
-  # # 
-  Rroot = Ra_avg1 * Froot2,
-  Rshoot = Ra_avg1 * (1 - Froot2),
-  Rs_topdown = NPP - HerbComsum - Fire - sink + Rroot,
-  # 
-  # # scenario2
-  Ra4 = GPP_raw * RaGpp2, # first way to calculate Ra, Ra = GPP * RaGPP
-  Ra_avg2 = (Ra4 + Ra3) / 2,
-  Rroot2 = Ra_avg2 * Froot2,
-  Rshoot2 = Ra_avg2 * (1 - Froot2),
-  Rs_topdown2 = NPP - HerbComsum - Fire - sink + Rroot2
-)
+bootstrap_data %>% 
+  mutate(
+    # Step 2. prepare other components, NPP and NPP consumed by fire etc.
+    NPP = sample(NPP$NPP, N_SAMPLES, replace = TRUE),
+    HerbComsum = rnorm(n = N_SAMPLES, mean = 2.2, sd = 0.2),
+    Fire = sample(var_Fire, N_SAMPLES, replace = TRUE),
+    sink = rnorm(n = N_SAMPLES, mean = 2.10, sd = 0.28),
+    
+    # Step 4. Ra-to-GPP ratio boosting
+    # RaGpp = sample(var_RaGpp$RaGPP_ratio, N_SAMPLES, replace = TRUE),
+    RaGpp_df = sample(var_RaGpp_df, N_SAMPLES, replace = TRUE),
+    RaGpp_ef = sample(var_RaGpp_ef, N_SAMPLES, replace = TRUE),
+    RaGpp_mf = sample(var_RaGpp_mf, N_SAMPLES, replace = TRUE),
+    RaGpp_gra = sample(var_RaGpp_gra, N_SAMPLES, replace = TRUE),
+    # for the rest of ecosystems, we use samples from all Froot rather than Other group
+    RaGpp_rest = sample(var_RaGpp$RaGPP_ratio, N_SAMPLES, replace = TRUE),
+    
+    # Step 5. Sampling Rroot-to-Ra ratio (Froot)
+    Froot_df = sample(var_df_froot, N_SAMPLES, replace = TRUE),
+    Froot_ef = sample(var_ef_froot, N_SAMPLES, replace = TRUE),
+    Froot_mf = sample(var_mf_froot, N_SAMPLES, replace = TRUE),
+    Froot_gra = sample(var_gra_froot, N_SAMPLES, replace = TRUE),
+    # for the rest of ecosystems, we use samples from all Froot rather than Other group
+    Froot_rest = sample(var_rest_froot, N_SAMPLES, replace = TRUE), 
+    
+    # Calculation **********
+    # scenario 1
+    RaGpp = RaGpp_rest,
+    # # scenario 2
+    RaGpp2 = RaGpp_df * df_area + RaGpp_ef * ef_area + RaGpp_mf * mf_area + 
+      RaGpp_gra * gra_area + RaGpp_rest * (1 - df_area - ef_area - mf_area - gra_area),
+    # 
+    # # # get Froot (Froot2 is better, from bottom-up section, see above results)
+    Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area +
+      Froot_rest * (1 - df_area-ef_area-mf_area),
+    # 
+    Ra1 = GPP_raw * RaGpp, # first way to calculate Ra, Ra = GPP * RaGPP
+    Ra2 = GPP_raw - NPP, # second way to calculate Ra, Ra = GPP - NPP
+    Ra3 = if_else(Ra2 < 0, Ra1, Ra2),
+    Ra_avg1 = (Ra1 + Ra3) / 2,
+    # # 
+    Rroot = Ra_avg1 * Froot2,
+    Rshoot = Ra_avg1 * (1 - Froot2),
+    Rs_topdown = NPP - HerbComsum - Fire - sink + Rroot,
+    # 
+    # # scenario2
+    Ra4 = GPP_raw * RaGpp2, # first way to calculate Ra, Ra = GPP * RaGPP
+    Ra_avg2 = (Ra4 + Ra3) / 2,
+    Rroot2 = Ra_avg2 * Froot2,
+    Rshoot2 = Ra_avg2 * (1 - Froot2),
+    Rs_topdown2 = NPP - HerbComsum - Fire - sink + Rroot2
+  ) ->
+  rs_results
 ```
-
 
 ## RSG results {.tabset .tabset-fade .tabset-pills}
 ### Scenario 1 - ratio __not__ weighted by ecosystem
