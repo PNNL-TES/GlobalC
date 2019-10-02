@@ -38,7 +38,7 @@ output:
 2. We then estimate Ra according to Ra/GPP ratio and GPP-NPP
 3. Heterotrophic respiration was estimated according to Rh = NPP - HerbComsum - Fire - Csink (NEP)
 4. Rs_topdown =  Rh + Rroot
-5. We then compare this top-down Rs with published Rs in the past decades (n=27)n to see how much probability they will match
+5. We then compare this top-down Rs with published Rs in the past decades (n=27) to see how much probability they will match
 
 ## Questions and more analysis in the future
 * How unlikely is it that we can reconcile current Rs and GPP estimates? 
@@ -593,19 +593,19 @@ print(p1_gpp2)
 ```
 
 ### Scenario 3 - SRDB Rs:GPP ratios
-```{r SRDB Rs:GPP ratios}
+```{r Simple SRDB Rs:GPP ratios}
 var_Rs_to_GPP <- with(srdb_v4, Rs_annual / GPP) %>% na.omit
 
 bootstrap_data %>% 
   mutate(Rs_to_GPP = sample(var_Rs_to_GPP, N_SAMPLES, replace = TRUE),
          Rs = GPP_raw * Rs_to_GPP,
          GPP = Rs_raw / Rs_to_GPP) ->
-  gpp_simple_results
+  simple_ratio_results
 
-gpp_qt <- quantile(gpp_simple_results$GPP, c(0.025, 0.5, 0.975)) %>% round(0)
-gpp_qt_raw <- quantile(gpp_simple_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+gpp_qt <- quantile(simple_ratio_results$GPP, c(0.025, 0.5, 0.975)) %>% round(0)
+gpp_qt_raw <- quantile(simple_ratio_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
 
-gpp_simple_results %>%
+simple_ratio_results %>%
   select(`GPP implied by SRDB Rs:GPP` = GPP, `Top-down GPP` = GPP_raw) %>% 
   gather(GPP_type) ->
   gpp_simple_figure_data
@@ -705,18 +705,15 @@ prob_agreement <- function(x, raw_quantiles) {
 # Quantify the probability GPP following (107, 133)
 # about 29% chance GPP will between (107-133)
 p_gpp1 <- prob_agreement(gpp_results$GPP, gpp_qt_raw)
-print(paste0("The probability of agreement in scenario 1 is: ", p_gpp1))
-
-# scenario 2 looks like a little bit right tail skew
 p_gpp2 <- prob_agreement(gpp_results$GPP2, gpp_qt_raw)
-print(paste0("The probability of agreement in scenario 2 is: ", p_gpp2))
-
-p_gpp3 <- prob_agreement(gpp_simple_results$GPP, gpp_qt_raw)
-print(paste0("The probability of agreement in scenario 2 is: ", p_gpp3))
+p_gpp3 <- prob_agreement(simple_ratio_results$GPP, gpp_qt_raw)
 ```
 
-The probability of agreement in scenario 1 is ```r p_gpp1*100``` %.  
-The probability of agreement in scenario 2 is ```r p_gpp2*100``` %.
+The probability of agreement in scenario 1 is ```r p_gpp1 * 100``` %. 
+
+The probability of agreement in scenario 2 is ```r p_gpp2 * 100``` %.
+
+The probability of agreement in scenario 3 is ```r p_gpp3 * 100``` %.
 
 
 ```{r prepare variables for RSG boostrapping}
@@ -729,7 +726,6 @@ var_RaGpp_ef = var_RaGpp[var_RaGpp$IGBP2 == "Evergreen", ]$RaGPP_ratio
 # mix forest are from all forest due to lack of data
 var_RaGpp_mf = var_RaGpp[var_RaGpp$Ecosystem == "Forest", ]$RaGPP_ratio 
 var_RaGpp_gra = var_RaGpp[var_RaGpp$Ecosystem == "Grassland", ]$RaGPP_ratio
-
 ```
 
 ## Bootstrapping RSG
@@ -847,6 +843,31 @@ p2_rs2 <- annotations(rs_base_figure %+% rs_figure_data,
 print(p2_rs2)
 ```
 
+### Scenario 3 - SRDB Rs:GPP ratios
+```{r}
+simple_ratio_results %>%
+  select(`Rs implied by SRDB Rs:GPP` = Rs, `Top-down Rs` = Rs_raw) %>% 
+  gather(Rs_type) ->
+  rs_simple_figure_data
+
+rsg_qt <- quantile(simple_ratio_results$Rs, c(0.025, 0.5, 0.975)) %>% round(0)
+rs_qt_raw <- quantile(simple_ratio_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+
+rs_simple_figure_data %>% 
+  ggplot(aes(value, fill = Rs_type)) +
+  geom_density(stat = 'density', alpha = 0.5) +
+  theme(legend.position = c(0.75, 0.75)) +
+  coord_cartesian(xlim = c(25, 350)) +
+  scale_fill_discrete("") + ylab("Density") +
+  xlab(expression(R[S]~(Pg~C~yr^{-1}))) ->
+  rs_simple_figure
+
+p2_rs3 <- annotations(rs_simple_figure,
+                      unique(rs_simple_figure_data$Rs_type), 
+                      rsg_qt, rsg_qt_raw, 150)
+print(p2_rs3)
+```
+
 ### RSG and components relationship
 ```{r}
 # Ra1 ~ Ra2
@@ -906,14 +927,15 @@ ggplot(rs_results) +
 
 ```{r compute proportion of agreement between top-down RSG and bottom-up RSG}
 p_Rs1 <- prob_agreement(rs_results$Rs_topdown, rsg_qt_raw)
-print(paste0("The probability of agreement in scenario 1 is: ", p_Rs1))
-
 p_Rs2 <- prob_agreement(rs_results$Rs_topdown2, rsg_qt_raw)
-print(paste0("The probability of agreement in scenario 2 is: ", p_Rs2))
+p_Rs3 <- prob_agreement(simple_ratio_results$Rs, rsg_qt_raw)
 ```
 
-The probability of agreement in scenario 1 is ```r p_Rs1*100``` %.  
-The probability of agreement in scenario 2 is ```r p_Rs2*100``` %.
+The probability of agreement in scenario 1 is ```r p_Rs1 * 100``` %.
+
+The probability of agreement in scenario 2 is ```r p_Rs2 * 100``` %.
+
+The probability of agreement in scenario 3 is ```r p_Rs3 * 100``` %.
 
 
 ## Topdown and bottomup comparison - Figure 1
