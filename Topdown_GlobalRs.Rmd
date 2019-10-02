@@ -162,78 +162,71 @@ IGBP <- read.table(file.path(DATA_DIR, 'IGBP.txt'), header = TRUE, sep = ",")
 # sort(unique(IGBP$IGBP2001Pr))
 # There are 16 IGBP groups
 IGBP %>% 
-  mutate(IGBP = case_when( IGBP2001Pr == 0 ~ "WAT",
-                           IGBP2001Pr == 1 ~ "ENF",
-                           IGBP2001Pr == 2 ~ "EBF",
-                           IGBP2001Pr == 3 ~ "DNF",
-                           IGBP2001Pr == 4 ~ "DBF",
-                           IGBP2001Pr == 5 ~ "MF",
-                           IGBP2001Pr == 6 ~ "CSH",
-                           IGBP2001Pr == 7 ~ "OSH",
-                           IGBP2001Pr == 8 ~ "WSA",
-                           IGBP2001Pr == 9 ~ "SAV",
-                           IGBP2001Pr == 10 ~ "GRA",
-                           IGBP2001Pr == 11 ~ "WET",
-                           IGBP2001Pr == 12 ~ "CRO",
-                           IGBP2001Pr == 13 ~ "URB",
-                           IGBP2001Pr == 14 ~ "CVM",
-                           IGBP2001Pr == 15 ~ "SNO",
-                           IGBP2001Pr == 16 ~ "BSV",
-                           TRUE ~ "UNC" ) ) -> IGBP
+  mutate(IGBP = case_when(IGBP2001Pr == 0 ~ "WAT",
+                          IGBP2001Pr == 1 ~ "ENF",
+                          IGBP2001Pr == 2 ~ "EBF",
+                          IGBP2001Pr == 3 ~ "DNF",
+                          IGBP2001Pr == 4 ~ "DBF",
+                          IGBP2001Pr == 5 ~ "MF",
+                          IGBP2001Pr == 6 ~ "CSH",
+                          IGBP2001Pr == 7 ~ "OSH",
+                          IGBP2001Pr == 8 ~ "WSA",
+                          IGBP2001Pr == 9 ~ "SAV",
+                          IGBP2001Pr == 10 ~ "GRA",
+                          IGBP2001Pr == 11 ~ "WET",
+                          IGBP2001Pr == 12 ~ "CRO",
+                          IGBP2001Pr == 13 ~ "URB",
+                          IGBP2001Pr == 14 ~ "CVM",
+                          IGBP2001Pr == 15 ~ "SNO",
+                          IGBP2001Pr == 16 ~ "BSV",
+                          TRUE ~ "UNC" ) ) -> IGBP
 # BBL: Interesting; I didn't know case_when! Aanother way to do this would be 
 # IGBP_list <- c("WAT", "ENF", ...)
 # IGBP$IGBP <- IGBP_list[IGBP$IGBP2001Pr]
 # 16 IGBP group into 10 Ecosystems
 IGBP %>% 
-  mutate (Ecosystem = case_when( IGBP2001Pr == 0 ~ "Water",
-                                 IGBP2001Pr == 1 ~ "Forest",
-                                 IGBP2001Pr == 2 ~ "Forest",
-                                 IGBP2001Pr == 3 ~ "Forest",
-                                 IGBP2001Pr == 4 ~ "Forest",
-                                 IGBP2001Pr == 5 ~ "Forest",
-                                 IGBP2001Pr == 6 ~ "Shrubland",
-                                 IGBP2001Pr == 7 ~ "Shrubland",
-                                 IGBP2001Pr == 8 ~ "Savanna",
-                                 IGBP2001Pr == 9 ~ "Savanna",
-                                 IGBP2001Pr == 10 ~ "Grassland",
-                                 IGBP2001Pr == 11 ~ "Wetland",
-                                 IGBP2001Pr == 12 ~ "Agriculture",
-                                 IGBP2001Pr == 13 ~ "Urbland",
-                                 IGBP2001Pr == 14 ~ "Agriculture",
-                                 IGBP2001Pr == 15 ~ "Snow",
-                                 IGBP2001Pr == 16 ~ "Desert",
-                                 TRUE ~ "Unclassified")) -> IGBP
+  mutate (Ecosystem = case_when(IGBP2001Pr == 0 ~ "Water",
+                                IGBP2001Pr == 1 ~ "Forest",
+                                IGBP2001Pr == 2 ~ "Forest",
+                                IGBP2001Pr == 3 ~ "Forest",
+                                IGBP2001Pr == 4 ~ "Forest",
+                                IGBP2001Pr == 5 ~ "Forest",
+                                IGBP2001Pr == 6 ~ "Shrubland",
+                                IGBP2001Pr == 7 ~ "Shrubland",
+                                IGBP2001Pr == 8 ~ "Savanna",
+                                IGBP2001Pr == 9 ~ "Savanna",
+                                IGBP2001Pr == 10 ~ "Grassland",
+                                IGBP2001Pr == 11 ~ "Wetland",
+                                IGBP2001Pr == 12 ~ "Agriculture",
+                                IGBP2001Pr == 13 ~ "Urbland",
+                                IGBP2001Pr == 14 ~ "Agriculture",
+                                IGBP2001Pr == 15 ~ "Snow",
+                                IGBP2001Pr == 16 ~ "Desert",
+                                TRUE ~ "Unclassified")) -> IGBP
 
 IGBP %>% 
-  mutate(IGBP_group = case_when( IGBP2001Pr == 0 ~ "WAT",
-                                 IGBP2001Pr == 1 ~ "EF",
-                                 IGBP2001Pr == 2 ~ "EF",
-                                 IGBP2001Pr == 3 ~ "DF",
-                                 IGBP2001Pr == 4 ~ "DF",
-                                 IGBP2001Pr == 5 ~ "MF",
-                                 IGBP2001Pr == 6 ~ "SH",
-                                 IGBP2001Pr == 7 ~ "SH",
-                                 IGBP2001Pr == 8 ~ "GRA",
-                                 IGBP2001Pr == 9 ~ "GRA",
-                                 IGBP2001Pr == 10 ~ "GRA",
-                                 IGBP2001Pr == 11 ~ "WET",
-                                 IGBP2001Pr == 12 ~ "CRO",
-                                 IGBP2001Pr == 13 ~ "URB",
-                                 IGBP2001Pr == 14 ~ "CRO",
-                                 IGBP2001Pr == 15 ~ "SNO",
-                                 IGBP2001Pr == 16 ~ "BSV",
-                                 TRUE ~ "UNC" ) ) -> IGBP
+  mutate(IGBP_group = case_when(IGBP2001Pr == 0 ~ "WAT",
+                                IGBP2001Pr == 1 ~ "EF",
+                                IGBP2001Pr == 2 ~ "EF",
+                                IGBP2001Pr == 3 ~ "DF",
+                                IGBP2001Pr == 4 ~ "DF",
+                                IGBP2001Pr == 5 ~ "MF",
+                                IGBP2001Pr == 6 ~ "SH",
+                                IGBP2001Pr == 7 ~ "SH",
+                                IGBP2001Pr == 8 ~ "GRA",
+                                IGBP2001Pr == 9 ~ "GRA",
+                                IGBP2001Pr == 10 ~ "GRA",
+                                IGBP2001Pr == 11 ~ "WET",
+                                IGBP2001Pr == 12 ~ "CRO",
+                                IGBP2001Pr == 13 ~ "URB",
+                                IGBP2001Pr == 14 ~ "CRO",
+                                IGBP2001Pr == 15 ~ "SNO",
+                                IGBP2001Pr == 16 ~ "BSV",
+                                TRUE ~ "UNC" ) ) -> IGBP
 
 # DGRsD <- read.csv(file.path(DATA_DIR, 'DGRsD.csv'), header = TRUE)
 AGB <- read.table(file.path(DATA_DIR, 'GLC2000_Point.txt'), header = TRUE, sep = ",")
 AGB %>% filter(RASTERVALU != -9999) -> AGB
-
-# head(AGB)
-# max(AGB$RASTERVALU)
-# min(AGB$RASTERVALU)
-# 
-# max(SOC$RASTERVALU)
-# min(SOC$RASTERVALU)
 
 SOC <- read.table(file.path(DATA_DIR, 'SOC_Point.txt'), header = TRUE, sep = ",")
 
@@ -413,21 +406,12 @@ var_GPP <- GPP[is.na(GPP$SD),]$GPP
 ```
 
 
-## Bootstrapping GPP
-```{r using boostrapping prepare data for GPP bottom-up and top-down comparison}
-# Bottom-up approach to estimate GPP
-# Rroot = Rs * RC (Rroot to Rs ratio, from srdb)
-# Froot = Rroot / Ra (root autotrophic respiration to total autotrophic respiration fraction/ratio, calculation please see plot_froot function)
-# Fshoot = 1-Froot
-# FsFr = (1-Froot)/Froot (FsFr = Rshoot/Rroot ratio)
-# Ra = Rroot + Rshoot
-# GPP = NPP + Rroot + Rshoot
-
+```{r bootstrap-creation}
 # Bootstrap settings
 N_SAMPLES <- 50000 # take 50000 samples
 set.seed(20190827)
 
-# This data frame is used both both Rs and GPP bootstrapping
+# Create the base data frame used in both Rs and GPP bootstrapping
 bootstrap_data <- tibble(
   # Step 1. Prepare Global Rs data
   # Rs = replicate( n_rep, sample(var_Rs$Rs, N_SAMPLES, replace = TRUE) %>% mean() ),
@@ -465,18 +449,30 @@ bootstrap_data <- tibble(
 bootstrap_data %>% 
   transmute(
     # Rs was calculated as the mean of above 10 subsamples
-    Rs = rowMeans(select(bootstrap_data, starts_with("Rs"))),
+    Rs_raw = rowMeans(select(bootstrap_data, starts_with("Rs"))),
     # calculate GPP, this is the Top-dowm GPP (collected from previous studies, and resampling)
     GPP_raw = rowMeans(select(bootstrap_data, starts_with("gpp")))
   ) ->
   bootstrap_data
+```
+
+
+## Bootstrapping GPP
+```{r gpp-bootstrap}
+# Bottom-up approach to estimate GPP
+# Rroot = Rs * RC (Rroot to Rs ratio, from srdb)
+# Froot = Rroot / Ra (root autotrophic respiration to total autotrophic respiration fraction/ratio, calculation please see plot_froot function)
+# Fshoot = 1-Froot
+# FsFr = (1-Froot)/Froot (FsFr = Rshoot/Rroot ratio)
+# Ra = Rroot + Rshoot
+# GPP = NPP + Rroot + Rshoot
 
 bootstrap_data %>% 
   mutate(
-    # Step 3. Prepare NPP, boosting from ITO paper
+    # Step 1. Prepare NPP, boosting from ITO paper
     NPP = sample(NPP$NPP, N_SAMPLES, replace = TRUE),
     
-    # Step 4. sampling Rroot-to Rs ratio (RC)
+    # Step 2. sampling Rroot-to Rs ratio (RC)
     Rc_agr = sample(var_agr_rc$RC_annual, N_SAMPLES, replace = TRUE),
     # forest further separate into 3 groups
     Rc_df = sample(var_df_rc$RC_annual, N_SAMPLES, replace = TRUE),
@@ -488,14 +484,14 @@ bootstrap_data %>%
     # for the rest of ecosystems we use samples from all RC records rather that from other groups
     Rc_rest = sample(var_rest_rc$RC_annual, N_SAMPLES, replace = TRUE), 
     
-    # Step 5. Sampling Rroot-to-Ra ratio (Froot)
+    # Step 3. Sampling Rroot-to-Ra ratio (Froot)
     Froot_df = sample(var_df_froot, N_SAMPLES, replace = TRUE),
     Froot_ef = sample(var_ef_froot, N_SAMPLES, replace = TRUE),
     Froot_mf = sample(var_mf_froot, N_SAMPLES, replace = TRUE),
     # for the rest of ecosystems we used samples from all RC records rather from other groups
     Froot_rest = sample(var_rest_froot, N_SAMPLES, replace = TRUE),
     
-    # Step 6. calculation ********************
+    # Step 4. calculation ********************
     # Rc = replicate( n_rep, var_RC$RC_annual, N_SAMPLES, replace = TRUE) %>% mean() ), # scenario 0: Rc not separate into different ecosystems, not used
     Rc = sample(var_RC$RC_annual, N_SAMPLES, replace = TRUE),
     # Rc = Rc_df*df_area + Rc_ef*ef_area + Rc_mf*mf_area + Rc_rest*1-(df_area + ef_area + mf_area), 
@@ -516,7 +512,7 @@ bootstrap_data %>%
     
     FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of scenario 1
     # Bottom up estimate of GPP, scenario 1
-    Rroot = Rs * Rc, # calculate root respiration
+    Rroot = Rs_raw * Rc, # calculate root respiration
     Rshoot = Rroot * FsFr, # calculate shoot respiration
     
     # Scenario 2: separate into 2 ecosystems and weighted by area
@@ -525,7 +521,7 @@ bootstrap_data %>%
       Froot_rest * (1 - df_area - ef_area - mf_area),
     FsFr2 = (1 - Froot2) / Froot2, # calculate Froot to Fshoot ratio of scenario 2
     # # Bottom up estimate of GPP, scenario 2
-    Rroot2 = Rs * Rc2,
+    Rroot2 = Rs_raw * Rc2,
     Rshoot2 = Rroot2 * FsFr2,
     
     GPP = NPP + Rroot + Rshoot, # scenario 1: calculate GPP
@@ -597,9 +593,36 @@ print(p1_gpp2)
 ```
 
 ### Scenario 3 - SRDB Rs:GPP ratios
-```{r, SRDB Rs:GPP ratios}
-gpp_results %>% 
-  select(Rs, GPP_raw)
+```{r SRDB Rs:GPP ratios}
+var_Rs_to_GPP <- with(srdb_v4, Rs_annual / GPP) %>% na.omit
+
+bootstrap_data %>% 
+  mutate(Rs_to_GPP = sample(var_Rs_to_GPP, N_SAMPLES, replace = TRUE),
+         Rs = GPP_raw * Rs_to_GPP,
+         GPP = Rs_raw / Rs_to_GPP) ->
+  gpp_simple_results
+
+gpp_qt <- quantile(gpp_simple_results$GPP, c(0.025, 0.5, 0.975)) %>% round(0)
+gpp_qt_raw <- quantile(gpp_simple_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+
+gpp_simple_results %>%
+  select(`GPP implied by SRDB Rs:GPP` = GPP, `Top-down GPP` = GPP_raw) %>% 
+  gather(GPP_type) ->
+  gpp_simple_figure_data
+
+gpp_simple_figure_data %>% 
+  ggplot(aes(value, fill = GPP_type)) +
+  geom_density(stat = 'density', alpha = 0.5) +
+  theme(legend.position = c(0.75, 0.75)) +
+  coord_cartesian(xlim = c(25, 350)) +
+  scale_fill_discrete("") + ylab("Density") +
+  xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
+  gpp_simple_figure
+
+p1_gpp3 <- annotations(gpp_simple_figure,
+                       unique(gpp_simple_figure_data$GPP_type), 
+                       gpp_qt, gpp_qt_raw, 150)
+print(p1_gpp3)
 ```
 
 
@@ -632,7 +655,7 @@ ggplot(gpp_results) +
 
 # GPP ~ Rs
 ggplot(gpp_results) +
-  aes(x = gpp_results$Rs, y = GPP2) +
+  aes(x = gpp_results$Rs_raw, y = GPP2) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
@@ -708,19 +731,19 @@ var_RaGpp_gra = var_RaGpp[var_RaGpp$Ecosystem == "Grassland", ]$RaGPP_ratio
 ```
 
 ## Bootstrapping RSG
-```{r using boostrap prepare data for RSG bottom-up and top-down comparison}
+```{r rs-bootstrap}
 # topdowm approach to estimate Rs
 # Ra = GPP * Ra_GPP_ratio (calculated based on data from a summary paper and from srdb, see plot_RaGPP function)
 # Ra = GPP - NPP (two approaches yield very similar results, we thus used the average of two estimates)
 bootstrap_data %>% 
   mutate(
-    # Step 2. prepare other components, NPP and NPP consumed by fire etc.
+    # Step 1. prepare other components, NPP and NPP consumed by fire etc.
     NPP = sample(NPP$NPP, N_SAMPLES, replace = TRUE),
     HerbComsum = rnorm(n = N_SAMPLES, mean = 2.2, sd = 0.2),
     Fire = sample(var_Fire, N_SAMPLES, replace = TRUE),
     sink = rnorm(n = N_SAMPLES, mean = 2.10, sd = 0.28),
     
-    # Step 4. Ra-to-GPP ratio boosting
+    # Step 2. Ra-to-GPP ratio boosting
     # RaGpp = sample(var_RaGpp$RaGPP_ratio, N_SAMPLES, replace = TRUE),
     RaGpp_df = sample(var_RaGpp_df, N_SAMPLES, replace = TRUE),
     RaGpp_ef = sample(var_RaGpp_ef, N_SAMPLES, replace = TRUE),
@@ -729,7 +752,7 @@ bootstrap_data %>%
     # for the rest of ecosystems, we use samples from all Froot rather than Other group
     RaGpp_rest = sample(var_RaGpp$RaGPP_ratio, N_SAMPLES, replace = TRUE),
     
-    # Step 5. Sampling Rroot-to-Ra ratio (Froot)
+    # Step 3. Sampling Rroot-to-Ra ratio (Froot)
     Froot_df = sample(var_df_froot, N_SAMPLES, replace = TRUE),
     Froot_ef = sample(var_ef_froot, N_SAMPLES, replace = TRUE),
     Froot_mf = sample(var_mf_froot, N_SAMPLES, replace = TRUE),
@@ -743,21 +766,21 @@ bootstrap_data %>%
     # # scenario 2
     RaGpp2 = RaGpp_df * df_area + RaGpp_ef * ef_area + RaGpp_mf * mf_area + 
       RaGpp_gra * gra_area + RaGpp_rest * (1 - df_area - ef_area - mf_area - gra_area),
-    # 
-    # # # get Froot (Froot2 is better, from bottom-up section, see above results)
+    
+    # get Froot (Froot2 is better, from bottom-up section, see above results)
     Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area +
       Froot_rest * (1 - df_area-ef_area-mf_area),
-    # 
+    
     Ra1 = GPP_raw * RaGpp, # first way to calculate Ra, Ra = GPP * RaGPP
     Ra2 = GPP_raw - NPP, # second way to calculate Ra, Ra = GPP - NPP
     Ra3 = if_else(Ra2 < 0, Ra1, Ra2),
     Ra_avg1 = (Ra1 + Ra3) / 2,
-    # # 
+    
     Rroot = Ra_avg1 * Froot2,
     Rshoot = Ra_avg1 * (1 - Froot2),
     Rs_topdown = NPP - HerbComsum - Fire - sink + Rroot,
-    # 
-    # # scenario2
+    
+    # scenario2
     Ra4 = GPP_raw * RaGpp2, # first way to calculate Ra, Ra = GPP * RaGPP
     Ra_avg2 = (Ra4 + Ra3) / 2,
     Rroot2 = Ra_avg2 * Froot2,
