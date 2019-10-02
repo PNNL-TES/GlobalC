@@ -512,20 +512,20 @@ bootstrap_data %>%
     
     FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of scenario 1
     # Bottom up estimate of GPP, scenario 1
-    Rroot = Rs_raw * Rc, # calculate root respiration
-    Rshoot = Rroot * FsFr, # calculate shoot respiration
+    Rroot = Rs_raw * Rc, # root respiration
+    Rshoot = Rroot * FsFr, # shoot respiration
     
     # Scenario 2: separate into 2 ecosystems and weighted by area
     # Froot %>% count(Ecosystem)
     Froot2 = Froot_df*df_area + Froot_ef*ef_area + Froot_mf*mf_area + 
       Froot_rest * (1 - df_area - ef_area - mf_area),
-    FsFr2 = (1 - Froot2) / Froot2, # calculate Froot to Fshoot ratio of scenario 2
-    # # Bottom up estimate of GPP, scenario 2
+    FsFr2 = (1 - Froot2) / Froot2, # Froot to Fshoot ratio of scenario 2
+    # Bottom up estimate of GPP, scenario 2
     Rroot2 = Rs_raw * Rc2,
     Rshoot2 = Rroot2 * FsFr2,
     
-    GPP = NPP + Rroot + Rshoot, # scenario 1: calculate GPP
-    GPP2 = NPP + Rroot2 + Rshoot2 # scenario 2: calculate GPP2
+    GPP = NPP + Rroot + Rshoot, # scenario 1: GPP
+    GPP2 = NPP + Rroot2 + Rshoot2 # scenario 2: GPP2
   ) ->
   gpp_results
 ```
@@ -692,25 +692,27 @@ ggplot(gpp_results) +
 
 ### Probability of agreement
 ```{r compute proportion of agreement between top-down RSG and bottom-up GPP}
+prob_agreement <- function(x, raw_quantiles) {
+  # assuming x follows a normal distribution, we can calculate the probability
+  # of it overlapping the distribution implied by the raw quantiles
+  mu <- mean(x)
+  s <- sd(x)
+  p_high <- pnorm((raw_quantiles[3] - mu) / s)
+  p_low <- pnorm((raw_quantiles[1] - mu) / s)
+  (p_high - p_low) %>% round(4)
+}
+
 # Quantify the probability GPP following (107, 133)
 # about 29% chance GPP will between (107-133)
-y <- mean(gpp_results$GPP)
-s <- sd(gpp_results$GPP)
-# assuming GPP follows a normal distribution, with mean = y and sd = s, we can calculate the properbility of GPP following (107-133) 95%CI
-p_gpp_high <- pnorm ((gpp_qt_raw[3] - y) / s)
-p_gpp_low <- pnorm ((gpp_qt_raw[1] - y) / s)
-p_gpp1 <- (p_gpp_high - p_gpp_low) %>% round(4)
+p_gpp1 <- prob_agreement(gpp_results$GPP, gpp_qt_raw)
 print(paste0("The probability of agreement in scenario 1 is: ", p_gpp1))
-# pnorm (-0.329)
 
 # scenario 2 looks like a little bit right tail skew
-# about 18%
-y <- mean(gpp_results$GPP2)
-s <- sd(gpp_results$GPP2)
-p_gpp_high <- pnorm ((gpp_qt_raw[3] - y) / s)
-p_gpp_low <- pnorm ((gpp_qt_raw[1] - y) / s)
-p_gpp2 <- (p_gpp_high - p_gpp_low) %>% round(4)
+p_gpp2 <- prob_agreement(gpp_results$GPP2, gpp_qt_raw)
 print(paste0("The probability of agreement in scenario 2 is: ", p_gpp2))
+
+p_gpp3 <- prob_agreement(gpp_simple_results$GPP, gpp_qt_raw)
+print(paste0("The probability of agreement in scenario 2 is: ", p_gpp3))
 ```
 
 The probability of agreement in scenario 1 is ```r p_gpp1*100``` %.  
@@ -763,7 +765,7 @@ bootstrap_data %>%
     # Calculation **********
     # scenario 1
     RaGpp = RaGpp_rest,
-    # # scenario 2
+    # scenario 2
     RaGpp2 = RaGpp_df * df_area + RaGpp_ef * ef_area + RaGpp_mf * mf_area + 
       RaGpp_gra * gra_area + RaGpp_rest * (1 - df_area - ef_area - mf_area - gra_area),
     
@@ -903,22 +905,10 @@ ggplot(rs_results) +
 ### RSG probability of agreement
 
 ```{r compute proportion of agreement between top-down RSG and bottom-up RSG}
-# accume Rs following normal distribution, with mean = y and sd = s,
-# we can calculate the probability of Rs following (80-92) 95%CI
-# about 28% chance Rs will be between (80-92)
-y <- mean(rs_results$Rs_topdown)
-s <- sd(rs_results$Rs_topdown)
-p_Rs_high <- pnorm ((y - rsg_qt_raw[1]) / s)
-p_Rs_low <- pnorm ((y - rsg_qt_raw[3]) / s)
-p_Rs1 <- (p_Rs_high - p_Rs_low) %>% round(4)
+p_Rs1 <- prob_agreement(rs_results$Rs_topdown, rsg_qt_raw)
 print(paste0("The probability of agreement in scenario 1 is: ", p_Rs1))
 
-# Scenario 2: about 23% chance Rs will be between (80-92)
-y <- mean(rs_results$Rs_topdown2)
-s <- sd(rs_results$Rs_topdown2)
-p_Rs_high <- pnorm ((y - rsg_qt_raw[1]) / s)
-p_Rs_low <- pnorm ((y - rsg_qt_raw[3]) / s)
-p_Rs2 <- (p_Rs_high - p_Rs_low) %>% round(4)
+p_Rs2 <- prob_agreement(rs_results$Rs_topdown2, rsg_qt_raw)
 print(paste0("The probability of agreement in scenario 2 is: ", p_Rs2))
 ```
 
