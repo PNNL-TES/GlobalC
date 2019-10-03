@@ -46,7 +46,6 @@ E.g. what % of the distribution of each 'allows' us to match the central estimat
 * What is driving the differences between botton-up GPP and reported GPP and top-down Rs and reported Rs?
 * How do we resolve this? Where is better/more data needed? 
 * These questions all resolve around influence x uncertainty = importance, right? This is basically the 'Dietze graph'.
-* Which is more likely, low GPP or high Rs? -- discussion
 * Savanna and grassland more than 20% area, but sample numbers are too small for Frrot, RC, and Ra/Gpp ratio
 * Ra < 0 how to resolve this (resolved)
 
@@ -64,36 +63,25 @@ DATA_DIR <- 'data'
 # Create output and log folders if they do not exist
 if(!file.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
 
-# install.packages('kableExtra')
 library(kableExtra)
 # Load required packages
-# install.packages("data.table")
 library(data.table)
-# install.packages("lubridate")
 library(lubridate)
-# install.packages("cowplot")
 library(cowplot)
 library(knitr)
-# install.packages("ggpubr")
-library("ggpubr")
-# install.packages("reshape")
+library(ggpubr)
 library(reshape)
 library(ggplot2)
-# install.packages("ggmap")
+theme_set(theme_bw())
 library(ggmap)
-# install.packages("maps")
 library(maps)
-# install.packages("mapdata")
 library(mapdata)
 library(tidyr)
-# install.packages("hexbin")
 library(hexbin)
 library(dplyr)
 # Source all needed functions
-theme_set(theme_bw())
 source('functions.R')
 ```
-
 
 
 ```{r self defined functions, echo=FALSE}
@@ -118,11 +106,10 @@ prep_RaGpp <- function(RaGPP, srdb_v4) {
 
 # plot froot
 plot_froot <- function (sdata) {
-  var_obs <- nrow(sdata)
   # plot Froot (root respiration/aototrophic respiration ratio) by ecosystem type
   Fl_plot <- ggplot(sdata, aes(x = IGBP2, y=Froot)) + geom_violin() +
-    geom_jitter(shape=16, position=position_jitter(0.2), col = "gray") +
-    geom_boxplot(width=.1) +
+    geom_jitter(shape = 16, position = position_jitter(0.2), col = "gray") +
+    geom_boxplot(width = 0.1) +
     ylab("Froot") +
     # stat_summary(fun.y=median, geom="point", size=2, color="red") +
     scale_x_discrete(limits = c("DF", "EF", "MF", "Other"),
@@ -135,7 +122,6 @@ plot_froot <- function (sdata) {
 ```
 
 
-
 ```{r preliminaries, echo=FALSE}
 # message=FALSE, include=FALSE, echo=FALSE, cache=TRUE
 # Set chunks defaults; these options will be applied to all subsequent chunks
@@ -145,7 +131,7 @@ knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE,
 ```
 
 
-## Method
+## Methods
 
 ```{r load data}
 # input data
@@ -398,11 +384,6 @@ var_ef_froot = Froot[Froot$IGBP2 == "EF",]$Froot # Froot data for ef
 var_df_froot = Froot[Froot$IGBP2 == "DF",]$Froot # Froot data for df
 var_mf_froot = Froot[Froot$IGBP2 == "MF",]$Froot # Froot data for mf
 var_other_froot = Froot[Froot$IGBP2 == "Other",]$Froot # samples of Froot for non-ef
-
-# var_rest <- var_RC %>% filter (Ecosystem_type != "Forest") # dataset contain RC records for non-forest of ecosystem
-var_Rs <- GlobalRs %>% filter(!is.na(Rs) & is.na(SD) ) # dataset contain global Rs estimates (without standard deviation information)
-var_GPP <- GPP[is.na(GPP$SD),]$GPP
-
 ```
 
 
@@ -411,49 +392,33 @@ var_GPP <- GPP[is.na(GPP$SD),]$GPP
 N_SAMPLES <- 50000 # take 50000 samples
 set.seed(20190827)
 
-# Create the base data frame used in both Rs and GPP bootstrapping
-bootstrap_data <- tibble(
-  # Step 1. Prepare Global Rs data
-  # Rs = replicate( n_rep, sample(var_Rs$Rs, N_SAMPLES, replace = TRUE) %>% mean() ),
-  # Rs1 = rnorm(n = N_SAMPLES, mean = 68, sd = 4), # not sure about the SD = 4
-  # for those without SD Rs, randomly sample from global Rs estimates, with replace=TRUE
-  Rs1 = sample(var_Rs$Rs, N_SAMPLES, replace = TRUE), 
-  # for those studies reported Rs (mean and SD, 9 studies) using rnorm functions
-  Rs2 = rnorm(n = N_SAMPLES, mean = 80.4, sd = 16.9), # for those with standard deviation, N_SAMPLES samples were take from normal distribution ~ (mean=80.4, sd=16.9)
-  # repeat until all Rs estimates with sd samples were taken and hold in the outputs
-  Rs3 = rnorm(n = N_SAMPLES, mean = 98, sd = 12),
-  Rs4 = rnorm(n = N_SAMPLES, mean = 79, sd = 7.65),
-  Rs5 = rnorm(n = N_SAMPLES, mean = 94.4, sd = 4.59),
-  Rs6 = rnorm(n = N_SAMPLES, mean = 91, sd = 2.05),
-  Rs7 = rnorm(n = N_SAMPLES, mean = 94.3, sd = 9.13),
-  Rs8 = rnorm(n = N_SAMPLES, mean = 78.34, sd = 2.25),
-  Rs9 = rnorm(n = N_SAMPLES, mean = 72.55, sd = 7.13),
-  Rs10 = rnorm(n = N_SAMPLES, mean = 93.3, sd = 3.11),
+# Use a short function to do this twice
+replace_SD_and_generate <- function(m, s, n_samples = N_SAMPLES) {
+  stopifnot(length(m) == length(s))
+  # Alternately for first part...see #9
+  # CV <- s / m
+  # CV <- replace_na(CV, median(CV, na.rm = TRUE))
+  # s <- if_else(is.na(s), m * CV, s)
   
-  # Step 2. Prepare GPP (same logic as global Rs)
-  gpp1 = rnorm(n = N_SAMPLES, mean = 124.6, sd = 2.7), # if gpp have mean and standard deviation, take N_SAMPLES samples from the normal distribution
-  gpp2 = rnorm(n = N_SAMPLES, mean = 135.7, sd = 21.712),
-  gpp3 = rnorm(n = N_SAMPLES, mean = 109.29, sd = 27.33),
-  gpp4 = rnorm(n = N_SAMPLES, mean = 118, sd = 26),
-  gpp5 = rnorm(n = N_SAMPLES, mean = 119, sd = 6),
-  gpp6 = rnorm(n = N_SAMPLES, mean = 110.5, sd = 21.3),
-  gpp7 = rnorm(n = N_SAMPLES, mean = 117, sd = 13),
-  gpp8 = rnorm(n = N_SAMPLES, mean = 147, sd = 16),
-  gpp9 = rnorm(n = N_SAMPLES, mean = 119, sd = 6),
-  gpp10 = rnorm(n = N_SAMPLES, mean = 122, sd = 25),
-  # for those do not have SD information, sample using boosting 
-  gpp11 = sample(var_GPP, N_SAMPLES, replace = TRUE) 
-) ->
-  bootstrap_data
+  # Generate and compute mean
+  empty_s <- is.na(s)
+  if(sum(empty_s)) { # entries with no s.d. get a single, collective draw
+    raw <- sample(m[which(empty_s)], size = n_samples, replace = TRUE)
+    x <- 1
+  } else {
+    raw <- rep(0.0, n_samples)
+    x <- 0
+  }
+  # Others are drawn individually
+  for(i in which(!empty_s)) {
+    raw <- raw + rnorm(n = n_samples, mean = m[i], sd = s[i])
+    x <- x + 1
+  }
+  raw / x
+}
 
-bootstrap_data %>% 
-  transmute(
-    # Rs was calculated as the mean of above 10 subsamples
-    Rs_raw = rowMeans(select(bootstrap_data, starts_with("Rs"))),
-    # calculate GPP, this is the Top-dowm GPP (collected from previous studies, and resampling)
-    GPP_raw = rowMeans(select(bootstrap_data, starts_with("gpp")))
-  ) ->
-  bootstrap_data
+bootstrap_data <- tibble(Rs_raw = replace_SD_and_generate(GlobalRs$Rs, GlobalRs$SD),
+                         GPP_raw = replace_SD_and_generate(GPP$GPP, GPP$SD))
 ```
 
 
