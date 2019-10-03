@@ -3,7 +3,7 @@
 #*****************************************************************************************************************
 # Basic functions
 #*****************************************************************************************************************
-summarySE <- function(data = NULL, measurevar, groupvars = NULL, na.rm = F,
+summarySE <- function(data = NULL, measurevar, groupvars = NULL, na.rm = FALSE,
                       conf.interval = .95, .drop = TRUE) {
   # library(plyr)
   
@@ -424,3 +424,100 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
 # hist(result)
 # abline(v = quantile(result, c(0.025, 0.975)), col = "red", lty = "dashed")
 
+#*****************************************************************************************************************
+# Added or moved by Ben
+#*****************************************************************************************************************
+
+# Given mean and standard deviation vectors, generate the basic bootstrapping
+# draws. We do this by first drawing from any `m` entries without corresponding `s`
+# values, and then individually draw from all `m` values with corresponding `s`'s,
+# one at a time. These `n_samples` are then averaged across the `n_samples` draws.
+replace_SD_and_generate <- function(m, s, n_samples = N_SAMPLES) {
+  stopifnot(length(m) == length(s))
+  # Alternately for first part, could do this...see #9
+  # CV <- s / m
+  # CV <- replace_na(CV, median(CV, na.rm = TRUE))
+  # s <- if_else(is.na(s), m * CV, s)
+  
+  # Generate and compute mean
+  empty_s <- is.na(s)
+  if(sum(empty_s)) { # entries with no s.d. get a single, collective draw
+    raw <- sample(m[which(empty_s)], size = n_samples, replace = TRUE)
+    x <- 1
+  } else {
+    raw <- rep(0.0, n_samples)
+    x <- 0
+  }
+  # Others are drawn individually
+  for(i in which(!empty_s)) {
+    raw <- raw + rnorm(n = n_samples, mean = m[i], sd = s[i])
+    x <- x + 1
+  }
+  raw / x
+}
+
+# The primary top-down and bottom-up bootstrapping figures all have similar
+# annotations. The following two functions handle this.
+
+# Given a length 3 vector of quantiles (2.5%, 50%, 97.5%) return a nice label
+make_label <- function(qt_data) {
+  paste0("Mean and 95% CI: ", qt_data[2], " (", qt_data[1], ", ", qt_data[3], ")")
+}
+# Given a figure, the types (character vector) of information it has, the two
+# quantile vectors (see above), and position information, return annotated figure
+annotations <- function(figure, types, x_qt, x_qt_raw, xpos) {
+  ann_dat <- tibble(Type = types,
+                    GPP_type = NA, Rs_type = NA,
+                    x = xpos, y = c(0.035, 0.025),
+                    label = c(make_label(x_qt), make_label(x_qt_raw)))
+  figure + geom_text(data = ann_dat,
+                     aes(x = x, y = y, label = label, color = Type),
+                     hjust = 0, show.legend = FALSE)
+}
+
+
+# Given a vector `x` and the quantiles of the 'raw' distribution, i.e. the 
+# standard top-down GPP or bottom-up Rs, compute the probability they agree
+prob_agreement <- function(x, raw_quantiles) {
+  # assuming x follows a normal distribution, we can calculate the probability
+  # of it overlapping the distribution implied by the raw quantiles
+  mu <- mean(x)
+  s <- sd(x)
+  p_high <- pnorm((raw_quantiles[3] - mu) / s)
+  p_low <- pnorm((raw_quantiles[1] - mu) / s)
+  (p_high - p_low) %>% round(4)
+}
+
+
+# Prepare Ra-GPP ratio 
+prep_RaGpp <- function(RaGPP, srdb_v4) {
+  RaGPP %>% 
+    select(Ecosystem, Leaf_habit, RaGPP_ratio) %>% 
+    mutate(Source = "Meta-papers") -> sdata2
+  
+  srdb_v4 %>% 
+    select(Ecosystem_type, Leaf_habit, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>% 
+    filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER)) %>% 
+    mutate(ER = if_else(is.na(ER), GPP, ER), # assume NEP very small
+           RaGPP_ratio = (ER - NPP) / GPP,
+           Source = "srdb_v4") %>% 
+    filter(RaGPP_ratio > 0, RaGPP_ratio < 1, !is.na(Ecosystem_type)) %>%
+    select(Ecosystem_type, Leaf_habit, RaGPP_ratio, Source) %>% 
+    bind_rows(sdata2)
+}
+
+# Plot froot
+plot_froot <- function (sdata) {
+  # plot Froot (root respiration/autotrophic respiration ratio) by ecosystem type
+  Fl_plot <- ggplot(sdata, aes(x = IGBP2, y=Froot)) + geom_violin() +
+    geom_jitter(shape = 16, position = position_jitter(0.2), col = "gray") +
+    geom_boxplot(width = 0.1) +
+    ylab("Froot") +
+    # stat_summary(fun.y=median, geom="point", size=2, color="red") +
+    scale_x_discrete(limits = c("DF", "EF", "MF", "Other"),
+                     labels = c("DF (n=13)","EF (n=91)", "MF (n=7)", "Other (n=11)") ) +
+    theme(axis.title.x=element_blank()) +
+    ylab("Rroot-Ra ratio")
+  
+  print(Fl_plot)
+}
