@@ -568,17 +568,20 @@ ggplot(gpp_results, aes(x = 1-Froot, y = GPP2)) +
 ```
 
 ### Probability of agreement
-```{r compute proportion of agreement between top-down RSG and bottom-up GPP}
+```{r gpp-agreement, cache=FALSE}
 p_gpp1 <- prob_agreement(gpp_results$GPP, gpp_qt_raw)
 p_gpp2 <- prob_agreement(gpp_results$GPP2, gpp_qt_raw)
 p_gpp3 <- prob_agreement(simple_ratio_results$GPP, gpp_qt_raw)
+p_gpp1_tt <- t_test(gpp_results$GPP_raw, gpp_results$GPP)
+p_gpp2_tt <- t_test(gpp_results$GPP_raw, gpp_results$GPP2)
+p_gpp3_tt <- t_test(gpp_results$GPP_raw, simple_ratio_results$GPP)
 ```
 
-The probability of agreement in scenario 1 is ```r p_gpp1 * 100``` %. 
-
-The probability of agreement in scenario 2 is ```r p_gpp2 * 100``` %.
-
-The probability of agreement in scenario 3 is ```r p_gpp3 * 100``` %.
+Scenario          | Agreement (quantiles) | p-value (t.test)
+----------------- | --------------------- | -----------------
+1 (no weighting)  | `r p_gpp1 * 100` %     | `r p_gpp1_tt`
+2 (weighting)     | `r p_gpp2 * 100` %     | `r p_gpp2_tt`
+3 (simple global) | `r p_gpp3 * 100` %     | `r p_gpp3_tt`
 
 
 ```{r prepare variables for RSG boostrapping}
@@ -776,17 +779,20 @@ ggplot(rs_results, aes(x = Fire, y = Rs_topdown)) +
 
 ### RSG probability of agreement
 
-```{r compute proportion of agreement between top-down RSG and bottom-up RSG}
+```{r compute proportion of agreement between top-down RSG and bottom-up RSG, cache=FALSE}
 p_Rs1 <- prob_agreement(rs_results$Rs_topdown, rsg_qt_raw)
 p_Rs2 <- prob_agreement(rs_results$Rs_topdown2, rsg_qt_raw)
 p_Rs3 <- prob_agreement(simple_ratio_results$Rs, rsg_qt_raw)
+p_Rs1_tt <- t_test(rs_results$Rs_raw, rs_results$Rs_topdown)
+p_Rs2_tt <- t_test(rs_results$Rs_raw, rs_results$Rs_topdown2)
+p_Rs3_tt <- t_test(rs_results$Rs_raw, simple_ratio_results$Rs)
 ```
 
-The probability of agreement in scenario 1 is ```r p_Rs1 * 100``` %.
-
-The probability of agreement in scenario 2 is ```r p_Rs2 * 100``` %.
-
-The probability of agreement in scenario 3 is ```r p_Rs3 * 100``` %.
+Scenario          | Agreement (quantiles) | p-value (t.test)
+----------------- | --------------------- | -----------------
+1 (no weighting)  | `r p_Rs1 * 100` %     | `r p_Rs1_tt`
+2 (weighting)     | `r p_Rs2 * 100` %     | `r p_Rs2_tt`
+3 (simple global) | `r p_Rs3 * 100` %     | `r p_Rs3_tt`
 
 
 ## Topdown and bottomup comparison - Figure 1

@@ -521,3 +521,11 @@ plot_froot <- function (sdata) {
   
   print(Fl_plot)
 }
+
+# Perform a Student's t-test and return results nicely formatted for a table
+t_test <- function(x, y, alternative = "two.sided", ...) {
+  z <- t.test(x, y, alternative = alternative, ...)
+  paste0("t = ", format(z$statistic, digits = 1, scientific = FALSE), 
+         ", df = ", format(z$parameter, digits = 1, scientific = FALSE), 
+         ", p-value = ", format(z$p.value, digits = 3, scientific = FALSE))
+}
