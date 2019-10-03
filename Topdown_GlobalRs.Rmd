@@ -326,8 +326,8 @@ var_RaGpp %>% count(IGBP2)
 var_RaGpp %>% count(Ecosystem)
 
 plot_RaGPP(var_RaGpp)
-
 ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
+
 var_RaGpp %>% 
   group_by(Ecosystem) %>% 
   summarise( count = n() ) %>%
@@ -373,23 +373,24 @@ var_other_rc <- var_RC %>% filter (Ecosystem_type %in% c("Desert", "Wetland"))
 var_rest_rc <- var_RC # for those ecosystem (e.g., tundra) has no data, use all from RC dataset
 
 # 2. prepare Froot (Rroot-to-Ra ratio data) **********
-var_agr_froot = Froot[Froot$Ecosystem == "Agriculture",]$Froot # samples of Froot for agriculture
-var_for_froot = Froot[Froot$Ecosystem == "Forest",]$Froot # samples of Froot for forest
-var_gra_froot = Froot[Froot$Ecosystem == "Grassland",]$Froot # samples of Froot for grassland
-var_sav_froot = Froot[Froot$Ecosystem == "Savanna",]$Froot # samples of Froot for savanna
-var_wet_froot = Froot[Froot$Ecosystem == "Wetland",]$Froot # samples of Froot for agriculture
-var_rest_froot = Froot$Froot # for those ecosystems has no data, use all data from Froot
+var_agr_froot <- Froot[Froot$Ecosystem == "Agriculture",]$Froot # samples of Froot for agriculture
+var_for_froot <- Froot[Froot$Ecosystem == "Forest",]$Froot # samples of Froot for forest
+var_gra_froot <- Froot[Froot$Ecosystem == "Grassland",]$Froot # samples of Froot for grassland
+var_sav_froot <- Froot[Froot$Ecosystem == "Savanna",]$Froot # samples of Froot for savanna
+var_wet_froot <- Froot[Froot$Ecosystem == "Wetland",]$Froot # samples of Froot for agriculture
+var_rest_froot <- Froot$Froot # for those ecosystems has no data, use all data from Froot
 # only separate into ef and the rest
-var_ef_froot = Froot[Froot$IGBP2 == "EF",]$Froot # Froot data for ef
-var_df_froot = Froot[Froot$IGBP2 == "DF",]$Froot # Froot data for df
-var_mf_froot = Froot[Froot$IGBP2 == "MF",]$Froot # Froot data for mf
-var_other_froot = Froot[Froot$IGBP2 == "Other",]$Froot # samples of Froot for non-ef
+var_ef_froot <- Froot[Froot$IGBP2 == "EF",]$Froot # Froot data for ef
+var_df_froot <- Froot[Froot$IGBP2 == "DF",]$Froot # Froot data for df
+var_mf_froot <- Froot[Froot$IGBP2 == "MF",]$Froot # Froot data for mf
+var_other_froot <- Froot[Froot$IGBP2 == "Other",]$Froot # samples of Froot for non-ef
 ```
 
 
 ```{r bootstrap-creation}
 # Bootstrap settings
-N_SAMPLES <- 50000 # take 50000 samples
+N_SAMPLES <- 50000 # Take 50000 samples
+QUANTILES <- c(0.025, 0.5, 0.975)  # Generate mean at 95% CI
 set.seed(20190827)
 
 # Use a short function to do this twice
@@ -464,15 +465,15 @@ bootstrap_data %>%
     # Scenario 2: Rc separate into 4 groups: agriculture, forest, grassland, and rest (all other ecosystems with obs<40, take samples from all RC records)
     # only separate into four groups, agriculture, forest, grassland and the rest
     # 1-(0.191 + 0.214 + 0.153 + 0.268)
-    Rc2 = (Rc_agr*ag_area + Rc_df*df_area + Rc_ef*ef_area + Rc_mf*mf_area + 
-             Rc_gra*gra_area + Rc_shr*shr_area 
+    Rc2 = (Rc_agr * ag_area + Rc_df * df_area + Rc_ef * ef_area + Rc_mf * mf_area + 
+             Rc_gra * gra_area + Rc_shr * shr_area 
            + Rc_rest * (1 - ag_area - df_area - ef_area-mf_area - gra_area - shr_area)), 
     # mean(sample(var_for$RC_annual, N_SAMPLES, replace = TRUE))
     # sample(var_df$RC_annual, N_SAMPLES, replace = TRUE) %>% mean
     # sample(var_ef$RC_annual, N_SAMPLES, replace = TRUE) %>% mean
     # sample(var_mf$RC_annual, N_SAMPLES, replace = TRUE) %>% mean
     
-    # scenario1: Froot not separate into different ecosystems
+    # scenario 1: Froot not separate into different ecosystems
     Froot = sample(Froot$Froot, N_SAMPLES, replace = TRUE) ,
     
     FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of scenario 1
@@ -482,7 +483,7 @@ bootstrap_data %>%
     
     # Scenario 2: separate into 2 ecosystems and weighted by area
     # Froot %>% count(Ecosystem)
-    Froot2 = Froot_df*df_area + Froot_ef*ef_area + Froot_mf*mf_area + 
+    Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area + 
       Froot_rest * (1 - df_area - ef_area - mf_area),
     FsFr2 = (1 - Froot2) / Froot2, # Froot to Fshoot ratio of scenario 2
     # Bottom up estimate of GPP, scenario 2
@@ -499,13 +500,13 @@ bootstrap_data %>%
 ## GPP results {.tabset .tabset-fade .tabset-pills}
 ### Scenario 1 - ratio __not__ weighted by ecosystem
 ```{r plot GPP comparison}
-# hist(gpp_results$GPP) + abline (v = quantile (gpp_results$GPP, c(0.025, 0.5, 0.975)), col = "red", lty = "dashed")
+# hist(gpp_results$GPP) + abline (v = quantile (gpp_results$GPP, QUANTILES), col = "red", lty = "dashed")
 # mean(gpp_results$GPP)
 # max(gpp_results$GPP)
 
 # scenario 1
-gpp_qt <- quantile(gpp_results$GPP, c(0.025, 0.5, 0.975)) %>% round(0)
-gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+gpp_qt <- quantile(gpp_results$GPP, QUANTILES) %>% round(0)
+gpp_qt_raw <- quantile(gpp_results$GPP_raw, QUANTILES) %>% round(0)
 
 gpp_results %>%
   select(`GPP implied by Rs` = GPP, `Top-down GPP` = GPP_raw) %>% 
@@ -544,8 +545,8 @@ ggsave("outputs/Figure2_gpp.jpg", width = 8, height = 4, dpi = 300, units = "in"
 ### Scenario 2 - ratio __weighted__ by ecosystem
 ```{r}
 # scenario 2
-gpp_qt <- quantile(gpp_results$GPP2, c(0.025, 0.5, 0.975)) %>% round(0)
-gpp_qt_raw <- quantile(gpp_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+gpp_qt <- quantile(gpp_results$GPP2, QUANTILES) %>% round(0)
+gpp_qt_raw <- quantile(gpp_results$GPP_raw, QUANTILES) %>% round(0)
 
 gpp_results %>%
   select(`GPP implied by Rs` = GPP2, `Top-down GPP` = GPP_raw) %>% 
@@ -567,8 +568,8 @@ bootstrap_data %>%
          GPP = Rs_raw / Rs_to_GPP) ->
   simple_ratio_results
 
-gpp_qt <- quantile(simple_ratio_results$GPP, c(0.025, 0.5, 0.975)) %>% round(0)
-gpp_qt_raw <- quantile(simple_ratio_results$GPP_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+gpp_qt <- quantile(simple_ratio_results$GPP, QUANTILES) %>% round(0)
+gpp_qt_raw <- quantile(simple_ratio_results$GPP_raw, QUANTILES) %>% round(0)
 
 simple_ratio_results %>%
   select(`GPP implied by SRDB Rs:GPP` = GPP, `Top-down GPP` = GPP_raw) %>% 
@@ -743,7 +744,7 @@ bootstrap_data %>%
     Rshoot = Ra_avg1 * (1 - Froot2),
     Rs_topdown = NPP - HerbComsum - Fire - sink + Rroot,
     
-    # scenario2
+    # scenario 2
     Ra4 = GPP_raw * RaGpp2, # first way to calculate Ra, Ra = GPP * RaGPP
     Ra_avg2 = (Ra4 + Ra3) / 2,
     Rroot2 = Ra_avg2 * Froot2,
@@ -758,8 +759,8 @@ bootstrap_data %>%
 ```{r plot RSG results}
 
 # scenario 1. RaGPP ratio not separated
-rsg_qt <- quantile(rs_results$Rs_topdown, c(0.025, 0.5, 0.975)) %>% round(0)
-rsg_qt_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+rsg_qt <- quantile(rs_results$Rs_topdown, QUANTILES) %>% round(0)
+rsg_qt_raw <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
 
 rs_results %>%
   select(`Rs implied by GPP` = Rs_topdown, `Bottom-up Rs` = Rs_raw) %>% 
@@ -785,9 +786,9 @@ ggsave("outputs/Figure2_rs.jpg", width = 8, height = 4)
 
 
 # Rs raw data plot
-# rsg_qt <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+# rsg_qt <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
 # plot_rs_raw <- ggplot(rs_results) + aes(Rs_raw) + geom_histogram(col = "black", fill = "gray", bins = 30) + 
-#   geom_vline(xintercept = c(quantile (rs_results$Rs, c(0.025, 0.5, 0.975))),col = "red", linetype = "dotted", size = 1.5) +
+#   geom_vline(xintercept = c(quantile (rs_results$Rs, QUANTILES)),col = "red", linetype = "dotted", size = 1.5) +
 #   annotate("text", x = quantile(rs_results$Rs, 0.98), y = 5000, label = paste0("95%CI (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")"), hjust = 0)
 
 ```
@@ -795,8 +796,8 @@ ggsave("outputs/Figure2_rs.jpg", width = 8, height = 4)
 ### Scenario 2 - ratio __weighted__ by ecosystem
 ```{r}
 # scenario 2. RaGPP ratio separated into 2 groups
-rsg_qt <- quantile(rs_results$Rs_topdown2, c(0.025, 0.5, 0.975)) %>% round(0)
-rsg_qt_raw <- quantile(rs_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+rsg_qt <- quantile(rs_results$Rs_topdown2, QUANTILES) %>% round(0)
+rsg_qt_raw <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
 
 rs_results %>%
   select(`Rs implied by GPP` = Rs_topdown2, `Bottom-up Rs` = Rs_raw) %>% 
@@ -815,8 +816,8 @@ simple_ratio_results %>%
   gather(Rs_type) ->
   rs_simple_figure_data
 
-rsg_qt <- quantile(simple_ratio_results$Rs, c(0.025, 0.5, 0.975)) %>% round(0)
-rs_qt_raw <- quantile(simple_ratio_results$Rs_raw, c(0.025, 0.5, 0.975)) %>% round(0)
+rsg_qt <- quantile(simple_ratio_results$Rs, QUANTILES) %>% round(0)
+rs_qt_raw <- quantile(simple_ratio_results$Rs_raw, QUANTILES) %>% round(0)
 
 rs_simple_figure_data %>% 
   ggplot(aes(value, fill = Rs_type)) +
