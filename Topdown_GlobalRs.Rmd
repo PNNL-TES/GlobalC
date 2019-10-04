@@ -810,6 +810,7 @@ ggsave("outputs/Figure2.jpg", width = 6, height = 8, dpi = 300, units = "in")
 n_points <- 20
 # w is the weight of top-down GPP dominance, 0 to 1
 w <- seq(0, 1, length.out = 20)
+w <- c(0.25, w) %>% unique() %>% sort()  # make sure 0.25 is included
 w <- c(0.5, w) %>% unique() %>% sort()  # make sure 0.5 is included
 gpp_wm <- tibble(q025 = rep(NA_real_, n_points), 
                  q500 = rep(NA_real_, n_points),
@@ -830,19 +831,32 @@ rs_wm$which <- "Rs"
 results <- bind_rows(gpp_wm, rs_wm)
 
 results_w50 <- filter(results, w == 0.5)
+results_w25 <- filter(results, w == 0.25)
 
 p_joint <- ggplot(results, aes(w, q500, color = which)) +
   geom_line(size = 1.5) +
   geom_ribbon(aes(fill = which, ymin = q025, ymax = q975), 
               color = NA, alpha = 0.25, show.legend = FALSE) + 
-  coord_cartesian(ylim = c(40, 200)) +
+  coord_cartesian(ylim = c(40, 180), expand = FALSE) +
   scale_color_discrete("") +
-  geom_segment(data = results_w50, aes(x = 0, xend = w, yend = q500), linetype = 2) +
-  geom_vline(xintercept = 0.5, linetype = 2)
+  # 50%
+  geom_segment(data = results_w50, aes(x = 0, xend = w, yend = q500), 
+               linetype = 2, size = 0.75) +
+  geom_label(data = results_w50, aes(x = 0.1, y = q500, label = round(q500, 0)),
+            size = 3, fontface = "bold", show.legend = FALSE) +
+  # 33%
+  geom_segment(data = results_w25, aes(x = 0, xend = w, yend = q500), 
+               linetype = 2, size = 0.5) +
+  geom_label(data = results_w25, aes(x = 0.05, y = q500, label = round(q500, 0)),
+            size = 2, show.legend = FALSE) +
+  # Other
+  geom_vline(xintercept = 0.5, linetype = 2, color = "darkgrey") +
+  
+  xlab("<-- Determined by bottom-up Rs                    Determined by top-down GPP -->") +
+  ylab(expression("50%"~quantile~(Pg~C~yr^-1)))
 print(p_joint)
 knitr::kable(results_w50, digits = 1, format = "markdown")
 ```
-
 
 
 ## Other diagnoses
