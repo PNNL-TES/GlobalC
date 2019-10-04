@@ -577,11 +577,11 @@ p_gpp2_tt <- t_test(gpp_results$GPP_raw, gpp_results$GPP2)
 p_gpp3_tt <- t_test(gpp_results$GPP_raw, simple_ratio_results$GPP)
 ```
 
-Scenario          | Agreement (quantiles) | p-value (t.test)
------------------ | --------------------- | -----------------
-1 (no weighting)  | `r p_gpp1 * 100` %     | `r p_gpp1_tt`
-2 (weighting)     | `r p_gpp2 * 100` %     | `r p_gpp2_tt`
-3 (simple global) | `r p_gpp3 * 100` %     | `r p_gpp3_tt`
+Scenario                 | Agreement (quantiles) | p-value (t.test)
+------------------------ | --------------------- | -----------------
+1 (no weighting)         | `r p_gpp1 * 100` %     | `r p_gpp1_tt`
+2 (weighting)            | `r p_gpp2 * 100` %     | `r p_gpp2_tt`
+3 (simple global Rs:GPP) | `r p_gpp3 * 100` %     | `r p_gpp3_tt`
 
 
 ```{r prepare variables for RSG boostrapping}
@@ -788,11 +788,11 @@ p_Rs2_tt <- t_test(rs_results$Rs_raw, rs_results$Rs_topdown2)
 p_Rs3_tt <- t_test(rs_results$Rs_raw, simple_ratio_results$Rs)
 ```
 
-Scenario          | Agreement (quantiles) | p-value (t.test)
------------------ | --------------------- | -----------------
-1 (no weighting)  | `r p_Rs1 * 100` %     | `r p_Rs1_tt`
-2 (weighting)     | `r p_Rs2 * 100` %     | `r p_Rs2_tt`
-3 (simple global) | `r p_Rs3 * 100` %     | `r p_Rs3_tt`
+Scenario                 | Agreement (quantiles) | p-value (t.test)
+------------------------ | --------------------- | -----------------
+1 (no weighting)         | `r p_Rs1 * 100` %     | `r p_Rs1_tt`
+2 (weighting)            | `r p_Rs2 * 100` %     | `r p_Rs2_tt`
+3 (simple global Rs:GPP) | `r p_Rs3 * 100` %     | `r p_Rs3_tt`
 
 
 ## Topdown and bottomup comparison - Figure 1
@@ -801,6 +801,48 @@ Scenario          | Agreement (quantiles) | p-value (t.test)
 plot_grid(p1_gpp2, p2_rs2, ncol=1, labels = c("(a)", "(b)"), hjust = -4, vjust = 4)
 ggsave("outputs/Figure2.jpg", width = 6, height = 8, dpi = 300, units = "in")
 ```
+
+
+## Combining GPP and Rs
+
+```{r joint, results='show'}
+# I think we want to take the *weighted* mean of two PDFs
+n_points <- 20
+# w is the weight of top-down GPP dominance, 0 to 1
+w <- seq(0, 1, length.out = 20)
+w <- c(0.5, w) %>% unique() %>% sort()  # make sure 0.5 is included
+gpp_wm <- tibble(q025 = rep(NA_real_, n_points), 
+                 q500 = rep(NA_real_, n_points),
+                 q975 = rep(NA_real_, n_points))
+rs_wm  <- tibble(q025 = rep(NA_real_, n_points), 
+                 q500 = rep(NA_real_, n_points),
+                 q975 = rep(NA_real_, n_points))
+for(i in seq_along(w)) {
+  weighted_gpp <- gpp_results$GPP_raw * w[i] + gpp_results$GPP * (1 - w[i])
+  gpp_wm[i,] <- quantile(weighted_gpp, probs = QUANTILES)
+  weighted_rs <- rs_results$Rs_raw * (1 - w[i]) + rs_results$Rs_topdown * w[i]
+  rs_wm[i,] <- quantile(weighted_rs, probs = QUANTILES)
+}
+gpp_wm$w <- w
+rs_wm$w <- w
+gpp_wm$which <- "GPP"
+rs_wm$which <- "Rs"
+results <- bind_rows(gpp_wm, rs_wm)
+
+results_w50 <- filter(results, w == 0.5)
+
+p_joint <- ggplot(results, aes(w, q500, color = which)) +
+  geom_line(size = 1.5) +
+  geom_ribbon(aes(fill = which, ymin = q025, ymax = q975), 
+              color = NA, alpha = 0.25, show.legend = FALSE) + 
+  coord_cartesian(ylim = c(40, 200)) +
+  scale_color_discrete("") +
+  geom_segment(data = results_w50, aes(x = 0, xend = w, yend = q500), linetype = 2) +
+  geom_vline(xintercept = 0.5, linetype = 2)
+print(p_joint)
+knitr::kable(results_w50, digits = 1, format = "markdown")
+```
+
 
 
 ## Other diagnoses
