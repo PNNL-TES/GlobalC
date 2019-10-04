@@ -55,7 +55,7 @@ E.g. what % of the distribution of each 'allows' us to match the central estimat
 * Provide a method to compare top-down Rs (Rs separated from remote sensing land model based GPP) with filed experiment based Rs (field Rs measurement, then modeling).
 
 
-```{r load packages, message=FALSE, echo=FALSE}
+```{r preliminaries, message=FALSE, echo=FALSE}
 # Constants
 OUTPUT_DIR		<- "outputs/"
 SEPARATOR		<- "-------------------------------------------"
@@ -82,11 +82,7 @@ library(dplyr)
 
 # Source all needed functions
 source('functions.R')
-```
 
-
-```{r preliminaries, echo=FALSE}
-# message=FALSE, include=FALSE, echo=FALSE, cache=TRUE
 # Set chunks defaults; these options will be applied to all subsequent chunks
 knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, 
                       echo = FALSE, warning = FALSE,
@@ -276,13 +272,15 @@ var_RaGpp %>% count(Ecosystem)
 var_RaGpp %>% count(Leaf_habit)
 
 var_RaGpp %>% 
-  mutate(IGBP2 = case_when(Ecosystem %in% c("Crop", "Tundra", "Wetland", "Agriculture") ~ "Other",
-                           Ecosystem %in% c("Grassland", "Savanna") ~ "Grassland",
-                           Ecosystem == "Forest" & Leaf_habit == "Deciduous" ~ "Deciduous",
-                           Ecosystem == "Forest" & Leaf_habit == "Evergreen" ~ "Evergreen",
-                           Ecosystem == "Forest" & Leaf_habit == "Forest" ~ "Forest",
-                           Ecosystem == "Forest" & Leaf_habit == "Mixed" ~ "Forest",
-                           TRUE ~ "NOTA")) -> var_RaGpp
+  mutate(IGBP2 = case_when(
+    Ecosystem %in% c("Crop", "Tundra", "Wetland", "Agriculture") ~ "Other",
+    Ecosystem %in% c("Grassland", "Savanna") ~ "Grassland",
+    Ecosystem == "Forest" & Leaf_habit == "Deciduous" ~ "Deciduous",
+    Ecosystem == "Forest" & Leaf_habit == "Evergreen" ~ "Evergreen",
+    Ecosystem == "Forest" & Leaf_habit == "Forest" ~ "Forest",
+    Ecosystem == "Forest" & Leaf_habit == "Mixed" ~ "Forest",
+    TRUE ~ "NOTA")
+  ) -> var_RaGpp
 
 var_RaGpp %>% count(IGBP2)
 var_RaGpp %>% count(Ecosystem)
@@ -316,7 +314,7 @@ shr_area <- IGBP_summary[IGBP_summary$IGBP_group == "SH",]$percent
 ```
 
 
-```{r prepare variables for boostrapping}
+```{r boostrapping-prep}
 # 1. prepare RC (Rroot-to-Rs ratio data) **********
 # get subset data for Bottom-up approach to estimate GPP, separate into 7 groups
 var_RC <- sub_srdb %>% 
@@ -531,16 +529,16 @@ ggplot(gpp_results, aes(x = NPP, y = GPP2)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") + 
-  xlab(expression(NPP~"("~Pg~C~yr^{-1}~")")) +
-  ylab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
+  xlab(expression(NPP~(Pg~C~yr^{-1}))) +
+  ylab(expression(GPP~(Pg~C~yr^{-1})))
 
 # GPP ~ Rs
 ggplot(gpp_results, aes(x = gpp_results$Rs_raw, y = GPP2)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
-  xlab(expression(R[S]~"("~Pg~C~yr^{-1}~")")) +
-  ylab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
+  xlab(expression(R[S]~(Pg~C~yr^{-1}))) +
+  ylab(expression(GPP~(Pg~C~yr^{-1})))
 
 # GPP ~ Rc
 ggplot(gpp_results, aes(x = Rc, y = GPP2)) +
@@ -548,7 +546,7 @@ ggplot(gpp_results, aes(x = Rc, y = GPP2)) +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
   xlab(expression(RC)) +
-  ylab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
+  ylab(expression(GPP~(Pg~C~yr^{-1})))
 
 # GPP ~ Froot
 ggplot(gpp_results, aes(x = Froot, y = GPP2)) +
@@ -556,7 +554,7 @@ ggplot(gpp_results, aes(x = Froot, y = GPP2)) +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
   xlab(expression(Froot)) +
-  ylab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
+  ylab(expression(GPP~(Pg~C~yr^{-1})))
 
 # GPP ~ Fshoot
 ggplot(gpp_results, aes(x = 1-Froot, y = GPP2)) +
@@ -564,7 +562,7 @@ ggplot(gpp_results, aes(x = 1-Froot, y = GPP2)) +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
   xlab(expression(Fshoot)) +
-  ylab(expression(GPP~"("~Pg~C~yr^{-1}~")"))
+  ylab(expression(GPP~(Pg~C~yr^{-1})))
 ```
 
 ### Probability of agreement
@@ -741,24 +739,24 @@ ggplot(rs_results, aes(x = GPP_raw, y = Rs_topdown)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
-  xlab(expression(GPP~"("~Pg~C~yr^{-1}~")")) +
-  ylab(expression(R[S]~"("~Pg~C~yr^{-1}~")"))
+  xlab(expression(GPP~(Pg~C~yr^{-1}))) +
+  ylab(expression(R[S]~(Pg~C~yr^{-1})))
 
 # Rs ~ NPP
 ggplot(rs_results, aes(x = NPP, y = Rs_topdown)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
-  xlab(expression(NPP~"("~Pg~C~yr^{-1}~")")) +
-  ylab(expression(R[S]~"("~Pg~C~yr^{-1}~")"))
+  xlab(expression(NPP~(Pg~C~yr^{-1}))) +
+  ylab(expression(R[S]~(Pg~C~yr^{-1})))
 
 # Rs ~ RaGpp
 ggplot(rs_results, aes(x = RaGpp, y = Rs_topdown)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
-  xlab(expression("Ra/GPP"~"("~Pg~C~yr^{-1}~")")) +
-  ylab(expression(R[S]~"("~Pg~C~yr^{-1}~")"))
+  xlab(expression(R %/% GPP~(Pg~C~yr^{-1}))) +
+  ylab(expression(R[S]~(Pg~C~yr^{-1})))
 
 # Rs ~ Froot
 ggplot(rs_results, aes(x = Froot2, y = Rs_topdown)) +
@@ -766,7 +764,7 @@ ggplot(rs_results, aes(x = Froot2, y = Rs_topdown)) +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
   xlab(expression(Froot)) +
-  ylab(expression(R[S]~"("~Pg~C~yr^{-1}~")"))
+  ylab(expression(R[S]~(Pg~C~yr^{-1})))
 
 # Rs ~ Fire
 ggplot(rs_results, aes(x = Fire, y = Rs_topdown)) +
@@ -774,7 +772,7 @@ ggplot(rs_results, aes(x = Fire, y = Rs_topdown)) +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
   xlab(expression(Fire~burned~"("~Pg~C~yr^{-1}~")")) +
-  ylab(expression(R[S]~"("~Pg~C~yr^{-1}~")"))
+  ylab(expression(R[S]~(Pg~C~yr^{-1})))
 ```
 
 ### RSG probability of agreement
@@ -843,17 +841,17 @@ p_joint <- ggplot(results, aes(w, q500, color = which)) +
   geom_segment(data = results_w50, aes(x = 0, xend = w, yend = q500), 
                linetype = 2, size = 0.75) +
   geom_label(data = results_w50, aes(x = 0.1, y = q500, label = round(q500, 0)),
-            size = 3, fontface = "bold", show.legend = FALSE) +
+             size = 3, fontface = "bold", show.legend = FALSE) +
   # 33%
   geom_segment(data = results_w25, aes(x = 0, xend = w, yend = q500), 
                linetype = 2, size = 0.5) +
   geom_label(data = results_w25, aes(x = 0.05, y = q500, label = round(q500, 0)),
-            size = 2, show.legend = FALSE) +
+             size = 2, show.legend = FALSE) +
   # Other
   geom_vline(xintercept = 0.5, linetype = 2, color = "darkgrey") +
   
   xlab("<-- Determined by bottom-up Rs                    Determined by top-down GPP -->") +
-  ylab(expression("50%"~quantile~(Pg~C~yr^-1)))
+  ylab(expression(Flux~(Pg~C~yr^-1)))
 print(p_joint)
 knitr::kable(results_w50, digits = 1, format = "markdown")
 ```
