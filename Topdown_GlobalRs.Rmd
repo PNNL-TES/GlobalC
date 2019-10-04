@@ -29,16 +29,16 @@ output:
 * __Bottom-up approach:__ 
 1. We collected published global soil respiration estimates (mostly is based on bottom up field Rs measurements)
 2. We then partition Rs into root respiration and belowground heterotrophic resipiration
-3. We also collected published NPP estimates in the past decades from ITO et al. (2011)
-4. We then collected (and calculated) Rroot/Ra ratio, according to the root respiration, GPP can be calculates as (NPP + Rroot + Rshoot)
-5. We then compare this bottomup GPP with published GPP in the past decades (n=65) to see how much probability they will match
+3. We also collected published NPP estimates from ITO et al. (2011)
+4. From published Rroot/Ra ratios, GPP can be calculated as (NPP + Rroot + Rshoot)
+5. We then compare this bottom-up GPP with published GPP in the past decades
 
 * __Top-down approach:__
-1. We first collect global GPP estimates in the past decades (most is top-dow remote sensing estimates)
-2. We then estimate Ra according to Ra/GPP ratio and GPP-NPP
-3. Heterotrophic respiration was estimated according to Rh = NPP - HerbComsum - Fire - Csink (NEP)
-4. Rs_topdown =  Rh + Rroot
-5. We then compare this top-down Rs with published Rs in the past decades (n=27) to see how much probability they will match
+6. We first collect global GPP estimates (most are top-down from remote sensing)
+7. We then estimate Ra according to published Ra/GPP ratios and GPP-NPP
+8. Heterotrophic respiration was estimated as Rh = NPP - HerbComsum - Fire - Csink (NEP)
+9. Rs_topdown =  Rh + Rroot
+10. We then compare this with published Rs (#1 above)
 
 ## Questions and more analysis in the future
 * How unlikely is it that we can reconcile current Rs and GPP estimates? 
@@ -58,7 +58,6 @@ E.g. what % of the distribution of each 'allows' us to match the central estimat
 ```{r preliminaries, message=FALSE, echo=FALSE}
 # Constants
 OUTPUT_DIR		<- "outputs/"
-SEPARATOR		<- "-------------------------------------------"
 DATA_DIR <- 'data'
 # Create output and log folders if they do not exist
 if(!file.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
@@ -94,86 +93,39 @@ knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE,
 
 ```{r load data}
 # input data
-srdb_v4 <- read.csv(file.path(DATA_DIR, 'srdbv4.csv')) # SRDB_V4 data
-FlFsFr <- read.csv(file.path(DATA_DIR, 'FlFsFrSummary.csv')) # Froot (Rroot/Rs) and Fshoot (Rshoot/Rs) from 39 papers
-GPP <- read.csv(file.path(DATA_DIR, 'GlobalGPP_Sum.csv')) # 65 GPP estimates from published paper
+read_file <- function(x) read.csv(file.path(DATA_DIR, x))
+
+srdb_v4 <- read_file('srdbv4.csv') # SRDB_V4 data
+FlFsFr <- read_file('FlFsFrSummary.csv') # Froot (Rroot/Rs) and Fshoot (Rshoot/Rs) from 39 papers
+GPP <- read_file('GlobalGPP_Sum.csv') # 65 GPP estimates from published paper
 GPP %>% filter(Year > 1980) -> GPP
-NPP <- read.csv(file.path(DATA_DIR, 'ITONPP.CSV')) # 251 NPP estimates from ITO (2011)
-GlobalRs <- read.csv(file.path(DATA_DIR, 'GlobalRs.csv')) # 27 estimates of global Rs
+NPP <- read_file('ITONPP.CSV') # 251 NPP estimates from ITO (2011)
+GlobalRs <- read_file('GlobalRs.csv') # 27 estimates of global Rs
 GlobalRs %>% filter(Year > 1980) -> GlobalRs
 # (Ra/GPP) Piao, Shilong, et al. "Forest annual carbon cost: A global‐scale analysis of autotrophic respiration." Ecology 91.3 (2010): 652-661.
-RaGPP <- read.csv(file.path(DATA_DIR, 'RaGPP.csv')) 
-IGBP <- read.table(file.path(DATA_DIR, 'IGBP.txt'), header = TRUE, sep = ",")
-# sort(unique(IGBP$IGBP2001Pr))
-# There are 16 IGBP groups
-IGBP %>% 
-  mutate(IGBP = case_when(IGBP2001Pr == 0 ~ "WAT",
-                          IGBP2001Pr == 1 ~ "ENF",
-                          IGBP2001Pr == 2 ~ "EBF",
-                          IGBP2001Pr == 3 ~ "DNF",
-                          IGBP2001Pr == 4 ~ "DBF",
-                          IGBP2001Pr == 5 ~ "MF",
-                          IGBP2001Pr == 6 ~ "CSH",
-                          IGBP2001Pr == 7 ~ "OSH",
-                          IGBP2001Pr == 8 ~ "WSA",
-                          IGBP2001Pr == 9 ~ "SAV",
-                          IGBP2001Pr == 10 ~ "GRA",
-                          IGBP2001Pr == 11 ~ "WET",
-                          IGBP2001Pr == 12 ~ "CRO",
-                          IGBP2001Pr == 13 ~ "URB",
-                          IGBP2001Pr == 14 ~ "CVM",
-                          IGBP2001Pr == 15 ~ "SNO",
-                          IGBP2001Pr == 16 ~ "BSV",
-                          TRUE ~ "UNC" ) ) -> IGBP
-# BBL: Interesting; I didn't know case_when! Aanother way to do this would be 
-# IGBP_list <- c("WAT", "ENF", ...)
-# IGBP$IGBP <- IGBP_list[IGBP$IGBP2001Pr]
-# 16 IGBP group into 10 Ecosystems
-IGBP %>% 
-  mutate (Ecosystem = case_when(IGBP2001Pr == 0 ~ "Water",
-                                IGBP2001Pr == 1 ~ "Forest",
-                                IGBP2001Pr == 2 ~ "Forest",
-                                IGBP2001Pr == 3 ~ "Forest",
-                                IGBP2001Pr == 4 ~ "Forest",
-                                IGBP2001Pr == 5 ~ "Forest",
-                                IGBP2001Pr == 6 ~ "Shrubland",
-                                IGBP2001Pr == 7 ~ "Shrubland",
-                                IGBP2001Pr == 8 ~ "Savanna",
-                                IGBP2001Pr == 9 ~ "Savanna",
-                                IGBP2001Pr == 10 ~ "Grassland",
-                                IGBP2001Pr == 11 ~ "Wetland",
-                                IGBP2001Pr == 12 ~ "Agriculture",
-                                IGBP2001Pr == 13 ~ "Urbland",
-                                IGBP2001Pr == 14 ~ "Agriculture",
-                                IGBP2001Pr == 15 ~ "Snow",
-                                IGBP2001Pr == 16 ~ "Desert",
-                                TRUE ~ "Unclassified")) -> IGBP
+RaGPP <- read_file('RaGPP.csv') 
+IGBP <- read_file('IGBP.txt')
 
-IGBP %>% 
-  mutate(IGBP_group = case_when(IGBP2001Pr == 0 ~ "WAT",
-                                IGBP2001Pr == 1 ~ "EF",
-                                IGBP2001Pr == 2 ~ "EF",
-                                IGBP2001Pr == 3 ~ "DF",
-                                IGBP2001Pr == 4 ~ "DF",
-                                IGBP2001Pr == 5 ~ "MF",
-                                IGBP2001Pr == 6 ~ "SH",
-                                IGBP2001Pr == 7 ~ "SH",
-                                IGBP2001Pr == 8 ~ "GRA",
-                                IGBP2001Pr == 9 ~ "GRA",
-                                IGBP2001Pr == 10 ~ "GRA",
-                                IGBP2001Pr == 11 ~ "WET",
-                                IGBP2001Pr == 12 ~ "CRO",
-                                IGBP2001Pr == 13 ~ "URB",
-                                IGBP2001Pr == 14 ~ "CRO",
-                                IGBP2001Pr == 15 ~ "SNO",
-                                IGBP2001Pr == 16 ~ "BSV",
-                                TRUE ~ "UNC" ) ) -> IGBP
+# There are 17 IGBP PFTs; map them to SRDB ecosystem types
+igbp_pft <- c("Water" = "WAT", 
+              "Forest" = "ENF", "Forest" = "EBF", "Forest" = "DNF", "Forest" = "DBF", "Forest" = "MF", 
+              "Shrubland" = "CSH", "Shrubland" = "OSH",
+              "Savanna" = "WSA", "Savanna" = "SAV",
+              "Grassland" = "GRA", "Wetland" = "WET",
+              "Agriculture" = "CRO", "Urbland" = "URB", "Agriculture" = "CVM", 
+              "Snow" = "SNO", "Desert" = "BSV")
+IGBP$IGBP <- igbp_pft[IGBP$IGBP2001Pr + 1]
+IGBP$Ecosystem <- names(igbp_pft)[IGBP$IGBP2001Pr + 1]
 
-# DGRsD <- read.csv(file.path(DATA_DIR, 'DGRsD.csv'), header = TRUE)
-AGB <- read.table(file.path(DATA_DIR, 'GLC2000_Point.txt'), header = TRUE, sep = ",")
-AGB %>% filter(RASTERVALU != -9999) -> AGB
+igbp_group <- c("WAT", "EF", "EF", "DF", "DF", "MF", "SH", "SH", "GRA",
+            "GRA", "GRA", "WET", "CRO", "URB", "CRO", "SNO", "BSV")
+IGBP$IGBP_group <- igbp_group[IGBP$IGBP2001Pr + 1]
 
-SOC <- read.table(file.path(DATA_DIR, 'SOC_Point.txt'), header = TRUE, sep = ",")
+# DGRsD <- read_file('DGRsD.csv')
+AGB <- read_file('GLC2000_Point.txt') %>% 
+  filter(RASTERVALU != -9999)
+
+SOC <- read_file('SOC_Point.txt')
 
 srdb_v4 %>% 
   select(Study_number, Biome, Ecosystem_type, Leaf_habit, 
@@ -224,7 +176,6 @@ p_rs <- ggplot(GlobalRs, aes(Year_published, Rs)) + geom_point() +
   ylab(expression(R[S]~(Pg~C~yr^-1)))
 p_rs <- ggMarginal(p_rs, type = "densigram", margins = "y", fill = "red")
 ggsave("outputs/p_rs.png", plot = p_rs, width = 8, height = 5)
-
 ```
 
 
@@ -262,7 +213,6 @@ ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 plot_froot(Froot)
 ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
-
 
 ### Plot Ra to GPP ratio
 ```{r plot Ra-GPP ratio}
