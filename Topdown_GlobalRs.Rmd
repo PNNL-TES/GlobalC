@@ -456,14 +456,14 @@ gpp_ratio_figure_data %>%
   ggplot(aes(value, fill = GPP_type)) +
   geom_density(stat = 'density', alpha = 0.5) +
   theme(legend.position = c(0.75, 0.75)) +
-  coord_cartesian(xlim = c(25, 350)) +
+  coord_cartesian(xlim = c(75, 250)) +
   scale_fill_discrete("") + ylab("Density") +
   xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
   gpp_ratio_figure
 
 p1_gpp3 <- annotations(gpp_ratio_figure,
                        unique(gpp_ratio_figure_data$GPP_type), 
-                       gpp_qt, gpp_qt_raw, 200)
+                       gpp_qt, gpp_qt_raw, 175)
 print(p1_gpp3)
 ```
 
@@ -779,14 +779,14 @@ p_joint <- ggplot(results, aes(w, q500, color = which)) +
   # 50%
   geom_segment(data = results_w50, aes(x = 0, xend = w, yend = q500), 
                linetype = 2, size = 0.75) +
-  geom_label(data = results_w50, aes(x = 0.1, y = q500, label = round(q500, 0)),
+  geom_label(data = results_w50, aes(x = 0.05, y = q500, label = round(q500, 0)),
              size = 3, fontface = "bold", show.legend = FALSE) +
   
   # 25%
-  geom_segment(data = results_w25, aes(x = 0, xend = w, yend = q500), 
-               linetype = 2, size = 0.5) +
-  geom_label(data = results_w25, aes(x = 0.05, y = q500, label = round(q500, 0)),
-             size = 2, show.legend = FALSE) +
+  # geom_segment(data = results_w25, aes(x = 0, xend = w, yend = q500), 
+  #              linetype = 2, size = 0.5) +
+  # geom_label(data = results_w25, aes(x = 0.05, y = q500, label = round(q500, 0)),
+  #            size = 2, show.legend = FALSE) +
   
   # Arrows and labels
   annotate("segment", x = 0.1, xend = 0.025, y = 60, yend = 60, arrow = myarrow) +
