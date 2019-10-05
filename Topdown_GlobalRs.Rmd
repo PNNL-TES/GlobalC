@@ -103,22 +103,10 @@ GlobalRs <- read_file('GlobalRs.csv') # 27 estimates of global Rs
 GlobalRs %>% filter(Year > 1980) -> GlobalRs
 # (Ra/GPP) Piao, Shilong, et al. "Forest annual carbon cost: A global‐scale analysis of autotrophic respiration." Ecology 91.3 (2010): 652-661.
 RaGPP <- read_file('RaGPP.csv') 
-IGBP <- read_file('IGBP.txt')
 
-# There are 17 IGBP PFTs; map them to SRDB ecosystem types
-igbp_pft <- c("Water" = "WAT", 
-              "Forest" = "ENF", "Forest" = "EBF", "Forest" = "DNF", "Forest" = "DBF", "Forest" = "MF", 
-              "Shrubland" = "CSH", "Shrubland" = "OSH",
-              "Savanna" = "WSA", "Savanna" = "SAV",
-              "Grassland" = "GRA", "Wetland" = "WET",
-              "Agriculture" = "CRO", "Urbland" = "URB", "Agriculture" = "CVM", 
-              "Snow" = "SNO", "Desert" = "BSV")
-IGBP$IGBP <- igbp_pft[IGBP$IGBP2001Pr + 1]
-IGBP$Ecosystem <- names(igbp_pft)[IGBP$IGBP2001Pr + 1]
-
-igbp_group <- c("WAT", "EF", "EF", "DF", "DF", "MF", "SH", "SH", "GRA",
-            "GRA", "GRA", "WET", "CRO", "URB", "CRO", "SNO", "BSV")
-IGBP$IGBP_group <- igbp_group[IGBP$IGBP2001Pr + 1]
+# IGBP data, and information to map it with other data
+IGBP <- read_file('IGBP.txt') %>% 
+  left_join(read_file("igbp_mapping.csv"), by = "IGBP2001Pr")
 
 # DGRsD <- read_file('DGRsD.csv')
 AGB <- read_file('GLC2000_Point.txt') %>% 
@@ -143,7 +131,6 @@ Froot %>% mutate(IGBP2 = case_when(
   TRUE ~ "Other"
 )) -> Froot
 ```
-
 
 ## Sites spatial distribution
 ```{r plot spatial distribution, echo=FALSE, warning=FALSE}
@@ -284,10 +271,10 @@ var_rest_rc <- var_RC # for those ecosystem (e.g., tundra) with no data, use all
 
 # 2. prepare Froot (Rroot-to-Ra ratio data) **********
 var_agr_froot <- Froot[Froot$Ecosystem == "Agriculture",]$Froot # samples of Froot for agriculture
-var_for_froot <- Froot[Froot$Ecosystem == "Forest",]$Froot # samples of Froot for forest
-var_gra_froot <- Froot[Froot$Ecosystem == "Grassland",]$Froot # samples of Froot for grassland
-var_sav_froot <- Froot[Froot$Ecosystem == "Savanna",]$Froot # samples of Froot for savanna
-var_wet_froot <- Froot[Froot$Ecosystem == "Wetland",]$Froot # samples of Froot for agriculture
+var_for_froot <- Froot[Froot$Ecosystem == "Forest",]$Froot #  forest
+var_gra_froot <- Froot[Froot$Ecosystem == "Grassland",]$Froot #  grassland
+var_sav_froot <- Froot[Froot$Ecosystem == "Savanna",]$Froot #  savanna
+var_wet_froot <- Froot[Froot$Ecosystem == "Wetland",]$Froot #  agriculture
 var_rest_froot <- Froot$Froot # for those ecosystems with no data, use all data from Froot
 # only separate into ef and the rest
 var_ef_froot <- Froot[Froot$IGBP2 == "EF",]$Froot # Froot data for ef
@@ -299,8 +286,8 @@ var_other_froot <- Froot[Froot$IGBP2 == "Other",]$Froot # samples of Froot for n
 
 ```{r bootstrap-creation}
 # Bootstrap settings
-N_SAMPLES <- 50000 # Take 50000 samples
-QUANTILES <- c(0.025, 0.5, 0.975)  # Generate mean at 95% CI
+N_SAMPLES <- 50000
+QUANTILES <- c(0.025, 0.5, 0.975)  # Generate mean and 95% CI
 set.seed(20190827)
 
 # Rs and GPP draws used by bootstrapping GPP and Rs blocks below
@@ -346,14 +333,13 @@ bootstrap_data %>%
     # Step 4. calculation ********************
     # Rc = replicate( n_rep, var_RC$RC_annual, N_SAMPLES, replace = TRUE) %>% mean() ), # scenario 0: Rc not separate into different ecosystems, not used
     Rc = sample(var_RC$RC_annual, N_SAMPLES, replace = TRUE),
-    # Rc = Rc_df*df_area + Rc_ef*ef_area + Rc_mf*mf_area + Rc_rest*1-(df_area + ef_area + mf_area), 
     
     # Scenario 2: Rc separate into 4 groups: agriculture, forest, grassland, and rest (all other ecosystems with obs<40, take samples from all RC records)
     # only separate into four groups, agriculture, forest, grassland and the rest
     # 1-(0.191 + 0.214 + 0.153 + 0.268)
     Rc2 = (Rc_agr * ag_area + Rc_df * df_area + Rc_ef * ef_area + Rc_mf * mf_area + 
-             Rc_gra * gra_area + Rc_shr * shr_area 
-           + Rc_rest * (1 - ag_area - df_area - ef_area-mf_area - gra_area - shr_area)), 
+             Rc_gra * gra_area + Rc_shr * shr_area + Rc_rest * 
+             (1 - ag_area - df_area - ef_area-mf_area - gra_area - shr_area)), 
     
     # Scenario 1: Froot not separate into different ecosystems
     Froot = sample(Froot$Froot, N_SAMPLES, replace = TRUE) ,
@@ -401,7 +387,8 @@ gpp_figure_data %>%
   gpp_base_figure
 
 p1_gpp <- annotations(gpp_base_figure, 
-                      unique(gpp_figure_data$GPP_type), gpp_qt, gpp_qt_raw, 150)
+                      unique(gpp_figure_data$GPP_type), 
+                      gpp_qt, gpp_qt_raw, 150)
 print(p1_gpp)
 ggsave("outputs/Figure2_gpp.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
@@ -418,7 +405,8 @@ gpp_results %>%
   gpp_figure2_data
 
 p1_gpp2 <- annotations(gpp_base_figure %+% gpp_figure2_data,
-                       unique(gpp_figure2_data$GPP_type), gpp_qt, gpp_qt_raw, 150)
+                       unique(gpp_figure2_data$GPP_type),
+                       gpp_qt, gpp_qt_raw, 150)
 print(p1_gpp2)
 ```
 
@@ -437,7 +425,8 @@ srdb_v4 %>%
   srdb_v4_ratio
 
 Rs_to_GPP_unweighted <- with(srdb_v4, mean(Rs_annual / GPP, na.rm = TRUE))
-Rs_to_GPP_weighted <- with(srdb_v4_ratio, weighted.mean(Rs_annual / GPP, w = rel_area, na.rm = TRUE))
+Rs_to_GPP_weighted <- with(srdb_v4_ratio, weighted.mean(Rs_annual / GPP, 
+                                                        w = rel_area, na.rm = TRUE))
 
 bootstrap_data %>% 
   mutate(Rs = GPP_raw * Rs_to_GPP_weighted,
@@ -452,18 +441,10 @@ ratio_results %>%
   gather(GPP_type) ->
   gpp_ratio_figure_data
 
-gpp_ratio_figure_data %>% 
-  ggplot(aes(value, fill = GPP_type)) +
-  geom_density(stat = 'density', alpha = 0.5) +
-  theme(legend.position = c(0.75, 0.75)) +
-  coord_cartesian(xlim = c(75, 250)) +
-  scale_fill_discrete("") + ylab("Density") +
-  xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
-  gpp_ratio_figure
-
-p1_gpp3 <- annotations(gpp_ratio_figure,
+p1_gpp3 <- annotations(gpp_base_figure %+% gpp_ratio_figure_data,
                        unique(gpp_ratio_figure_data$GPP_type), 
-                       gpp_qt, gpp_qt_raw, 175)
+                       gpp_qt, gpp_qt_raw, 175) ->
+  p1_gpp3
 print(p1_gpp3)
 ```
 
@@ -487,7 +468,7 @@ gpp_results %>% ggplot() + aes(Rroot2) +
   geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
 
 # GPP ~ NPP
-ggplot(gpp_results, aes(x = NPP, y = GPP2)) +
+ggplot(gpp_results, aes(NPP, GPP2)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") + 
@@ -495,7 +476,7 @@ ggplot(gpp_results, aes(x = NPP, y = GPP2)) +
   ylab(expression(GPP~(Pg~C~yr^{-1})))
 
 # GPP ~ Rs
-ggplot(gpp_results, aes(x = gpp_results$Rs_raw, y = GPP2)) +
+ggplot(gpp_results, aes(Rs_raw, GPP2)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
@@ -503,19 +484,18 @@ ggplot(gpp_results, aes(x = gpp_results$Rs_raw, y = GPP2)) +
   ylab(expression(GPP~(Pg~C~yr^{-1})))
 
 # GPP ~ Rc
-ggplot(gpp_results, aes(x = Rc, y = GPP2)) +
+ggplot(gpp_results, aes(Rc, GPP2)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
-  xlab(expression(RC)) +
+  xlab("RC") +
   ylab(expression(GPP~(Pg~C~yr^{-1})))
 
 # GPP ~ Froot
-ggplot(gpp_results, aes(x = Froot, y = GPP2)) +
+ggplot(gpp_results, aes(Froot, GPP2)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
-  xlab(expression(Froot)) +
   ylab(expression(GPP~(Pg~C~yr^{-1})))
 
 # GPP ~ Fshoot
@@ -523,7 +503,7 @@ ggplot(gpp_results, aes(x = 1-Froot, y = GPP2)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
-  xlab(expression(Fshoot)) +
+  xlab("Fshoot") +
   ylab(expression(GPP~(Pg~C~yr^{-1})))
 ```
 
@@ -559,8 +539,10 @@ var_RaGpp_gra <- var_RaGpp %>% filter(Ecosystem == "Grassland") %>% pull(RaGPP_r
 ## Bootstrapping RSG
 ```{r rs-bootstrap}
 # topdown approach to estimate Rs
-# Ra = GPP * Ra_GPP_ratio (calculated based on data from a summary paper and from srdb, see plot_RaGPP function)
-# Ra = GPP - NPP (two approaches yield very similar results, we thus used the average of two estimates)
+# Ra = GPP * Ra_GPP_ratio (calculated based on data from a 
+#   summary paper and from srdb; see plot_RaGPP function)
+# Ra = GPP - NPP (two approaches yield very similar results;
+#   we thus used the average of two estimates)
 bootstrap_data %>% 
   mutate(
     # Step 1. prepare other components, NPP and NPP consumed by fire etc.
@@ -641,7 +623,8 @@ rs_figure_data %>%
   rs_base_figure
 
 p2_rs <- annotations(rs_base_figure, 
-                     types = unique(rs_figure_data$Rs_type), rsg_qt, rsg_qt_raw, 100)
+                     types = unique(rs_figure_data$Rs_type), 
+                     rsg_qt, rsg_qt_raw, 100)
 print(p2_rs)
 ggsave("outputs/Figure2_rs.jpg", width = 8, height = 4)
 ```
@@ -658,7 +641,8 @@ rs_results %>%
   rs_figure_data
 
 p2_rs2 <- annotations(rs_base_figure %+% rs_figure_data, 
-                      types = unique(rs_figure_data$Rs_type), rsg_qt, rsg_qt_raw, 100)
+                      types = unique(rs_figure_data$Rs_type), 
+                      rsg_qt, rsg_qt_raw, 100)
 print(p2_rs2)
 ```
 
@@ -672,7 +656,7 @@ ggplot(rs_results, aes(x = Ra1)) +
   ylab(expression(count))
 
 # Rs ~ GPP
-ggplot(rs_results, aes(x = GPP_raw, y = Rs_topdown)) +
+ggplot(rs_results, aes(GPP_raw, Rs_topdown)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
@@ -680,7 +664,7 @@ ggplot(rs_results, aes(x = GPP_raw, y = Rs_topdown)) +
   ylab(expression(R[S]~(Pg~C~yr^{-1})))
 
 # Rs ~ NPP
-ggplot(rs_results, aes(x = NPP, y = Rs_topdown)) +
+ggplot(rs_results, aes(NPP, Rs_topdown)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
@@ -688,7 +672,7 @@ ggplot(rs_results, aes(x = NPP, y = Rs_topdown)) +
   ylab(expression(R[S]~(Pg~C~yr^{-1})))
 
 # Rs ~ RaGpp
-ggplot(rs_results, aes(x = RaGpp, y = Rs_topdown)) +
+ggplot(rs_results, aes(RaGpp, Rs_topdown)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
@@ -696,7 +680,7 @@ ggplot(rs_results, aes(x = RaGpp, y = Rs_topdown)) +
   ylab(expression(R[S]~(Pg~C~yr^{-1})))
 
 # Rs ~ Froot
-ggplot(rs_results, aes(x = Froot2, y = Rs_topdown)) +
+ggplot(rs_results, aes(Froot2, Rs_topdown)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
@@ -704,11 +688,11 @@ ggplot(rs_results, aes(x = Froot2, y = Rs_topdown)) +
   ylab(expression(R[S]~(Pg~C~yr^{-1})))
 
 # Rs ~ Fire
-ggplot(rs_results, aes(x = Fire, y = Rs_topdown)) +
+ggplot(rs_results, aes(Fire, Rs_topdown)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
-  xlab(expression(Fire~burned~"("~Pg~C~yr^{-1}~")")) +
+  xlab(expression(Fire~burned~(Pg~C~yr^{-1}))) +
   ylab(expression(R[S]~(Pg~C~yr^{-1})))
 ```
 
@@ -765,7 +749,7 @@ results <- bind_rows("GPP" = gpp_wm, "Rs" = rs_wm, .id = "which")
 results_w50 <- filter(results, w == 0.5)
 results_w25 <- filter(results, w == 0.25)
 myarrow <- arrow(length = unit(0.05, "inches"))
-  
+
 p_joint <- ggplot(results, aes(w, q500, color = which)) +
   geom_vline(xintercept = 0.5, size = 0.25, linetype = 2) +
   
@@ -876,7 +860,6 @@ print(p_ratios)
 Note that the arithmetic mean of Rs:GPP in SRDB is `r round(Rs_to_GPP_unweighted, 3)` (median `r round(median(srdb_v4$Rs_annual / srdb_v4$GPP, na.rm = TRUE), 3)`), while the weighted (by area of ecosystem types globally) is `r round(Rs_to_GPP_weighted, 3)`. This close agreement implies that SRDB is in fact a pretty good representation of the land surface (and/or that Rs:GPP doesn't vary much).
 
 
-## Discarded codes
 ```{r not used}
 # Each row gets the closest latitude and longitude values to AGB and SOC data
 # AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
