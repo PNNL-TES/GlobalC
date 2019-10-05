@@ -415,12 +415,16 @@ replace_SD_and_generate <- function(m, s, n_samples = N_SAMPLES) {
 
 # Given a length 3 vector of quantiles (2.5%, 50%, 97.5%) return a nice label
 make_label <- function(qt_data) {
+  stopifnot(length(qt_data) == 3)
   paste0("Mean and 95% CI: ", qt_data[2], " (", qt_data[1], ", ", qt_data[3], ")")
 }
 # Given a figure, the types (character vector) of information it has, the two
 # quantile vectors (see above), and position information, return annotated figure
 annotations <- function(figure, types, x_qt, x_qt_raw, xpos) {
-  ann_dat <- tibble(Type = types,
+  stopifnot(length(x_qt) == 3)
+  stopifnot(length(x_qt_raw) == 3)
+
+    ann_dat <- tibble(Type = types,
                     GPP_type = NA, Rs_type = NA,
                     x = xpos, y = c(0.035, 0.025),
                     label = c(make_label(x_qt), make_label(x_qt_raw)))
@@ -433,6 +437,8 @@ annotations <- function(figure, types, x_qt, x_qt_raw, xpos) {
 # Given a vector `x` and the quantiles of the 'raw' distribution, i.e. the 
 # standard top-down GPP or bottom-up Rs, compute the probability they agree
 prob_agreement <- function(x, raw_quantiles) {
+  stopifnot(length(raw_quantiles) == 3)
+  
   # assuming x follows a normal distribution, we can calculate the probability
   # of it overlapping the distribution implied by the raw quantiles
   mu <- mean(x)
@@ -478,6 +484,8 @@ plot_froot <- function (sdata) {
 
 # Perform a Student's t-test and return results nicely formatted for a table
 t_test <- function(x, y, alternative = "two.sided", ...) {
+  stopifnot(is.numeric(x))
+  stopifnot(is.numeric(y))
   z <- t.test(x, y, alternative = alternative, ...)
   paste0("t = ", format(z$statistic, digits = 1, scientific = FALSE), 
          ", df = ", format(z$parameter, digits = 1, scientific = FALSE), 
