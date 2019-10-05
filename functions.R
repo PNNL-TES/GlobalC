@@ -1,68 +1,28 @@
 
 
-#*****************************************************************************************************************
-# Basic functions
-#*****************************************************************************************************************
-summarySE <- function(data = NULL, measurevar, groupvars = NULL, na.rm = FALSE,
-                      conf.interval = .95, .drop = TRUE) {
-  # library(plyr)
-  
-  # New version of length which can handle NA's: if na.rm =  = T, don't count them
-  length2 <- function (x, na.rm = FALSE) {
-    if (na.rm) sum(!is.na(x))
-    else       length(x)
-  }
-  
-  # This does the summary. For each group's data frame, return a vector with
-  # N, mean, and sd
-  datac <- plyr::ddply(data, groupvars, .drop = .drop,
-                       .fun = function(xx, col) {
-                         c(N    = length2(xx[[col]], na.rm = na.rm),
-                           mean = mean   (xx[[col]], na.rm = na.rm),
-                           median = median   (xx[[col]], na.rm = na.rm),
-                           #do.call("rbind", tapply(xx[[col]], measurevar, quantile, c(0.25, 0.5, 0.75)))
-                           sd   = sd     (xx[[col]], na.rm = na.rm)
-                         )
-                       },
-                       measurevar
-  )
-  
-  # Rename the "mean" column
-  datac <- plyr::rename(datac, c("mean" = measurevar))
-  
-  datac$se <- datac$sd / sqrt(datac$N)  # Calculate standard error of the mean
-  
-  # Confidence interval multiplier for standard error
-  # Calculate t-statistic for confidence interval:
-  # e.g., if conf.interval is .95, use .975 (above/below), and use df = N-1
-  ciMult <- qt(conf.interval / 2 + 0.5, datac$N - 1)
-  datac$ci <- datac$se * ciMult
-  
-  return(datac)
-}
-
 #************************************************************
-# plot Figure 1, sites distribution
-
+# plot sites distribution
 plot_sites <- function (sdata, sdata2) {
   worldMap <- map_data(map = "world")
   
   # RC sites from SRDB_v4
   sdata %>% 
     select(Study_number, Biome, Leaf_habit, Latitude, Longitude, RC_annual) %>% 
-    filter(RC_annual > 0 & RC_annual < 1) -> 
-    sub_srdb 
-  # sub_srdb$RC_RH_Ratio <- sub_srdb$RC_annual/(1-sub_srdb$RC_annual)
+    filter(RC_annual > 0 & RC_annual < 1) %>% 
+    # do what the 'summarySE' function used to
+    filter(!is.na(Latitude)) %>% 
+    group_by(Latitude, Longitude) %>% 
+    summarise(N = n(),
+              median = median(RC_annual),
+              sd = sd(RC_annual),
+              RC_annual = mean(RC_annual)) %>% 
+    mutate(se = sd / sqrt(N),
+           ci = se * qt(0.95 / 2 + 0.5, N - 1)) ->
+    siteInfor
   
-  x <- rep(-170, 2)
-  size <- c(2, 1.5)
-  y <- c(-25, -40)
-  
-  cc_legend <- tibble (x, y, size)
-  
-  siteInfor <- summarySE (data = sub_srdb, measurevar = 'RC_annual', groupvars = c("Latitude","Longitude"))
-  siteInfor <- siteInfor[, c(1:3)]
-  siteInfor <- siteInfor[which(!is.na(siteInfor$Latitude)),]
+  cc_legend <- tibble(x = rep(-170, 2), 
+                      y = c(2, 1.5),
+                      size = c(-25, -40))
   
   sitemap <- ggplot(data = worldMap) + 
     geom_polygon(aes(x = long, y = lat , fill = region , group = group, alpha = 0.1), color = "white") + 
@@ -84,14 +44,12 @@ plot_sites <- function (sdata, sdata2) {
     geom_point(data = siteInfor, aes(x = siteInfor$Longitude, y = siteInfor$Latitude), 
                color = "black", shape = 18, size = 2, alpha = 1) + 
     
-    
     # Rshoot/Rroot sites
-    geom_point(data = sdata2, aes(x = sdata2$Longitude, y = sdata2$Latitude), color = "red",
+    geom_point(data = sdata2, aes(Longitude, Latitude), color = "red",
                shape = 3, size = 1.5, stroke = 1.5, alpha = 1, fill = "red") +
     # legend
-    geom_point(data = cc_legend ,aes(x = cc_legend$x, y = cc_legend$y), shape = c(18, 3), 
-               stroke = c(1, 1.5), color = c("black", "red"), size = cc_legend$size, alpha = c(1, 1)) +
-    annotate("text", x = -150, y = -10, label = "Legend", size = 4, hjust = 0) +
+    geom_point(data = cc_legend, aes(x, y, size = size), shape = c(18, 3), 
+               stroke = c(1, 1.5), color = c("black", "red"), alpha = c(1, 1)) +
     annotate("text", x = -150, y = -25, label = "RC sites", size = 4, hjust = 0) +
     annotate("text", x = -150, y = -40, label = "Rroot/Rshoot sites", size = 4, hjust = 0) +
     guides(fill = FALSE)  # do this to leave off the color legend
@@ -106,9 +64,9 @@ plot_GPP <- function (sdata, sdata2) {
   sdata$Global <- paste0("n = ", obs_gpp)
   p_GPP <- ggplot(sdata, aes(x = Global, y = GPP)) + geom_violin() +
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
-    geom_boxplot(width = .1) +
+    geom_boxplot(width = 0.1) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
-    ylab(expression(GPP~"("~Pg~yr^{-1}~")"))
+    ylab(expression(GPP~(Pg~yr^{-1})))
   
   # GPP_His <- ggplot(data = sdata, aes(GPP)) + 
   # geom_histogram(bins = 30, col = "black", fill = "gray",alpha = 0.6) + #labs(title = "Histogram for GPP") +
@@ -116,12 +74,11 @@ plot_GPP <- function (sdata, sdata2) {
   # GPP_His <- GPP_His + annotate("text", x = 85, y = 6.5, label = "(a)" , size = 5)
   
   # Trend
-  subGPP <- subset(sdata, sdata$GPP > 90 & sdata$GPP < 180 )
-  Trend_GPP <- ggplot (subGPP, aes(x = Year, y = GPP)) +
-    geom_point(col = "gray")
-  Trend_GPP <- Trend_GPP + 
+  subGPP <- subset(sdata, GPP > 90 & GPP < 180 )
+  Trend_GPP <- ggplot(subGPP, aes(Year, GPP)) +
+    geom_point(col = "gray") + 
     # geom_smooth(aes(Year, GPP), method = "lm", col = "black", se = FALSE) +
-    geom_smooth(aes(Year, GPP), method = "lm", col = "red", data = sdata, se = TRUE) +
+    geom_smooth(method = "lm", col = "red", data = sdata, se = TRUE) +
     theme(legend.title = element_blank()) +
     # one outlier
     # geom_point(data = subset(sdata, sdata$GPP < 90 | sdata$GPP > 180) ,aes(x = Year, y = GPP), color = c("red"), shape = 16 ) +
@@ -138,49 +95,51 @@ plot_GPP <- function (sdata, sdata2) {
   slope1 <- coefficients(summary(lm_model1))[2,1]
   slope2 <- coefficients(summary(lm_model2))[2,1]
   
-  sdata$Global <- paste0("n = ", GPP %>% filter(!is.na(Trend)) %>% nrow())
-  p_trend <- ggplot(sdata, aes(x = Global, y = Trend)) + geom_violin() +
+  sdata$Global <- paste("n =", GPP %>% filter(!is.na(Trend)) %>% nrow())
+  p_trend <- ggplot(sdata, aes(Global, Trend)) + geom_violin() +
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
-    geom_boxplot(width = .1) +
+    geom_boxplot(width = 0.1) +
     # geom_point(aes(y = slope1), col = "black", shape = 13) + 
     geom_point(aes(y = slope2), col = "red", shape = 13) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
-    ylab(expression(GPP~trend~"("~Pg~yr^{-2}~")"))
+    ylab(expression(GPP~trend~(Pg~yr^{-2})))
   
   print(paste0("median = ", median(sdata$GPP)))
   se <- sd(sdata$GPP) / sqrt(nrow(sdata))
   paste0("se = ", se) %>% print()
   CI <- round(qt(0.975, df = nrow(sdata)-1) * se, 3)
   print(paste0("95% CI = ", CI))
-  print(paste0("number of trend = ", nrow(GPP[!is.na(GPP$Trend),])))
-  
+  print(paste0("Trend = ", nrow(GPP[!is.na(GPP$Trend),])))
   
   # plot global Rs
-  p_Rs <- ggplot(sdata2, aes(x = paste0("n = ",nrow(sdata2)), y = Rs)) + geom_violin() +
+  p_Rs <- ggplot(sdata2, aes(x = paste("n =", nrow(sdata2)), y = Rs)) + 
+    geom_violin() +
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_boxplot(width = 0.1) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
-    ylab(expression(R[S]~"("~Pg~yr^{-1}~")")) +
+    ylab(expression(R[S]~(Pg~yr^{-1}))) +
     xlab("Global")
   
   # plot Rs~Year relationship
-  Trend_Rs <- ggplot (sdata2, aes(x = Year, y = Rs)) + geom_point(col = "gray") +
-    geom_smooth(aes(Year, Rs), method = "lm", col = "red") +
-    xlim(min(sdata$Year), max(sdata$Year)) +
-    theme(legend.title = element_blank()) +
-    theme(axis.title.y = element_blank()) +
-    annotate("text", x = 1992, y = 80, label = "Trend = 0.52", na.rm = TRUE)
-  
   sum_mod <- lm(Rs~Year, data = sdata2)
   slope3 <- coefficients(summary(sum_mod))[2,1]
+
+  Trend_Rs <- ggplot(sdata2, aes(Year, Rs)) + geom_point(col = "gray") +
+    geom_smooth(method = "lm", col = "red") +
+    xlim(min(sdata$Year), max(sdata$Year)) +
+    theme(legend.title = element_blank(), axis.title.y = element_blank()) +
+    annotate("text", x = 1992, y = 80, 
+             label = paste("Trend =", round(slope3, 3)), na.rm = TRUE)
   print(sum_mod)
   
   # plot trend
-  Rs_IRate <- sdata2 %>% filter(!is.na(IncreaseRate)) %>% 
-    ggplot(aes(x = "n = 7", y = IncreaseRate)) + geom_violin() +
+  Rs_IRate <- sdata2 %>% 
+    filter(!is.na(IncreaseRate)) %>% 
+    ggplot(aes(x = "n = 7", y = IncreaseRate)) + 
+    geom_violin() +
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_boxplot(width = 0.1) +
-    ylab(expression(R[S]~trend~"("~Pg~yr^{-2}~")")) +
+    ylab(expression(R[S]~trend~(Pg~yr^{-2}))) +
     xlab("Global") +
     geom_point(aes(y = slope3), col = "red", shape = 13)
   
@@ -192,7 +151,6 @@ plot_GPP <- function (sdata, sdata2) {
 }
 
 
-
 # plot NPP and Rab/Rh
 plot_RaGPP <- function (sdata2) {
   
@@ -200,7 +158,7 @@ plot_RaGPP <- function (sdata2) {
   
   sdata2$Global <- paste0("n = ", var_obs)
   
-  Ra_GPP <- ggplot(sdata2, aes(x = IGBP2, y = RaGPP_ratio)) + geom_violin() +
+  Ra_GPP <- ggplot(sdata2, aes(IGBP2, RaGPP_ratio)) + geom_violin() +
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_boxplot(width = 0.1) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
@@ -211,16 +169,13 @@ plot_RaGPP <- function (sdata2) {
   
   print(mean(sdata2$RaGPP_ratio))
   se <- sd(sdata2$RaGPP_ratio) / sqrt(nrow(sdata2))
-  paste0("Ra/GPP se = ", se) %>% print()
+  paste("Ra/GPP se =", se) %>% print()
   CI <- round(qt(0.975, df = nrow(sdata2) - 1) * se, 3)
-  paste0("Ra/GPP 95% CI = ", CI) %>% print()
-  paste0("Ra/GPP obs = ", nrow(sdata2)) %>% print()
+  paste("Ra/GPP 95% CI =", CI) %>% print()
+  paste("Ra/GPP obs =", nrow(sdata2)) %>% print()
   
   # print figure
   print(Ra_GPP)
-  # plot_grid(p_NPP, Ra_GPP, labels = c('( a )', '( b )')
-  #           , vjust = c(3.5,3.5), hjust = c(-2.5, -2.25) )
-  
 }
 
 
@@ -283,7 +238,6 @@ cal_Froot <- function (sdata, sdata2) {
 }
 
 
-
 # plot global Rs
 plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
   sub_Rs <- subset(sdata, !is.na(sdata$Rs))
@@ -293,7 +247,7 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_boxplot(width = 0.1) +
     # geom_point(aes(y = 71.67), col = "red") + geom_point(aes(y = 76.68), col = "red") +
-    xlab("Global Rs") + ylab(expression(Rs~"("~Pg~yr^{-1}~")")) +
+    xlab("Global Rs") + ylab(expression(Rs~(Pg~yr^{-1}))) +
     theme(axis.title.x = element_blank())
   
   sub_Rh <- subset(sdata, !is.na(sdata$Rh))
@@ -301,15 +255,15 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
   p_Rh <- ggplot(sub_Rh, aes(x = label, y = Rh)) + geom_boxplot(width = .1) +
     geom_point(colour = "gray", size = 2) +
     geom_point(aes(y = 46.47), col = "red") +
-    xlab("Global Rh") + ylab(expression(Rh~"("~Pg~yr^{-1}~")")) +
+    xlab("Global Rh") + ylab(expression(Rh~(Pg~yr^{-1}))) +
     theme(axis.title.x = element_blank())
   
   sub_Ra <- subset(sdata, !is.na(sdata$Ra))
   sub_Ra$label <- "n = 1"
   p_Ra <- ggplot(sub_Ra, aes(x = label, y = Ra)) + geom_boxplot(width = 0.1) +
     geom_point(colour = "gray", size = 2) +
-    geom_point(aes(y = 25.20), col = "red") + geom_point(aes(y = 30.21), col = "red") +
-    xlab("Global Ra") + ylab(expression(Ra~"("~Pg~yr^{-1}~")")) +
+    geom_point(y = 25.20, col = "red") + geom_point(y = 30.21, col = "red") +
+    xlab("Global Ra") + ylab(expression(Ra~(Pg~yr^{-1}))) +
     theme(axis.title.x = element_blank())
   
   # RC and RH distribution
@@ -343,32 +297,32 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
   
   
   print(mean(sub_srdb$RC_annual))
-  se <- sd(sub_srdb$RC_annual)/sqrt(nrow(sub_srdb))
+  se <- sd(sub_srdb$RC_annual) / sqrt(nrow(sub_srdb))
   paste0("RC se = ", se) %>% print()
-  CI <- round(qt(0.975, df = nrow(sub_srdb)-1)*se, 3)
-  paste0("RC 95% CI = ", CI) %>% print()
-  paste0("RC obs = ", nrow(sub_srdb)) %>% print()
+  CI <- round(qt(0.975, df = nrow(sub_srdb)-1) * se, 3)
+  paste("RC 95% CI =", CI) %>% print()
+  paste("RC obs =", nrow(sub_srdb)) %>% print()
   
   # plot NPP
   sdata3$Global <- "n = 251"
-  p_NPP <- ggplot(sdata3, aes(x = Global, y = NPP)) + geom_violin() +
+  p_NPP <- ggplot(sdata3, aes(Global, NPP)) + geom_violin() +
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_boxplot(width = 0.1) +
-    ylab(expression(NPP~"("~Pg~yr^{-1}~")")) +
+    ylab(expression(NPP~(Pg~yr^{-1}))) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     theme(axis.title.x = element_blank())
   print(median(sdata3$NPP))
   se <- sd(sdata3$NPP) / sqrt(nrow(sdata3))
-  paste0("NPP se = ", se) %>% print()
+  paste("NPP se =", se) %>% print()
   CI <- round(qt(0.975, df = nrow(sdata3) - 1) * se, 3)
-  paste0("NPP 95% CI = ", CI) %>% print()
+  paste("NPP 95% CI =", CI) %>% print()
   
   # plot Fire
   p_fire <- tibble(Fire = c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)) %>% 
     ggplot(aes(x = "Fire", y = Fire)) + geom_violin() +
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_boxplot(width = 0.1) +
-    ylab(expression(Fire~burned~"("~Pg~yr^{-1}~")")) +
+    ylab(expression(Fire~burned~(Pg~yr^{-1}))) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     theme(axis.title.x = element_blank())
   
