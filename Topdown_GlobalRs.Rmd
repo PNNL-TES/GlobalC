@@ -93,7 +93,7 @@ knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE,
 
 ```{r load data}
 # input data
-read_file <- function(x) read.csv(file.path(DATA_DIR, x))
+read_file <- function(x) read.csv(file.path(DATA_DIR, x), stringsAsFactors = FALSE)
 
 srdb_v4 <- read_file('srdbv4.csv') # SRDB_V4 data
 FlFsFr <- read_file('FlFsFrSummary.csv') # Froot (Rroot/Rs) and Fshoot (Rshoot/Rs) from 39 papers
@@ -202,7 +202,7 @@ sub_srdb %>%
   group_by(Ecosystem_type) %>% 
   summarise(count = n())
 
-plot_Rroot_Rs (GlobalRs, sub_srdb, NPP) 
+plot_Rroot_Rs(GlobalRs, sub_srdb, NPP) 
 ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
@@ -240,7 +240,7 @@ ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
 
 var_RaGpp %>% 
   group_by(Ecosystem) %>% 
-  summarise( count = n() ) %>%
+  summarise(count = n()) %>%
   mutate(percent = count / sum(count)) %>%
   arrange(desc(Ecosystem))
 ```
@@ -423,35 +423,44 @@ print(p1_gpp2)
 ```
 
 ### Scenario 3 - SRDB Rs:GPP ratios
-```{r Simple SRDB Rs:GPP ratios}
-var_Rs_to_GPP <- with(srdb_v4, Rs_annual / GPP) %>% na.omit
+```{r SRDB Rs:GPP ratios}
+# Compute the median Rs:GPP ratio, weighted by ecosystem type globally
+IGBP %>% 
+  filter(IGBP_group != "WAT") %>% 
+  group_by(Ecosystem_type = Ecosystem) %>% 
+  summarise(rel_area = sum(abs(Latitude) / 180 * pi)) -> 
+  IGBP_summary_ecosystem
+
+srdb_v4_ratio <- left_join(srdb_v4, IGBP_summary_ecosystem, by = "Ecosystem_type")
+
+Rs_to_GPP_unweighted <- with(srdb_v4, mean(Rs_annual / GPP, na.rm = TRUE))
+Rs_to_GPP_weighted <- with(srdb_v4_ratio, weighted.mean(Rs_annual / GPP, w = rel_area, na.rm = TRUE))
 
 bootstrap_data %>% 
-  mutate(Rs_to_GPP = sample(var_Rs_to_GPP, N_SAMPLES, replace = TRUE),
-         Rs = GPP_raw * Rs_to_GPP,
-         GPP = Rs_raw / Rs_to_GPP) ->
-  simple_ratio_results
+  mutate(Rs = GPP_raw * Rs_to_GPP_weighted,
+         GPP = Rs_raw / Rs_to_GPP_weighted) ->
+  ratio_results
 
-gpp_qt <- quantile(simple_ratio_results$GPP, QUANTILES) %>% round(0)
-gpp_qt_raw <- quantile(simple_ratio_results$GPP_raw, QUANTILES) %>% round(0)
+gpp_qt <- quantile(ratio_results$GPP, QUANTILES) %>% round(0)
+gpp_qt_raw <- quantile(ratio_results$GPP_raw, QUANTILES) %>% round(0)
 
-simple_ratio_results %>%
+ratio_results %>%
   select(`GPP implied by SRDB Rs:GPP` = GPP, `Top-down GPP` = GPP_raw) %>% 
   gather(GPP_type) ->
-  gpp_simple_figure_data
+  gpp_ratio_figure_data
 
-gpp_simple_figure_data %>% 
+gpp_ratio_figure_data %>% 
   ggplot(aes(value, fill = GPP_type)) +
   geom_density(stat = 'density', alpha = 0.5) +
   theme(legend.position = c(0.75, 0.75)) +
   coord_cartesian(xlim = c(25, 350)) +
   scale_fill_discrete("") + ylab("Density") +
   xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
-  gpp_simple_figure
+  gpp_ratio_figure
 
-p1_gpp3 <- annotations(gpp_simple_figure,
-                       unique(gpp_simple_figure_data$GPP_type), 
-                       gpp_qt, gpp_qt_raw, 150)
+p1_gpp3 <- annotations(gpp_ratio_figure,
+                       unique(gpp_ratio_figure_data$GPP_type), 
+                       gpp_qt, gpp_qt_raw, 200)
 print(p1_gpp3)
 ```
 
@@ -519,17 +528,17 @@ ggplot(gpp_results, aes(x = 1-Froot, y = GPP2)) +
 ```{r gpp-agreement, cache=FALSE}
 p_gpp1 <- prob_agreement(gpp_results$GPP, gpp_qt_raw)
 p_gpp2 <- prob_agreement(gpp_results$GPP2, gpp_qt_raw)
-p_gpp3 <- prob_agreement(simple_ratio_results$GPP, gpp_qt_raw)
+p_gpp3 <- prob_agreement(ratio_results$GPP, gpp_qt_raw)
 p_gpp1_tt <- t_test(gpp_results$GPP_raw, gpp_results$GPP)
 p_gpp2_tt <- t_test(gpp_results$GPP_raw, gpp_results$GPP2)
-p_gpp3_tt <- t_test(gpp_results$GPP_raw, simple_ratio_results$GPP)
+p_gpp3_tt <- t_test(gpp_results$GPP_raw, ratio_results$GPP)
 ```
 
 Scenario                 | Agreement (quantiles) | p-value (t.test)
 ------------------------ | --------------------- | -----------------
 1 (no weighting)         | `r p_gpp1 * 100` %     | `r p_gpp1_tt`
 2 (weighting)            | `r p_gpp2 * 100` %     | `r p_gpp2_tt`
-3 (simple global Rs:GPP) | `r p_gpp3 * 100` %     | `r p_gpp3_tt`
+3 (global Rs:GPP)        | `r p_gpp3 * 100` %     | `r p_gpp3_tt`
 
 
 ```{r prepare variables for RSG boostrapping}
@@ -650,31 +659,6 @@ p2_rs2 <- annotations(rs_base_figure %+% rs_figure_data,
 print(p2_rs2)
 ```
 
-### Scenario 3 - SRDB Rs:GPP ratios
-```{r rsg-scenario3}
-simple_ratio_results %>%
-  select(`Rs implied by SRDB Rs:GPP` = Rs, `Top-down Rs` = Rs_raw) %>% 
-  gather(Rs_type) ->
-  rs_simple_figure_data
-
-rsg_qt <- quantile(simple_ratio_results$Rs, QUANTILES) %>% round(0)
-rs_qt_raw <- quantile(simple_ratio_results$Rs_raw, QUANTILES) %>% round(0)
-
-rs_simple_figure_data %>% 
-  ggplot(aes(value, fill = Rs_type)) +
-  geom_density(stat = 'density', alpha = 0.5) +
-  theme(legend.position = c(0.75, 0.75)) +
-  coord_cartesian(xlim = c(25, 350)) +
-  scale_fill_discrete("") + ylab("Density") +
-  xlab(expression(R[S]~(Pg~C~yr^{-1}))) ->
-  rs_simple_figure
-
-p2_rs3 <- annotations(rs_simple_figure,
-                      unique(rs_simple_figure_data$Rs_type), 
-                      rsg_qt, rsg_qt_raw, 150)
-print(p2_rs3)
-```
-
 ### RSG and components relationship
 ```{r}
 # Ra1 ~ Ra2
@@ -730,10 +714,10 @@ ggplot(rs_results, aes(x = Fire, y = Rs_topdown)) +
 ```{r compute proportion of agreement between top-down RSG and bottom-up RSG, cache=FALSE}
 p_Rs1 <- prob_agreement(rs_results$Rs_topdown, rsg_qt_raw)
 p_Rs2 <- prob_agreement(rs_results$Rs_topdown2, rsg_qt_raw)
-p_Rs3 <- prob_agreement(simple_ratio_results$Rs, rsg_qt_raw)
+p_Rs3 <- prob_agreement(ratio_results$Rs, rsg_qt_raw)
 p_Rs1_tt <- t_test(rs_results$Rs_raw, rs_results$Rs_topdown)
 p_Rs2_tt <- t_test(rs_results$Rs_raw, rs_results$Rs_topdown2)
-p_Rs3_tt <- t_test(rs_results$Rs_raw, simple_ratio_results$Rs)
+p_Rs3_tt <- t_test(rs_results$Rs_raw, ratio_results$Rs)
 ```
 
 Scenario                 | Agreement (quantiles) | p-value (t.test)
@@ -844,8 +828,7 @@ Presumably, as a matter of mathematics, the ratio of global Rs to global GPP sho
 * the SRDB itself, for sites at which both GPP and Rs were measured;
 * and FLUXNET2015 Tier 1, using Rs data measured very close to the towers.
 
-```{r, site-ratios}
-#topdown <- expand.grid(GPP = GPP$GPP, Rs = GlobalRs$Rs)
+```{r, site-ratios, results='show'}
 topdown <- data.frame(GPP = GPP$GPP, Rs = mean(GlobalRs$Rs))
 topdown$Source <- paste0("Global GPP\n(N = ", nrow(topdown), ")")
 topdown$Type <- "Global"
@@ -873,14 +856,23 @@ bind_rows(topdown, srdb, fluxnet, cmip6) %>%
          Source = factor(Source, unique(Source)[c(2,3, 1,4)])) ->
   ratios
 
+ratios %>% 
+  group_by(Source) %>% 
+  summarise(Ratio = round(median(Ratio), 3)) %>%
+  knitr::kable(type = "markdown")
+
 p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) + 
   geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), size = 0.75) +
   geom_jitter(alpha = I(0.25)) + 
   ylab("Ratio of Rs to GPP") + xlab("") +
-  coord_cartesian(ylim = c(0, 2))
+  coord_cartesian(ylim = c(0, 2)) #+
+#  geom_label()
 print(p_ratios)
+
+
 ```
 
+Note that the arithmetic mean of Rs:GPP in SRDB is `r round(Rs_to_GPP_unweighted, 3)` (median `r round(median(srdb_v4$Rs_annual / srdb_v4$GPP, na.rm = TRUE), 3)`), while the weighted (by area of ecosystem types globally) is `r round(Rs_to_GPP_weighted, 3)`. This close agreement implies that SRDB is in fact a pretty good representation of the land surface (and/or that Rs:GPP doesn't vary much).
 
 
 ## Discarded codes
