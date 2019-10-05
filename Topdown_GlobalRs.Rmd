@@ -7,7 +7,6 @@ output:
   word_document: default
 ---
 
-
 ## Abbreviations
 * Rroot - root respiration
 * Rshoot - shoot respiration
@@ -130,7 +129,8 @@ SOC <- read_file('SOC_Point.txt')
 srdb_v4 %>% 
   select(Study_number, Biome, Ecosystem_type, Leaf_habit, 
          Latitude, Longitude, RC_annual, Ra_annual, Rh_annual) %>% 
-  filter(RC_annual > 0, RC_annual < 1) -> sub_srdb
+  filter(RC_annual > 0, RC_annual < 1) -> 
+  sub_srdb
 
 # calculate Froot
 Froot <- cal_Froot(FlFsFr, srdb_v4) 
@@ -428,10 +428,13 @@ print(p1_gpp2)
 IGBP %>% 
   filter(IGBP_group != "WAT") %>% 
   group_by(Ecosystem_type = Ecosystem) %>% 
-  summarise(rel_area = sum(abs(Latitude) / 180 * pi)) -> 
+  summarise(rel_area = sum(cos(abs(Latitude) / 180 * pi))) -> 
   IGBP_summary_ecosystem
 
-srdb_v4_ratio <- left_join(srdb_v4, IGBP_summary_ecosystem, by = "Ecosystem_type")
+srdb_v4 %>% 
+  filter(Ecosystem_state != "Managed") %>% 
+  left_join(IGBP_summary_ecosystem, by = "Ecosystem_type") ->
+  srdb_v4_ratio
 
 Rs_to_GPP_unweighted <- with(srdb_v4, mean(Rs_annual / GPP, na.rm = TRUE))
 Rs_to_GPP_weighted <- with(srdb_v4_ratio, weighted.mean(Rs_annual / GPP, w = rel_area, na.rm = TRUE))
@@ -835,9 +838,7 @@ topdown$Type <- "Global"
 
 srdb_v4 %>% 
   filter(!is.na(GPP), !is.na(Rs_annual), Ecosystem_state != "Managed") %>% 
-  select(Rs = Rs_annual, GPP, Biome, Ecosystem_type) %>% 
-  mutate(Biome = as.character(Biome), 
-         Ecosystem_type = as.character(Ecosystem_type)) ->
+  select(Rs = Rs_annual, GPP, Biome, Ecosystem_type) ->
   srdb
 srdb$Source <- paste0("SRDB\n(N = ", nrow(srdb), ")")
 srdb$Type <- "Observations"
