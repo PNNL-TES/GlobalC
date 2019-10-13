@@ -65,15 +65,18 @@ library(kableExtra)
 # Load required packages
 library(data.table)
 library(lubridate)
-library(cowplot)
 library(knitr)
 library(ggpubr)
 library(reshape)
+
 library(ggplot2)
 theme_set(theme_bw())
+library(cowplot)
 library(ggmap)
 library(maps)
 library(mapdata)
+library(ggExtra)
+
 library(tidyr)
 library(hexbin)
 library(dplyr)
@@ -141,7 +144,7 @@ plot_sites(srdb_v4, FlFsFr)
 
 ## Ratio by vegetation types {.tabset .tabset-fade .tabset-pills}
 ### Plot GPP
-```{r plot GPP and RSG, fig.height = 6, fig.width = 8}
+```{r plot GPP and RSG, fig.height = 6, fig.width = 8, cache=FALSE}
 # panel (a). all 65 GPP estimates
 # panel (b). GPP vs year, the red dots in panel c are calculated trend from panel b (increasing rate = 0.2 if outliers removed, 0.42 if outliers kept)
 # panel (c). 16 GPP estimates reported GPP increase trend
@@ -149,20 +152,19 @@ plot_GPP(GPP, GlobalRs)
 ggsave("outputs/FigureS1.jpg", width = 8, height = 6, dpi = 300, units = "in")
 
 # A couple of simpler figures for Ben's Japan presentation
-library(ggExtra)
 p_gpp <- ggplot(GPP, aes(Year, GPP)) + geom_point() + 
   geom_errorbar(aes(ymin = GPP - SD, ymax = GPP + SD), na.rm = TRUE) + 
   geom_smooth(method = "lm") + theme_cowplot() +
   ylab(expression(GPP~(Pg~C~yr^-1)))
-p_gpp <- ggMarginal(p_gpp, type = "densigram", margins = "y", fill = "red")
-ggsave("outputs/p_gpp.png", plot = p_gpp, width = 8, height = 5)
+p_gpp_marg <- ggMarginal(p_gpp, type = "densigram", margins = "y", fill = "red")
+ggsave("outputs/p_gpp.png", plot = p_gpp_marg, width = 8, height = 5)
 
 p_rs <- ggplot(GlobalRs, aes(Year_published, Rs)) + geom_point() + 
   geom_errorbar(aes(ymin = Rs - SD, ymax = Rs + SD), na.rm = TRUE) + 
   geom_smooth(method = "lm") + theme_cowplot() +
-  ylab(expression(R[S]~(Pg~C~yr^-1)))
-p_rs <- ggMarginal(p_rs, type = "densigram", margins = "y", fill = "red")
-ggsave("outputs/p_rs.png", plot = p_rs, width = 8, height = 5)
+  xlab("Year") + ylab(expression(R[S]~(Pg~C~yr^-1)))
+p_rs_marg <- ggMarginal(p_rs, type = "densigram", margins = "y", fill = "red")
+ggsave("outputs/p_rs.png", plot = p_rs_marg, width = 8, height = 5)
 ```
 
 
@@ -367,7 +369,7 @@ bootstrap_data %>%
 
 ## GPP results {.tabset .tabset-fade .tabset-pills}
 ### Scenario 1 - ratio __not__ weighted by ecosystem
-```{r plot GPP comparison}
+```{r plot GPP comparison, results='asis'}
 # Scenario 1
 gpp_qt <- quantile(gpp_results$GPP, QUANTILES) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, QUANTILES) %>% round(0)
@@ -379,22 +381,30 @@ gpp_results %>%
 
 gpp_figure_data %>% 
   ggplot(aes(value, fill = GPP_type)) +
+  theme_cowplot() +
   geom_density(stat = 'density', alpha = 0.5) +
-  theme(legend.position = c(0.75, 0.75)) +
-  coord_cartesian(xlim = c(25, 350)) +
+  #  theme(legend.position = c(0.75, 0.75)) +
+  coord_cartesian(xlim = c(50, 350)) +
   scale_fill_discrete("") + ylab("Density") +
   xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
   gpp_base_figure
 
-p1_gpp <- annotations(gpp_base_figure, 
-                      unique(gpp_figure_data$GPP_type), 
-                      gpp_qt, gpp_qt_raw, 150)
+p_gpp <- p_gpp + theme(text = element_text(size = 9),
+                       axis.text = element_text(size = 9))
+p_gpp_marg <- ggMarginal(p_gpp, type = "densigram", margins = "y", fill = "red")
+
+p1_gpp <- ggdraw() +
+  draw_plot(gpp_base_figure) +
+  draw_plot(p_gpp_marg, x = 0.35, y = 0.4, width = 0.4, height = 0.5)
 print(p1_gpp)
-ggsave("outputs/Figure2_gpp.jpg", width = 8, height = 4, dpi = 300, units = "in")
+
+cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
+cat("\n\nTop-down GPP quantiles: ", gpp_qt_raw, "\n")
+ggsave("outputs/Figure1_gpp.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
 ### Scenario 2 - ratio __weighted__ by ecosystem
-```{r}
+```{r, results='asis'}
 # Scenario 2
 gpp_qt <- quantile(gpp_results$GPP2, QUANTILES) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, QUANTILES) %>% round(0)
@@ -404,14 +414,18 @@ gpp_results %>%
   gather(GPP_type) ->
   gpp_figure2_data
 
-p1_gpp2 <- annotations(gpp_base_figure %+% gpp_figure2_data,
-                       unique(gpp_figure2_data$GPP_type),
-                       gpp_qt, gpp_qt_raw, 150)
+p1_gpp2 <- ggdraw() +
+  draw_plot(gpp_base_figure %+% gpp_figure2_data) +
+  draw_plot(p_gpp_marg, x = 0.35, y = 0.4, width = 0.4, height = 0.5)
 print(p1_gpp2)
+
+cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
+cat("\n\nTop-down GPP quantiles: ", gpp_qt_raw, "\n")
+ggsave("outputs/Figure1_gpp_weighted.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
 ### Scenario 3 - SRDB Rs:GPP ratios
-```{r SRDB Rs:GPP ratios}
+```{r SRDB Rs:GPP ratios, results='asis'}
 # Compute the median Rs:GPP ratio, weighted by ecosystem type globally
 IGBP %>% 
   filter(IGBP_group != "WAT") %>% 
@@ -441,11 +455,14 @@ ratio_results %>%
   gather(GPP_type) ->
   gpp_ratio_figure_data
 
-p1_gpp3 <- annotations(gpp_base_figure %+% gpp_ratio_figure_data,
-                       unique(gpp_ratio_figure_data$GPP_type), 
-                       gpp_qt, gpp_qt_raw, 175) ->
-  p1_gpp3
+p1_gpp3 <- ggdraw() +
+  draw_plot(gpp_base_figure %+% gpp_ratio_figure_data) +
+  draw_plot(p_gpp_marg, x = 0.35, y = 0.4, width = 0.4, height = 0.5)
 print(p1_gpp3)
+
+cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
+cat("\n\nTop-down GPP quantiles: ", gpp_qt_raw, "\n")
+ggsave("outputs/Figure1_gpp_simple.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
 
@@ -600,7 +617,7 @@ bootstrap_data %>%
 
 ## RSG results {.tabset .tabset-fade .tabset-pills}
 ### Scenario 1 - ratio __not__ weighted by ecosystem
-```{r rsg-scenario1}
+```{r rsg-scenario1, results='asis'}
 # Scenario 1. RaGPP ratio not separated
 rsg_qt <- quantile(rs_results$Rs_topdown, QUANTILES) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
@@ -612,9 +629,10 @@ rs_results %>%
 
 rs_figure_data %>% 
   ggplot(aes(value, fill = Rs_type)) +
+  theme_cowplot() +
   geom_density(stat = 'density', alpha = 0.5) +
-  theme(legend.position = c(0.75, 0.75)) +
-  coord_cartesian(xlim = c(25, 150)) +
+  #  theme(legend.position = c(0.75, 0.75)) +
+  coord_cartesian(xlim = c(0, 120)) +
   # reverse the color scale so that teal (color 1) is always observations, 
   # while pink is always implied fluxes
   scale_fill_discrete("", h.start = 180) + scale_color_discrete(h.start = 180) +
@@ -622,15 +640,22 @@ rs_figure_data %>%
   xlab(expression(R[S]~(Pg~C~yr^{-1}))) ->
   rs_base_figure
 
-p2_rs <- annotations(rs_base_figure, 
-                     types = unique(rs_figure_data$Rs_type), 
-                     rsg_qt, rsg_qt_raw, 100)
+p_rs <- p_rs + theme(text = element_text(size = 9),
+                     axis.text = element_text(size = 9))
+p_rs_marg <- ggMarginal(p_rs, type = "densigram", margins = "y", fill = "red")
+
+p2_rs <- ggdraw() +
+  draw_plot(rs_base_figure) +
+  draw_plot(p_rs_marg, x = 0.1, y = 0.4, width = 0.4, height = 0.5)
 print(p2_rs)
-ggsave("outputs/Figure2_rs.jpg", width = 8, height = 4)
+
+cat("\n\nRs implied by GPP quantiles: ", rsg_qt, "\n")
+cat("\n\nBottom-up Rs quantiles: ", rsg_qt_raw, "\n")
+ggsave("outputs/Figure1_rs.jpg", width = 8, height = 4)
 ```
 
 ### Scenario 2 - ratio __weighted__ by ecosystem
-```{r rsg-scenario2}
+```{r rsg-scenario2, results='asis'}
 # Scenario 2. RaGPP ratio separated into 2 groups
 rsg_qt <- quantile(rs_results$Rs_topdown2, QUANTILES) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
@@ -640,10 +665,14 @@ rs_results %>%
   gather(Rs_type) ->
   rs_figure_data
 
-p2_rs2 <- annotations(rs_base_figure %+% rs_figure_data, 
-                      types = unique(rs_figure_data$Rs_type), 
-                      rsg_qt, rsg_qt_raw, 100)
+p2_rs2 <- ggdraw() +
+  draw_plot(rs_base_figure %+% rs_figure_data) +
+  draw_plot(p_rs_marg, x = 0.1, y = 0.4, width = 0.4, height = 0.5)
 print(p2_rs2)
+
+cat("\n\nRs implied by GPP quantiles: ", rsg_qt, "\n")
+cat("\n\nBottom-up Rs quantiles: ", rsg_qt_raw, "\n")
+ggsave("outputs/Figure1_rs_weighted.jpg", width = 8, height = 4)
 ```
 
 ### RSG and components relationship
@@ -715,10 +744,10 @@ Scenario                 | Agreement (quantiles) | p-value (t.test)
 
 
 ## Topdown and bottomup comparison - Figure 1
-```{r combine GPP and RSG comparison into figure 2, fig.height=8, fig.width=6}
+```{r combine GPP and RSG comparison into figure 2, fig.height=7, fig.width=8, cache=FALSE}
 # Scenario 2, RC separate into 4 groups, and Froot separate into 2 groups
-plot_grid(p1_gpp2, p2_rs2, ncol=1, labels = c("(a)", "(b)"), hjust = -4, vjust = 4)
-ggsave("outputs/Figure2.jpg", width = 6, height = 8, dpi = 300, units = "in")
+plot_grid(p1_gpp2, p2_rs2, ncol = 1, labels = c("(a)", "(b)")) # , hjust = -4, vjust = 4
+ggsave("outputs/Figure1.png") # , width = 10, height = 8, dpi = 300, units = "in"
 ```
 
 
