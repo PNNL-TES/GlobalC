@@ -322,14 +322,14 @@ bootstrap_data %>%
     # other ecosystems
     Rc_gra = sample(var_gra_rc$RC_annual, N_SAMPLES, replace = TRUE),
     Rc_shr = sample(var_shr_rc$RC_annual, N_SAMPLES, replace = TRUE),
-    # for the rest of ecosystems we use samples from all RC records rather that from other groups
+    # for other ecosystems we use samples from all RC records
     Rc_rest = sample(var_rest_rc$RC_annual, N_SAMPLES, replace = TRUE), 
     
     # Step 3. Sampling Rroot-to-Ra ratio (Froot)
     Froot_df = sample(var_df_froot, N_SAMPLES, replace = TRUE),
     Froot_ef = sample(var_ef_froot, N_SAMPLES, replace = TRUE),
     Froot_mf = sample(var_mf_froot, N_SAMPLES, replace = TRUE),
-    # for the rest of ecosystems we used samples from all RC records rather from other groups
+    # for other ecosystems we use samples from all RC records
     Froot_rest = sample(var_rest_froot, N_SAMPLES, replace = TRUE),
     
     # Step 4. calculation ********************
@@ -343,7 +343,7 @@ bootstrap_data %>%
              Rc_gra * gra_area + Rc_shr * shr_area + Rc_rest * 
              (1 - ag_area - df_area - ef_area-mf_area - gra_area - shr_area)), 
     
-    # Scenario 1: Froot not separate into different ecosystems
+    # Scenario 1: Froot not separated into different ecosystems
     Froot = sample(Froot$Froot, N_SAMPLES, replace = TRUE) ,
     
     FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of scenario 1
@@ -574,7 +574,7 @@ bootstrap_data %>%
     RaGpp_ef = sample(var_RaGpp_ef, N_SAMPLES, replace = TRUE),
     RaGpp_mf = sample(var_RaGpp_mf, N_SAMPLES, replace = TRUE),
     RaGpp_gra = sample(var_RaGpp_gra, N_SAMPLES, replace = TRUE),
-    # for the rest of ecosystems, we use samples from all Froot rather than Other group
+    # for other ecosystems, we use samples from all Froot
     RaGpp_rest = sample(var_RaGpp$RaGPP_ratio, N_SAMPLES, replace = TRUE),
     
     # Step 3. Sampling Rroot-to-Ra ratio (Froot)
@@ -582,7 +582,7 @@ bootstrap_data %>%
     Froot_ef = sample(var_ef_froot, N_SAMPLES, replace = TRUE),
     Froot_mf = sample(var_mf_froot, N_SAMPLES, replace = TRUE),
     Froot_gra = sample(var_gra_froot, N_SAMPLES, replace = TRUE),
-    # for the rest of ecosystems, we use samples from all Froot rather than Other group
+    # for other ecosystems, we use samples from all Froot
     Froot_rest = sample(var_rest_froot, N_SAMPLES, replace = TRUE), 
     
     # Calculation **********
@@ -746,19 +746,20 @@ Scenario                 | Agreement (quantiles) | p-value (t.test)
 ## Topdown and bottomup comparison - Figure 1
 ```{r combine GPP and RSG comparison into figure 2, fig.height=7, fig.width=8, cache=FALSE}
 # Scenario 2, RC separate into 4 groups, and Froot separate into 2 groups
-plot_grid(p1_gpp2, p2_rs2, ncol = 1, labels = c("(a)", "(b)")) # , hjust = -4, vjust = 4
-ggsave("outputs/Figure1.png") # , width = 10, height = 8, dpi = 300, units = "in"
+plot_grid(p1_gpp2, p2_rs2, ncol = 1, labels = c("(a)", "(b)"), hjust = 0)
+ggsave("outputs/Figure1.png")
 ```
 
 
 ## Combining GPP and Rs
 
+What's the most likely values for GPP and R[S] that are consistent with the underlying distributions?
+
 ```{r joint, results='show'}
 n_points <- 20
 # w is the weight of top-down GPP dominance, 0 to 1
 w <- seq(0, 1, length.out = 20)
-w <- c(0.25, w) %>% unique() %>% sort()  # make sure 0.25 is included
-w <- c(0.5, w) %>% unique() %>% sort()  # make sure 0.5 is included
+w <- c(0.25, 0.5, 0.75, w) %>% unique() %>% sort()  # ensure 0.25, 0.5, and 0.75 are included
 
 gpp_wm <- tibble(q025 = rep(NA_real_, n_points), 
                  q500 = rep(NA_real_, n_points),
@@ -775,6 +776,7 @@ gpp_wm$w <- w
 rs_wm$w <- w
 results <- bind_rows("GPP" = gpp_wm, "Rs" = rs_wm, .id = "which")
 
+results_w75 <- filter(results, w == 0.75)
 results_w50 <- filter(results, w == 0.5)
 results_w25 <- filter(results, w == 0.25)
 myarrow <- arrow(length = unit(0.05, "inches"))
@@ -789,17 +791,22 @@ p_joint <- ggplot(results, aes(w, q500, color = which)) +
   scale_color_discrete("", labels = c("GPP", expression(R[S]))) +
   theme(legend.text.align = 0) +
   
+  # 75%
+  geom_segment(data = results_w75, aes(x = 0, xend = w, yend = q500),
+               linetype = 2, size = 0.5) +
+  geom_label(data = results_w75, aes(x = 0.125, y = q500, label = round(q500, 0)),
+             size = 2, show.legend = FALSE) +
   # 50%
   geom_segment(data = results_w50, aes(x = 0, xend = w, yend = q500), 
-               linetype = 2, size = 0.75) +
-  geom_label(data = results_w50, aes(x = 0.05, y = q500, label = round(q500, 0)),
-             size = 3, fontface = "bold", show.legend = FALSE) +
+               linetype = 2, size = 1) +
+  geom_label(data = results_w50, aes(x = 0.075, y = q500, label = round(q500, 0)),
+             size = 3.5, fontface = "bold", show.legend = FALSE) +
   
   # 25%
-  # geom_segment(data = results_w25, aes(x = 0, xend = w, yend = q500), 
-  #              linetype = 2, size = 0.5) +
-  # geom_label(data = results_w25, aes(x = 0.05, y = q500, label = round(q500, 0)),
-  #            size = 2, show.legend = FALSE) +
+  geom_segment(data = results_w25, aes(x = 0, xend = w, yend = q500),
+               linetype = 2, size = 0.5) +
+  geom_label(data = results_w25, aes(x = 0.025, y = q500, label = round(q500, 0)),
+             size = 2, show.legend = FALSE) +
   
   # Arrows and labels
   annotate("segment", x = 0.1, xend = 0.025, y = 60, yend = 60, arrow = myarrow) +
@@ -814,6 +821,7 @@ p_joint <- ggplot(results, aes(w, q500, color = which)) +
   ylab(expression(Flux~(Pg~C~yr^-1)))
 
 print(p_joint)
+ggsave("outputs/Figure3.png")
 knitr::kable(results_w50, digits = 1, format = "markdown")
 ```
 
@@ -883,7 +891,7 @@ p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) +
 #  geom_label()
 print(p_ratios)
 
-
+ggsave("outputs/Figure2.png")
 ```
 
 Note that the arithmetic mean of Rs:GPP in SRDB is `r round(Rs_to_GPP_unweighted, 3)` (median `r round(median(srdb_v4$Rs_annual / srdb_v4$GPP, na.rm = TRUE), 3)`), while the weighted (by area of ecosystem types globally) is `r round(Rs_to_GPP_weighted, 3)`. This close agreement implies that SRDB is in fact a pretty good representation of the land surface (and/or that Rs:GPP doesn't vary much).
