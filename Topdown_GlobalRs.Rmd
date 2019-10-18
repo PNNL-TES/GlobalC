@@ -871,7 +871,7 @@ read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>%
 fluxnet$Source <- paste0("FLUXNET\n(N = ", nrow(fluxnet), ")")
 fluxnet$Type <- "Observations"
 
-cmip6_data_file <- "/Users/d3x290/Downloads/cmip6/output/1.cmip6_global_monthly_means.csv"
+cmip6_data_file <- "data/CMIP/1.cmip6_global_monthly_means.csv"
 if(file.exists(cmip6_data_file)) {
   read.csv(cmip6_data_file, stringsAsFactors = FALSE) %>% 
     as_tibble() %>% 
