@@ -871,36 +871,40 @@ read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>%
 fluxnet$Source <- paste0("FLUXNET\n(N = ", nrow(fluxnet), ")")
 fluxnet$Type <- "Observations"
 
+cmip5_data_file <- "data/CMIP/1.cmip5_global_monthly_means.csv"
 cmip6_data_file <- "data/CMIP/1.cmip6_global_monthly_means.csv"
-if(file.exists(cmip6_data_file)) {
-  read.csv(cmip6_data_file, stringsAsFactors = FALSE) %>% 
+if(file.exists(cmip5_data_file) && file.exists(cmip6_data_file)) {
+  read.csv(cmip5_data_file, stringsAsFactors = FALSE) %>% 
+    bind_rows(read.csv(cmip6_data_file, stringsAsFactors = FALSE)) %>% 
     as_tibble() %>% 
     filter(model != "IPSL-CM6A-LR") %>% 
-    select(model, experiment, ensemble, variable, time, value, LandArea) %>% 
+    select(era, model, experiment, ensemble, variable, time, value, LandArea) %>% 
     mutate(year = floor(time / 10000)) %>% 
-    group_by(variable, model, experiment, ensemble, year) %>% 
+    group_by(era, variable, model, experiment, ensemble, year) %>% 
     # units are kgC/m2/s, one month per row; need to go to PgC/yr
     summarise(value = sum(value * LandArea * 1000 * 60 * 60 * 24 * 365 / 1e15 / 12)) -> 
     model_data
   
   model_data %>% 
     filter(variable != "gpp") %>% 
-    group_by(model, experiment, ensemble, year) %>% 
+    group_by(era, model, experiment, ensemble, year) %>% 
     summarise(variable = "Rs", 
               value = sum(value)) %>% 
     bind_rows(filter(model_data, variable == "gpp")) %>% 
     spread(variable, value) %>% 
-    filter(year >= 2012) ->
+    filter(year >= 2005) %>% 
+    group_by(era, model, experiment, ensemble) %>% 
+    summarise(gpp = mean(gpp), Rs = mean(Rs)) ->
     model_ratios
   
   model_ratios %>% 
-    mutate(GPP = gpp, Source = paste0("CMIP6\n(N = ", nrow(model_ratios), ")"), Type = "Models") ->
-    cmip6
+    mutate(GPP = gpp, Source = paste0("CMIP5/6\n(N = ", nrow(model_ratios), ")"), Type = "Models") ->
+    cmip
 } else {
-  cmip6 <- data.frame(Source = "CMIP6\n(N = 0)", Type = "Models", stringsAsFactors = FALSE)
+  cmip <- data.frame(Source = "CMIP6\n(N = 0)", Type = "Models", stringsAsFactors = FALSE)
 }
 
-bind_rows(topdown, srdb, fluxnet, cmip6) %>% 
+bind_rows(topdown, srdb, fluxnet, cmip) %>% 
   mutate(Ratio = Rs / GPP,
          Source = factor(Source, unique(Source)[c(2, 3, 1, 4)])) ->
   ratios
