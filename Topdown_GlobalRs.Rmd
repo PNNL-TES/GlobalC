@@ -74,6 +74,7 @@ library(cowplot)
 library(ggmap)
 library(maps)
 library(mapdata)
+# install.packages("ggExtra")
 library(ggExtra)
 
 library(tidyr)
