@@ -1,36 +1,36 @@
-Fl,Fw,Fshoot,Froot,IGBP,Ecosystem,IGBP_Comments,Latitude,Longitude,Reference,StudyNo,SRDBNo,Rleaf,Rwood,Rroot,Ra,Notes1,Notes2
-,,50,,EBF,Forest,Tropical forest,9.75,-83.75,"(Allen and Lemon, 1976)",1,,,,,,Book chapter,
-53,35,,12,EBF,Forest,Tropical  forest,3.22,101.65,"(Yoda, 1983)",1,,,,,,Book chapter,
-,,55,,EBF,Forest,Warm-temperate forest,36.2,138.25,"(Yoda, 1978)",1,,,,,,Book chapter,
-28,26,,46,DBF,Forest,Temperate  deciduous forest,,,"(Edwards et al., 1981)",1,,,,,,Book chapter,
-33.5,39,,27.5,ENF,Forest,Pinus radiata trees,-35.35,148.77,"(Ryan et al., 1996)",,,,,,,,
-31.6,39.4,,29,ENF,Forest,"Forest in northern Manitob, Canada",55.34,-106.14,"(Ryan et al., 1997)",2,,,,,,,
-43.17,34.53,,22.3,ENF,Forest,"Forest in Central Saskatchewa, Canada",55.57,-106.23,"(Ryan et al., 1997)",2,,,,,,,
-41.56626506,12.40963855,,46.02409639,ENF,Forest,NSA-OBS,55.88333333,-98.33333333,"(Ryan et al., 1997)",2,,345,103,382,830,Table 5,
-48.38709677,3.379416283,,48.23348694,ENF,Forest,NSA-OJP,55.88333333,-98.33333333,"(Ryan et al., 1997)",2,,315,22,314,651,Table 5,
-46.96356275,10.39136302,,42.64507422,DBF,Forest,NSA-OA,55.88333333,-98.33333333,"(Ryan et al., 1997)",2,,348,77,316,741,Table 5,
-64.45859873,11.08280255,,24.45859873,ENF,Forest,SSA-OBS,53.88333333,-104.8833333,"(Ryan et al., 1997)",2,,506,87,192,785,Table 5,
-66.1682243,5.607476636,,28.22429907,ENF,Forest,SSA-OJP,53.88333333,-104.8833333,"(Ryan et al., 1997)",2,,354,30,151,535,Table 5,
-51.8722467,13.54625551,,34.5814978,DBF,Forest,SSA-OA,53.88333333,-104.8833333,"(Ryan et al., 1997)",2,,471,123,314,908,Table 5,
-32.92,13.6,,53.48,EBF,Forest,Pine forest,44.5,-120.62,"(Law, BE, Ryan, MG, Anthoni, 1999)",,1470,,,,,,
-,,,24.92,CRO,Cropland,Crop,55.55,4.73,"(Suleau et al., 2011)",,6029,,,,,,
-,,,46.7,DBF,Forest,Young Beech forest,48.67,7.08,"(Granier et al., 2000)",,1602,,,,,,
-23.3,6.7,,70,SAV,Savanna,Tropical savanna,-12.6,131.17,"(Chen et al., 2003)",,2241,,,,,,
-24.4,18.28,,57.32,MF,Forest,Deciduous forest,45.48,-90.12,"(Bolstad et al., 2004)",,2532,,,,,,
-31.27,26.01,,42.72,MF,Forest,Hardwood forest,45.58,-83.7,"(Curtis et al., 2005)",,2904,,,,,,
-,,,29.01,ENF,Forest,Spruce-dominated forest,45.2,-68.74,"(Davidson et al., 2006)",,3301,,,,,,
-,,,34.78,MF,Forest,Temperate forest,51.18,4.31,"(Nagy et al., 2006)",,3503,,,,,,
-,,,49.04,EBF,Forest,Rain forest,21.55,101.15,"(Zhang et al., 2006)",,3705,,,,,,
-,,,36.43,ENF,Forest,Douglas Fir,49.52,-125.2,"(Jassal et al., 2007)",,3885,,,,,,
-46.22,17.07,,36.71,ENF,Forest,Scots Pine,62.52,30.49,"(Zha et al., 2007)",,4166,,,,,,
-38.1,26.33,,35.57,EBF,Forest,Eucalyptus forest,-35.39,148.09,"(Keith et al., 2009)",,4920,,,,,,
-41.49,12.04,,46.47,ENF,Forest,Scots pine forest,61.51,24.17,"(Kolari et al., 2009)",,4938,,,,,,
-50.51,21.21,,28.28,EBF,Forest,Amazonian forests,-2.15,-55.63,"(Malhi et al., 2009)",,4979,,,,,,
-24.86,25.15,,49.99,ENF,Forest,Pine forest,28.58333333,-16.325,"(Wieser et al., 2009)",,5227,,,,,,
-,,,36.21,GRA,Grassland,Alpine meadow,37.36,101.18,"(Zhang et al., 2009)",,5262,,,,,,
-50,15.45,,34.55,ENF,Forest,Black spruce forest,49.69,-74.43,"(Hermle et al., 2010)",,5392,,,,,,
-22.96,34.31,,42.73,EBF,Forest,Brazil Eucalyptus,-19.82,-40.08,"(Ryan et al., 2010)",,5435,,,,,,
-55.52,19.42,,25.06,EBF,Forest,Rain forest,21.92,101.25,"(Tan et al., 2010)",,5545,,,,,,
-,,,23.55,CRO,Cropland,Maize,51.97,5.63,"(Jans et al., 2010)",,5833,,,,,,
-30.7,43.15,,26.15,EBF,Forest,Eucalyptus plantation,-22.96,-48.72,"(Campoe et al., 2012)",,6245,,,,,,
-,,,24,MF,Forest,Mediterranean pine forest,43.72,10.28,"(Matteucci et al., 2015)",,10043,,,,,,
+Fl,Fw,Fshoot,Froot,IGBP,Ecosystem,IGBP_Comments,Latitude,Longitude,Rleaf,Rwood,Rroot,Ra,SRDB_Study,Note,Reference,URL_or_details
+,,50,,EBF,Forest,Tropical forest,9.75,-83.75,,,,,,Book chapter,"(Allen and Lemon, 1976)","Allen, L. H. & Lemon, E. R. Carbon dioxide exchange and turbulence in a Costa Rican tropical rain forest. in Vegetation and the Atmosphere (ed. Monteith, J. .) 2, 265Ð308 (Academic Press, 1976)."
+53,35,,12,EBF,Forest,Tropical  forest,3.22,101.65,,,,,,Book chapter,"(Yoda, 1983)","Yoda, K. Community respiration in a lowland rain forest in Pasoh, peninsular Malaysia. Ecol 33, 183Ð197 (1983)."
+,,55,,EBF,Forest,Warm-temperate forest,36.2,138.25,,,,,,Book chapter,"(Yoda, 1978)","Yoda, K. Estimation of community respiration. in Biological Production in a Warm Temperate Evergreen Oak Forest of Japan (eds. Kira, K., Ono, Y. & Hosokawa, T.) 18, 112Ð131 (Univ. Tokyo Press, 1978)."
+28,26,,46,DBF,Forest,Temperate  deciduous forest,,,,,,,,Book chapter,"(Edwards et al., 1981)","Edwards, N. T., Shugart, H. H., McLaughlin, S. B., Harris, W. F. & Reichle, D. E. Carbon metabolism in terrestrial ecosystems. in Dynamic Properties of Forest Ecosystems (ed. Reichle, D. E.) 499Ð536 (Cambridge Univ. Press, 1981)."
+33.5,39,,27.5,ENF,Forest,Pinus radiata trees,-35.35,148.77,,,,,,,"(Ryan et al., 1996)",https://academic.oup.com/treephys/article/16/3/333/1690346
+31.6,39.4,,29,ENF,Forest,"Forest in northern Manitob, Canada",55.34,-106.14,,,,,,,"(Ryan et al., 1997)",https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/97JD01236%4010.1002/%28ISSN%292169-8996.BOREAS2
+43.17,34.53,,22.3,ENF,Forest,"Forest in Central Saskatchewa, Canada",55.57,-106.23,,,,,,,"(Ryan et al., 1997)",https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/97JD01236%4010.1002/%28ISSN%292169-8996.BOREAS2
+41.57,12.41,,46.02,ENF,Forest,NSA-OBS,55.88,-98.33,345,103,382,830,,Table 5,"(Ryan et al., 1997)",https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/97JD01236%4010.1002/%28ISSN%292169-8996.BOREAS2
+48.39,3.38,,48.23,ENF,Forest,NSA-OJP,55.88,-98.33,315,22,314,651,,Table 5,"(Ryan et al., 1997)",https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/97JD01236%4010.1002/%28ISSN%292169-8996.BOREAS2
+46.96,10.39,,42.65,DBF,Forest,NSA-OA,55.88,-98.33,348,77,316,741,,Table 5,"(Ryan et al., 1997)",https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/97JD01236%4010.1002/%28ISSN%292169-8996.BOREAS3
+64.46,11.08,,24.46,ENF,Forest,SSA-OBS,53.88,-104.88,506,87,192,785,,Table 5,"(Ryan et al., 1997)",https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/97JD01236%4010.1002/%28ISSN%292169-8996.BOREAS4
+66.17,5.61,,28.22,ENF,Forest,SSA-OJP,53.88,-104.88,354,30,151,535,,Table 5,"(Ryan et al., 1997)",https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/97JD01236%4010.1002/%28ISSN%292169-8996.BOREAS5
+51.87,13.55,,34.58,DBF,Forest,SSA-OA,53.88,-104.88,471,123,314,908,,Table 5,"(Ryan et al., 1997)",https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/97JD01236%4010.1002/%28ISSN%292169-8996.BOREAS6
+32.92,13.6,,53.48,EBF,Forest,Pine forest,44.5,-120.62,,,,,1470,,"(Law, BE, Ryan, MG, Anthoni, 1999)",https://onlinelibrary.wiley.com/doi/abs/10.1046/j.1365-2486.1999.00214.x
+,,,24.92,CRO,Cropland,Crop,55.55,4.73,,,,,6029,,"(Suleau et al., 2011)",https://www.sciencedirect.com/science/article/pii/S0168192311000311
+,,,46.7,DBF,Forest,Young Beech forest,48.67,7.08,,,,,1602,,"(Granier et al., 2000)",https://besjournals.onlinelibrary.wiley.com/doi/full/10.1046/j.1365-2435.2000.00434.x
+23.3,6.7,,70,SAV,Savanna,Tropical savanna,-12.6,131.17,,,,,2241,,"(Chen et al., 2003)",https://link.springer.com/article/10.1007/s00442-003-1358-5
+24.4,18.28,,57.32,MF,Forest,Deciduous forest,45.48,-90.12,,,,,2532,,"(Bolstad et al., 2004)",https://academic.oup.com/treephys/article/24/5/493/1638171
+31.27,26.01,,42.72,MF,Forest,Hardwood forest,45.58,-83.7,,,,,2904,,"(Curtis et al., 2005)",https://nph.onlinelibrary.wiley.com/doi/full/10.1111/j.1469-8137.2005.01438.x
+,,,29.01,ENF,Forest,Spruce-dominated forest,45.2,-68.74,,,,,3301,,"(Davidson et al., 2006)",https://onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2486.2005.01062.x
+,,,34.78,MF,Forest,Temperate forest,51.18,4.31,,,,,3503,,"(Nagy et al., 2006)",https://www.sciencedirect.com/science/article/pii/S0168192306002346
+,,,49.04,EBF,Forest,Rain forest,21.55,101.15,,,,,3705,,"(Zhang et al., 2006)",https://link.springer.com/article/10.1007/s11430-006-8150-4
+,,,36.43,ENF,Forest,Douglas Fir,49.52,-125.2,,,,,3885,,"(Jassal et al., 2007)",https://www.sciencedirect.com/science/article/pii/S0168192307000366
+46.22,17.07,,36.71,ENF,Forest,Scots Pine,62.52,30.49,,,,,4166,,"(Zha et al., 2007)",https://academic.oup.com/aob/article/99/2/345/2390924
+38.1,26.33,,35.57,EBF,Forest,Eucalyptus forest,-35.39,148.09,,,,,4920,,"(Keith et al., 2009)",https://www.sciencedirect.com/science/article/pii/S0168192308002773
+41.49,12.04,,46.47,ENF,Forest,Scots pine forest,61.51,24.17,,,,,4938,,"(Kolari et al., 2009)",https://helda.helsinki.fi/bitstream/handle/10138/233561/ber14-4-761.pdf?sequence=1
+50.51,21.21,,28.28,EBF,Forest,Amazonian forests,-2.15,-55.63,,,,,4979,,"(Malhi et al., 2009)",https://onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2486.2008.01780.x
+24.86,25.15,,49.99,ENF,Forest,Pine forest,28.58,-16.33,,,,,5227,,"(Wieser et al., 2009)",https://academic.oup.com/treephys/article/29/3/457/1696511
+,,,36.21,GRA,Grassland,Alpine meadow,37.36,101.18,,,,,5262,,"(Zhang et al., 2009)",https://www.sciencedirect.com/science/article/pii/S0038071708004677
+50,15.45,,34.55,ENF,Forest,Black spruce forest,49.69,-74.43,,,,,5392,,"(Hermle et al., 2010)",https://academic.oup.com/treephys/article/30/4/527/1682048
+22.96,34.31,,42.73,EBF,Forest,Brazil Eucalyptus,-19.82,-40.08,,,,,5435,,"(Ryan et al., 2010)",https://www.sciencedirect.com/science/article/pii/S0378112710000198
+55.52,19.42,,25.06,EBF,Forest,Rain forest,21.92,101.25,,,,,5545,,"(Tan et al., 2010)",https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2009JD012913
+,,,23.55,CRO,Cropland,Maize,51.97,5.63,,,,,5833,,"(Jans et al., 2010)",https://www.sciencedirect.com/science/article/pii/S0167880910001623
+30.7,43.15,,26.15,EBF,Forest,Eucalyptus plantation,-22.96,-48.72,,,,,6245,,"(Campoe et al., 2012)",https://academic.oup.com/treephys/article/32/6/696/1664762
+,,,24,MF,Forest,Mediterranean pine forest,43.72,10.28,,,,,10043,,"(Matteucci et al., 2015)",https://www.sciencedirect.com/science/article/pii/S003807171500187X
