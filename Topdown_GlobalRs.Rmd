@@ -1,5 +1,5 @@
 ---
-title: "TopdownApproach"
+title: "GlobalC"
 author: "Jinshi"
 date: "May 19, 2019"
 output:
@@ -101,13 +101,14 @@ read_file <- function(x) read.csv(file.path(DATA_DIR, x), stringsAsFactors = FAL
 
 srdb_v4 <- read_file('srdbv4.csv') # SRDB_V4 data
 FlFsFr <- read_file('FlFsFrSummary.csv') # Froot (Rroot/Rs) and Fshoot (Rshoot/Rs) from 39 papers
-GPP <- read_file('GlobalGPP_Sum.csv') # 65 GPP estimates from published paper
-GPP %>% filter(Year > 1980) -> GPP
+GPP <- read_file('GlobalGPP_Sum.csv') # GPP estimates from published paper
+GPP %>% filter(Pub_year > 1980 & Flag != "Model") -> GPP
 NPP <- read_file('ITONPP.CSV') # 251 NPP estimates from ITO (2011)
-GlobalRs <- read_file('GlobalRs.csv') # 27 estimates of global Rs
-GlobalRs %>% filter(Year > 1980) -> GlobalRs
+GlobalRs <- read_file('GlobalRs.csv') # estimates of global Rs
+GlobalRs %>% filter(Pub_year > 1980) -> GlobalRs
 # (Ra/GPP) Piao, Shilong, et al. "Forest annual carbon cost: A global‐scale analysis of autotrophic respiration." Ecology 91.3 (2010): 652-661.
 RaGPP <- read_file('RaGPP.csv') 
+var_Fire <- read_file('Fire_burn_C.csv')
 
 # IGBP data, and information to map it with other data
 IGBP <- read_file('IGBP.txt') %>% 
@@ -161,7 +162,7 @@ p_gpp <- ggplot(GPP, aes(Year, GPP)) + geom_point() +
 p_gpp_marg <- ggMarginal(p_gpp, type = "densigram", margins = "y", fill = "red")
 ggsave("outputs/p_gpp.png", plot = p_gpp_marg, width = 8, height = 5)
 
-p_rs <- ggplot(GlobalRs, aes(Year_published, Rs)) + geom_point() + 
+p_rs <- ggplot(GlobalRs, aes(Pub_year, Rs)) + geom_point() + 
   geom_errorbar(aes(ymin = Rs - SD, ymax = Rs + SD), na.rm = TRUE) + 
   geom_smooth(method = "lm") + theme_cowplot() +
   xlab("Year") + ylab(expression(R[S]~(Pg~C~yr^-1)))
@@ -176,10 +177,7 @@ ggsave("outputs/p_rs.png", plot = p_rs_marg, width = 8, height = 5)
 # Plot global Rs, NPP, Fire-burned Carbon, and RC by ecosystem (root respiration to soil respiration ratio)
 # more details please see function plot_Rroot_Rs()
 # prepare data first
-sub_srdb %>% 
-  select(Leaf_habit) %>% 
-  group_by(Leaf_habit) %>% 
-  summarise(count = n())
+sub_srdb %>% count(Leaf_habit) 
 
 sub_srdb %>% 
   mutate(IGBP2 = case_when(Ecosystem_type == "Agriculture" ~ "Agriculture",
@@ -189,9 +187,8 @@ sub_srdb %>%
                            Ecosystem_type == "Forest" & Leaf_habit == 'Evergreen' ~ "EF",
                            Ecosystem_type == "Forest" & Leaf_habit == 'Mixed' ~ "Mixed",
                            TRUE ~ "Other")) -> sub_srdb
-sub_srdb %>% 
-  group_by(Ecosystem_type) %>% 
-  summarise(count = n())
+
+sub_srdb %>% count(Ecosystem_type) 
 
 plot_Rroot_Rs(GlobalRs, sub_srdb, NPP) 
 ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
@@ -240,11 +237,18 @@ var_RaGpp %>%
 ```{r calculate vegetation areas}
 # IGBP area by type
 IGBP %>% count(IGBP_group)
+# Wrong old calculation
+# IGBP %>% filter(IGBP_group != "WAT") %>% 
+#   group_by(IGBP_group) %>% 
+#   summarise(count = n()) %>% 
+#   mutate(percent = count / sum(count)) -> IGBP_summary
 
-IGBP %>% filter(IGBP_group != "WAT") %>% 
+# Updated calculation
+IGBP %>% 
+  filter(IGBP_group != "WAT") %>% 
   group_by(IGBP_group) %>% 
-  summarise(count = n()) %>% 
-  mutate(percent = count / sum(count)) -> IGBP_summary
+  summarise(rel_area = sum(cos(abs(Latitude) / 180 * pi))) %>% 
+  mutate(percent = rel_area / sum(rel_area)) -> IGBP_summary
 
 ag_area <- IGBP_summary[IGBP_summary$IGBP_group == "CRO",]$percent
 df_area <- IGBP_summary[IGBP_summary$IGBP_group == "DF",]$percent
@@ -385,7 +389,7 @@ gpp_figure_data %>%
   ggplot(aes(value, fill = GPP_type)) +
   theme_cowplot() +
   geom_density(stat = 'density', alpha = 0.5) +
-  #  theme(legend.position = c(0.75, 0.75)) +
+  # theme(legend.position = c(0.75, 0.25)) +
   coord_cartesian(xlim = c(50, 350)) +
   scale_fill_discrete("") + ylab("Density") +
   xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
@@ -459,7 +463,7 @@ ratio_results %>%
 
 p1_gpp3 <- ggdraw() +
   draw_plot(gpp_base_figure %+% gpp_ratio_figure_data) +
-  draw_plot(p_gpp_marg, x = 0.35, y = 0.4, width = 0.4, height = 0.5)
+  draw_plot(p_gpp_marg, x = 0.35, y = 0.6, width = 0.4, height = 0.5) 
 print(p1_gpp3)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
@@ -545,7 +549,7 @@ Scenario                 | Agreement (quantiles) | p-value (t.test)
 
 ```{r prepare variables for RSG boostrapping}
 # Froot used the same data as bottom-up approach
-var_Fire <- c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)
+# var_Fire <- c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)
 # prepare RaGPP ratio data
 var_RaGpp %>% count(IGBP2)
 var_RaGpp_df <- var_RaGpp %>% filter(IGBP2 == "Deciduous") %>% pull(RaGPP_ratio)
@@ -567,7 +571,7 @@ bootstrap_data %>%
     # Step 1. prepare other components, NPP and NPP consumed by fire etc.
     NPP = sample(NPP$NPP, N_SAMPLES, replace = TRUE),
     HerbComsum = rnorm(n = N_SAMPLES, mean = 2.2, sd = 0.2),
-    Fire = sample(var_Fire, N_SAMPLES, replace = TRUE),
+    Fire = sample(var_Fire$Amount_Pg, N_SAMPLES, replace = TRUE),
     sink = rnorm(n = N_SAMPLES, mean = 2.10, sd = 0.28),
     
     # Step 2. Ra-to-GPP ratio boosting
