@@ -75,19 +75,20 @@ plot_GPP <- function (sdata, sdata2) {
   
   # Trend
   subGPP <- subset(sdata, GPP > 90 & GPP < 180 )
-  Trend_GPP <- ggplot(subGPP, aes(Year, GPP)) +
+  Trend_GPP <- ggplot(subGPP, aes(Pub_year, GPP)) +
     geom_point(col = "gray") + 
-    # geom_smooth(aes(Year, GPP), method = "lm", col = "black", se = FALSE) +
+    # geom_smooth(aes(Pub_year, GPP), method = "lm", col = "black", se = FALSE) +
     geom_smooth(method = "lm", col = "red", data = sdata, se = TRUE) +
     theme(legend.title = element_blank()) +
     # one outlier
-    # geom_point(data = subset(sdata, sdata$GPP < 90 | sdata$GPP > 180) ,aes(x = Year, y = GPP), color = c("red"), shape = 16 ) +
+    # geom_point(data = subset(sdata, sdata$GPP < 90 | sdata$GPP > 180) ,aes(x = Pub_year, y = GPP), color = c("red"), shape = 16 ) +
     theme(legend.position = "none") +
-    theme(axis.title.y = element_blank())
+    theme(axis.title.y = element_blank()) +
+    labs(x = expression(Data~published~time~"(year)"))
   # annotate("text", x = 1958, y = 175, size = 5)
   
-  lm_model1 <- lm(GPP ~ Year, data = subGPP)
-  lm_model2 <- lm(GPP ~ Year, data = GPP)
+  lm_model1 <- lm(GPP ~ Pub_year, data = subGPP)
+  lm_model2 <- lm(GPP ~ Pub_year, data = GPP)
   
   print(summary(lm_model1))
   print(summary(lm_model2))
@@ -100,7 +101,7 @@ plot_GPP <- function (sdata, sdata2) {
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_boxplot(width = 0.1) +
     # geom_point(aes(y = slope1), col = "black", shape = 13) + 
-    geom_point(aes(y = slope2), col = "red", shape = 13) +
+    # geom_point(aes(y = slope2), col = "red", shape = 13) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     ylab(expression(GPP~trend~(Pg~yr^{-2})))
   
@@ -120,16 +121,17 @@ plot_GPP <- function (sdata, sdata2) {
     ylab(expression(R[S]~(Pg~yr^{-1}))) +
     xlab("Global")
   
-  # plot Rs~Year relationship
-  sum_mod <- lm(Rs~Year, data = sdata2)
+  # plot Rs~Pub_year relationship
+  sum_mod <- lm(Rs~Pub_year, data = sdata2)
   slope3 <- coefficients(summary(sum_mod))[2,1]
 
-  Trend_Rs <- ggplot(sdata2, aes(Year, Rs)) + geom_point(col = "gray") +
+  Trend_Rs <- ggplot(sdata2, aes(Pub_year, Rs)) + geom_point(col = "gray") +
     geom_smooth(method = "lm", col = "red") +
-    xlim(min(sdata$Year), max(sdata$Year)) +
+    xlim(min(sdata$Pub_year), max(sdata$Pub_year)) +
     theme(legend.title = element_blank(), axis.title.y = element_blank()) +
     annotate("text", x = 1992, y = 80, 
-             label = paste("Trend =", round(slope3, 3)), na.rm = TRUE)
+             label = paste("Trend =", round(slope3, 3)), na.rm = TRUE) +
+    labs(x = expression(Data~published~time~"(year)"))
   print(sum_mod)
   
   # plot trend
@@ -140,8 +142,8 @@ plot_GPP <- function (sdata, sdata2) {
     geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_boxplot(width = 0.1) +
     ylab(expression(R[S]~trend~(Pg~yr^{-2}))) +
-    xlab("Global") +
-    geom_point(aes(y = slope3), col = "red", shape = 13)
+    xlab("Global") 
+    # geom_point(aes(y = slope3), col = "red", shape = 13)
   
   plot_grid(p_Rs, Trend_Rs, Rs_IRate, p_GPP, Trend_GPP, p_trend, 
             ncol = 3, 
@@ -184,8 +186,7 @@ plot_RaGPP <- function (sdata2) {
 #   comb_data
 # comb_data$Fshoot <- ifelse(is.na(comb_data$Fshoot), 100-comb_data$Froot, comb_data$Fshoot)
 # comb_data$Froot <- ifelse(is.na(comb_data$Froot), 100-comb_data$Fshoot, comb_data$Froot)
-# gather(comb_data, key = "Fraction", value = "Percentage", -Ecosystem) ->
-#   comb_data
+# gather(comb_data, key = "Fraction", value = "Percentage", -Ecosystem) -> comb_data
 
 
 # Function to calculate Rroot/Ra ratio and Rshoot/Ra ratio
@@ -336,47 +337,6 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
 }
 
 
-#*****************************************************************************************************************
-# boots function
-# bootsting <- function (sdata) {
-#   k = 10000
-#   mysamples = replicate (k, sample(sdata, 2, replace = T))
-#   mymeans = apply(mysamples, 2, mean)
-#   
-#   boots_plot <- tibble(Boots = mymeans) %>% 
-#     ggplot(., aes(Boots)) + geom_histogram(color = "black", fill = "gray", bins = 30) 
-#   
-#   print(boots_plot)
-#   return(mymeans)
-# }
-
-
-# bottom_up <- function () {
-#   var_Rs <- GlobalRs %>% filter(!is.na(Rs)) %>% select(Rs)
-#   samp_Rs <- sample(var_Rs$Rs, 1, replace = T)
-#   
-#   # RC
-#   var_RC <- srdb_v4 %>% select(RC_annual) %>% filter(RC_annual > 0 & RC_annual < 1 & !is.na(RC_annual)) 
-#   # mean(var_Rroot_Rs_ratio$RC_annual)
-#   samp_RC <- sample(var_RC$RC_annual, 1, replace = T)
-#   
-#   # Froot and Froot/Fshoot ratio
-#   var_Froot <- Froot %>% select (Froot)
-#   samp_Froot <- sample(var_froot$Froot, 1, replace = T)
-#   samp_FrFs_ratio <- 1/(1-sam_Froot) # Froot/Fshoot ratio
-#   
-#   # sampling NPP
-#   samp_NPP <- sample(NPP$NPP, 1, replace = T)
-#   
-#   Rroot <- samp_Rs * samp_RC
-#   Rshoot <- samp_Rs * samp_FrFs_ratio
-#   samp_GPP <- samp_NPP + Rroot + Rshoot
-# }
-# 
-# result <- replicate(1000, bottom_up())
-# summary(result)
-# hist(result)
-# abline(v = quantile(result, c(0.025, 0.975)), col = "red", lty = "dashed")
 
 #*****************************************************************************************************************
 # Added or moved by Ben
@@ -491,3 +451,47 @@ t_test <- function(x, y, alternative = "two.sided", ...) {
          ", df = ", format(z$parameter, digits = 1, scientific = FALSE), 
          ", p-value = ", format(z$p.value, digits = 3, scientific = FALSE))
 }
+
+
+
+#*****************************************************************************************************************
+# boots function
+# bootsting <- function (sdata) {
+#   k = 10000
+#   mysamples = replicate (k, sample(sdata, 2, replace = T))
+#   mymeans = apply(mysamples, 2, mean)
+#   
+#   boots_plot <- tibble(Boots = mymeans) %>% 
+#     ggplot(., aes(Boots)) + geom_histogram(color = "black", fill = "gray", bins = 30) 
+#   
+#   print(boots_plot)
+#   return(mymeans)
+# }
+
+
+# bottom_up <- function () {
+#   var_Rs <- GlobalRs %>% filter(!is.na(Rs)) %>% select(Rs)
+#   samp_Rs <- sample(var_Rs$Rs, 1, replace = T)
+#   
+#   # RC
+#   var_RC <- srdb_v4 %>% select(RC_annual) %>% filter(RC_annual > 0 & RC_annual < 1 & !is.na(RC_annual)) 
+#   # mean(var_Rroot_Rs_ratio$RC_annual)
+#   samp_RC <- sample(var_RC$RC_annual, 1, replace = T)
+#   
+#   # Froot and Froot/Fshoot ratio
+#   var_Froot <- Froot %>% select (Froot)
+#   samp_Froot <- sample(var_froot$Froot, 1, replace = T)
+#   samp_FrFs_ratio <- 1/(1-sam_Froot) # Froot/Fshoot ratio
+#   
+#   # sampling NPP
+#   samp_NPP <- sample(NPP$NPP, 1, replace = T)
+#   
+#   Rroot <- samp_Rs * samp_RC
+#   Rshoot <- samp_Rs * samp_FrFs_ratio
+#   samp_GPP <- samp_NPP + Rroot + Rshoot
+# }
+# 
+# result <- replicate(1000, bottom_up())
+# summary(result)
+# hist(result)
+# abline(v = quantile(result, c(0.025, 0.975)), col = "red", lty = "dashed")
