@@ -89,7 +89,7 @@ source('functions.R')
 # Set chunks defaults; these options will be applied to all subsequent chunks
 knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, 
                       echo = FALSE, warning = FALSE,
-                      fig.height = 4, fig.width = 8, cache = TRUE)
+                      fig.height = 4, fig.width = 8, cache = FALSE)
 ```
 
 
@@ -136,6 +136,15 @@ Froot %>% mutate(IGBP2 = case_when(
   IGBP %in% c('MF', 'Mixed') & Ecosystem == 'Forest' ~ "MF",
   TRUE ~ "Other"
 )) -> Froot
+```
+
+
+```{r handle missing SD}
+# GPP %>% select(GPP, SD) %>% filter (!is.na(SD)) %>% ggplot(aes(GPP, SD)) + geom_point()
+# GPP %>% select(GPP, SD) %>% filter (!is.na(SD)) %>% lm(GPP, SD) %>% summary()
+
+# GlobalRs %>% select(Rs, SD) %>% filter (!is.na(SD)) %>% ggplot(aes(Rs, SD)) + geom_point()
+# GlobalRs %>% select(Rs, SD) %>% filter (!is.na(SD)) %>% lm(Rs, SD) %>% summary()
 ```
 
 ## Sites spatial distribution
@@ -571,7 +580,8 @@ bootstrap_data %>%
     # Step 1. prepare other components, NPP and NPP consumed by fire etc.
     NPP = sample(NPP$NPP, N_SAMPLES, replace = TRUE),
     HerbComsum = rnorm(n = N_SAMPLES, mean = 2.2, sd = 0.2),
-    Fire = sample(var_Fire$Amount_Pg, N_SAMPLES, replace = TRUE),
+    # Fire = sample(var_Fire$Amount_Pg, N_SAMPLES, replace = TRUE),
+    Fire = replace_SD_and_generate(var_Fire$Amount_Pg, var_Fire$SD), # Another way to do fire resample (use mean and SD)
     sink = rnorm(n = N_SAMPLES, mean = 2.10, sd = 0.28),
     
     # Step 2. Ra-to-GPP ratio boosting
@@ -832,24 +842,6 @@ knitr::kable(results_w50, digits = 1, format = "markdown")
 ```
 
 
-## Other diagnoses
-```{r diagnoses}
-# check
-gpp_results %>% transmute(check = (1 - Froot) / Froot - FsFr)
-
-rs_results$Ra2 %>% min(na.rm = TRUE)
-rs_results$Ra3 %>% min(na.rm = TRUE)
-
-# check Froot (root-to-Rs ratio)
-Froot %>% transmute (check = Froot + Fshoot) %>% max
-Froot %>% transmute (check = Froot + Fshoot) %>% min
-Froot %>% group_by(Ecosystem) %>% summarise(count = n())
-
-Froot %>% count(IGBP2) 
-Froot %>% count(Ecosystem) 
-mean(Froot$Froot)
-```
-
 ## Site-specific ratios of GPP to Rs
 
 Presumably, as a matter of mathematics, the ratio of global Rs to global GPP should be the linear combination (sum) of all terrestrial points Neither SRDB nor FLUXNET is an unbiased sample of the land surface, but it may be instructive to look at the Rs:GPP for three data sources:
@@ -933,6 +925,25 @@ ggsave("outputs/Figure2.png")
 ```
 
 Note that the arithmetic mean of Rs:GPP in SRDB is `r round(Rs_to_GPP_unweighted, 3)` (median `r round(median(srdb_v4$Rs_annual / srdb_v4$GPP, na.rm = TRUE), 3)`), while the weighted (by area of ecosystem types globally) is `r round(Rs_to_GPP_weighted, 3)`. This close agreement implies that SRDB is in fact a pretty good representation of the land surface (and/or that Rs:GPP doesn't vary much).
+
+
+## Other diagnoses
+```{r diagnoses}
+# check
+gpp_results %>% transmute(check = (1 - Froot) / Froot - FsFr)
+
+rs_results$Ra2 %>% min(na.rm = TRUE)
+rs_results$Ra3 %>% min(na.rm = TRUE)
+
+# check Froot (root-to-Rs ratio)
+Froot %>% transmute (check = Froot + Fshoot) %>% max
+Froot %>% transmute (check = Froot + Fshoot) %>% min
+Froot %>% group_by(Ecosystem) %>% summarise(count = n())
+
+Froot %>% count(IGBP2) 
+Froot %>% count(Ecosystem) 
+mean(Froot$Froot)
+```
 
 
 ```{r not used}

@@ -21,8 +21,8 @@ plot_sites <- function (sdata, sdata2) {
     siteInfor
   
   cc_legend <- tibble(x = rep(-170, 2), 
-                      y = c(2, 1.5),
-                      size = c(-25, -40))
+                      y = c(-25, -40),
+                      size = c(2.5, 1.25))
   
   sitemap <- ggplot(data = worldMap) + 
     geom_polygon(aes(x = long, y = lat , fill = region , group = group, alpha = 0.1), color = "white") + 
@@ -349,9 +349,10 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
 replace_SD_and_generate <- function(m, s, n_samples = N_SAMPLES) {
   stopifnot(length(m) == length(s))
   # Alternately for first part, could do this...see #9
-  # CV <- s / m
-  # CV <- replace_na(CV, median(CV, na.rm = TRUE))
-  # s <- if_else(is.na(s), m * CV, s)
+  # agreed, this is a better way
+  CV <- s / m
+  CV <- replace_na(CV, median(CV, na.rm = TRUE))
+  s <- if_else(is.na(s), m * CV, s)
   
   # Generate and compute mean
   empty_s <- is.na(s)
