@@ -83,6 +83,9 @@ library(tidyr)
 library(hexbin)
 library(dplyr)
 
+# install.packages('ggbeeswarm')
+library(ggbeeswarm)
+
 # Source all needed functions
 source('functions.R')
 
@@ -147,16 +150,13 @@ Froot %>% mutate(IGBP2 = case_when(
 # GlobalRs %>% select(Rs, SD) %>% filter (!is.na(SD)) %>% lm(Rs, SD) %>% summary()
 ```
 
-## Sites spatial distribution
-```{r plot spatial distribution, echo=FALSE, warning=FALSE}
-# Figure. Sites distribution -- FlFsFr sites and RC/HC sites
-plot_sites(srdb_v4, FlFsFr)
-```
+
 
 
 ## Ratio by vegetation types {.tabset .tabset-fade .tabset-pills}
 ### Plot GPP
 ```{r plot GPP and RSG, fig.height = 6, fig.width = 8, cache=FALSE}
+# Use ggbeeswarm to replot those figures, see https://github.com/eclarke/ggbeeswarm
 # panel (a). all 65 GPP estimates
 # panel (b). GPP vs year, the red dots in panel c are calculated trend from panel b (increasing rate = 0.2 if outliers removed, 0.42 if outliers kept)
 # panel (c). 16 GPP estimates reported GPP increase trend
@@ -241,6 +241,13 @@ var_RaGpp %>%
   mutate(percent = count / sum(count)) %>%
   arrange(desc(Ecosystem))
 ```
+
+## Sites spatial distribution
+```{r plot spatial distribution, echo=FALSE, warning=FALSE}
+# Figure. Sites distribution -- FlFsFr sites and RC/HC sites
+plot_sites(srdb_v4, Froot, srdb_v4)
+```
+
 
 
 ```{r calculate vegetation areas}
