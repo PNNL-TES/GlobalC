@@ -2,7 +2,8 @@
 
 #************************************************************
 # plot sites distribution
-plot_sites <- function (sdata, sdata2) {
+plot_sites <- function (sdata, sdata2, srdb_v4) {
+  # prepare data for word map
   worldMap <- map_data(map = "world")
   
   # RC sites from SRDB_v4
@@ -20,12 +21,24 @@ plot_sites <- function (sdata, sdata2) {
            ci = se * qt(0.95 / 2 + 0.5, N - 1)) ->
     siteInfor
   
-  cc_legend <- tibble(x = rep(-170, 2), 
-                      y = c(-25, -40),
-                      size = c(2.5, 1.25))
+  # prepare Ra-GPP sites data
+  srdb_v4 %>% 
+    select(Ecosystem_type, Leaf_habit, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP, Latitude, Longitude) %>% 
+    filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER)) %>% 
+    mutate(ER = if_else(is.na(ER), GPP, ER), # assume NEP very small
+           RaGPP_ratio = (ER - NPP) / GPP,
+           Source = "srdb_v4") %>% 
+    filter(RaGPP_ratio > 0, RaGPP_ratio < 1, !is.na(Ecosystem_type)) -> ra_gpp_srdb
+    
+  # prepare data for legend
+  cc_legend <- tibble(x = rep(-170, 3), 
+                      y = c(-25, -40, -55),
+                      size = c(1.25, 1.25, 1.25))
   
+  # Base map - word map
   sitemap <- ggplot(data = worldMap) + 
-    geom_polygon(aes(x = long, y = lat , fill = region , group = group, alpha = 0.1), color = "white") + 
+    # geom_polygon(aes(x = long, y = lat , fill = region , group = group, alpha = 0.1), color = "white") + 
+    geom_polygon(aes(x = long, y = lat, group = group, alpha = 0.1), color = "white", fill = "gray") + 
     coord_fixed(1.3) +
     theme(axis.text.y   = element_text(size = 12),
           axis.text.x   = element_text(size = 12),
@@ -42,16 +55,22 @@ plot_sites <- function (sdata, sdata2) {
     scale_y_continuous(name = "Latitude", limits = c(-60, 90), breaks = seq(-90, 90, 15),
                        labels = seq(-90,90,15))+
     geom_point(data = siteInfor, aes(x = siteInfor$Longitude, y = siteInfor$Latitude), 
-               color = "black", shape = 18, size = 2, alpha = 1) + 
+               color = "black", shape = 1, size = 2, alpha = 0.75) + 
     
-    # Rshoot/Rroot sites
+    # Rroot-to-Ra ratio sites
     geom_point(data = sdata2, aes(Longitude, Latitude), color = "red",
-               shape = 3, size = 1.5, stroke = 1.5, alpha = 1, fill = "red") +
+               shape = 2, size = 3.5, alpha = 1) +
+    
+    # Ra-GPP ratio sited
+    geom_point(data = ra_gpp_srdb, aes(Longitude, Latitude), color = "blue",
+               shape = 3, size = 5, alpha = 1) +
+    
     # legend
-    geom_point(data = cc_legend, aes(x, y, size = size), shape = c(18, 3), 
-               stroke = c(1, 1.5), color = c("black", "red"), alpha = c(1, 1)) +
-    annotate("text", x = -150, y = -25, label = "RC sites", size = 4, hjust = 0) +
-    annotate("text", x = -150, y = -40, label = "Rroot/Rshoot sites", size = 4, hjust = 0) +
+    geom_point(data = cc_legend, aes(x, y, size = size), shape = c(1, 2, 3), 
+               color = c("black", "red", "blue"), alpha = c(1, 1, 1)) +
+    annotate("text", x = -150, y = -25, label = expression("Rroot-"~R[S]~ratio), size = 4, hjust = 0) +
+    annotate("text", x = -150, y = -40, label = "Rroot-Ra ratio", size = 4, hjust = 0) +
+    annotate("text", x = -150, y = -55, label = "Ra-GPP ratio", size = 4, hjust = 0) +
     guides(fill = FALSE)  # do this to leave off the color legend
   print(sitemap)
 }
@@ -63,7 +82,8 @@ plot_GPP <- function (sdata, sdata2) {
   obs_gpp <- nrow(sdata)
   sdata$Global <- paste0("n = ", obs_gpp)
   p_GPP <- ggplot(sdata, aes(x = Global, y = GPP)) + geom_violin() +
-    geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    geom_quasirandom(col = 'gray') +
+    # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_boxplot(width = 0.1) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     ylab(expression(GPP~(Pg~yr^{-1})))
@@ -98,7 +118,8 @@ plot_GPP <- function (sdata, sdata2) {
   
   sdata$Global <- paste("n =", GPP %>% filter(!is.na(Trend)) %>% nrow())
   p_trend <- ggplot(sdata, aes(Global, Trend)) + geom_violin() +
-    geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    geom_quasirandom(col = 'gray') +
+    # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_boxplot(width = 0.1) +
     # geom_point(aes(y = slope1), col = "black", shape = 13) + 
     # geom_point(aes(y = slope2), col = "red", shape = 13) +
@@ -115,7 +136,8 @@ plot_GPP <- function (sdata, sdata2) {
   # plot global Rs
   p_Rs <- ggplot(sdata2, aes(x = paste("n =", nrow(sdata2)), y = Rs)) + 
     geom_violin() +
-    geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    geom_quasirandom(col = 'gray') +
+    # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_boxplot(width = 0.1) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     ylab(expression(R[S]~(Pg~yr^{-1}))) +
@@ -139,7 +161,8 @@ plot_GPP <- function (sdata, sdata2) {
     filter(!is.na(IncreaseRate)) %>% 
     ggplot(aes(x = "n = 7", y = IncreaseRate)) + 
     geom_violin() +
-    geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    geom_quasirandom(col = 'gray') +
+    # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_boxplot(width = 0.1) +
     ylab(expression(R[S]~trend~(Pg~yr^{-2}))) +
     xlab("Global") 
@@ -161,7 +184,8 @@ plot_RaGPP <- function (sdata2) {
   sdata2$Global <- paste0("n = ", var_obs)
   
   Ra_GPP <- ggplot(sdata2, aes(IGBP2, RaGPP_ratio)) + geom_violin() +
-    geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    geom_quasirandom(col = 'gray') +
     geom_boxplot(width = 0.1) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     ylab("Ra-GPP ratio") +
@@ -245,7 +269,8 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
   Rs_obs <- nrow(sub_Rs)
   sub_Rs$label <- paste0("n = ", Rs_obs)
   p_Rs <- ggplot(sub_Rs, aes(x = label, y = Rs)) + geom_violin() +
-    geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    geom_quasirandom(col = 'gray', varwidth = TRUE) +
     geom_boxplot(width = 0.1) +
     # geom_point(aes(y = 71.67), col = "red") + geom_point(aes(y = 76.68), col = "red") +
     xlab("Global Rs") + ylab(expression(Rs~(Pg~yr^{-1}))) +
@@ -280,7 +305,8 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
   sub_srdb$Global <- paste0("n = ", RC_obs)
   
   RC_plot <- ggplot(sub_srdb, aes(x = Global, y = RC_annual)) + geom_violin() +
-    geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    geom_quasirandom(col = 'gray', varwidth = TRUE) +
     geom_boxplot(width = 0.1) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     ylab("RC") +
@@ -288,7 +314,8 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
   
   # RC by biome
   RC_plot2 <- ggplot(sub_srdb, aes(x = IGBP2, y = RC_annual)) + geom_violin() +
-    geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    geom_quasirandom(col = 'gray', varwidth = TRUE) +
     geom_boxplot(width = 0.1) +
     scale_x_discrete(limits = c("Agriculture", "DF", "EF", "Mixed", "Grassland", "Shrubland", "Other"),
                      labels = c("Agriculture (n = 40)", "DF (n = 189)", "EF (n = 256)", "Mixed (n = 28)", "Grassland (n = 74)", "Shrubland (n = 14)", "Other (n = 16)")) +
@@ -307,7 +334,8 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
   # plot NPP
   sdata3$Global <- "n = 251"
   p_NPP <- ggplot(sdata3, aes(Global, NPP)) + geom_violin() +
-    geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    geom_quasirandom(col = 'gray', varwidth = TRUE) +
     geom_boxplot(width = 0.1) +
     ylab(expression(NPP~(Pg~yr^{-1}))) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
@@ -321,7 +349,8 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
   # plot Fire
   p_fire <- tibble(Fire = c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)) %>% 
     ggplot(aes(x = "Fire", y = Fire)) + geom_violin() +
-    geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
+    geom_quasirandom(col = 'gray', varwidth = TRUE) +
     geom_boxplot(width = 0.1) +
     ylab(expression(Fire~burned~(Pg~yr^{-1}))) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
@@ -431,7 +460,8 @@ prep_RaGpp <- function(RaGPP, srdb_v4) {
 plot_froot <- function (sdata) {
   # plot Froot (root respiration/autotrophic respiration ratio) by ecosystem type
   Fl_plot <- ggplot(sdata, aes(x = IGBP2, y=Froot)) + geom_violin() +
-    geom_jitter(shape = 16, position = position_jitter(0.2), col = "gray") +
+    # geom_jitter(shape = 16, position = position_jitter(0.2), col = "gray") +
+    geom_quasirandom(col = 'gray') +
     geom_boxplot(width = 0.1) +
     ylab("Froot") +
     # stat_summary(fun.y=median, geom="point", size=2, color="red") +
