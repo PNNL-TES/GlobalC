@@ -378,10 +378,14 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
 replace_SD_and_generate <- function(m, s, n_samples = N_SAMPLES) {
   stopifnot(length(m) == length(s))
   # Alternately for first part, could do this...see #9
-  # agreed, this is a better way
-  CV <- s / m
-  CV <- replace_na(CV, median(CV, na.rm = TRUE))
-  s <- if_else(is.na(s), m * CV, s)
+  # agreed, this is a better way, but with too small sd in the raw data
+  # CV <- s / m
+  # CV <- replace_na(CV, median(CV, na.rm = TRUE))
+  # s <- if_else(is.na(s), m * CV, s)
+  
+  # using biggest reported SD
+  max_sd = max(s, na.rm = T)
+  s <- if_else(is.na(s), max_sd, s)
   
   # Generate and compute mean
   empty_s <- is.na(s)
@@ -400,6 +404,35 @@ replace_SD_and_generate <- function(m, s, n_samples = N_SAMPLES) {
   raw / x
 }
 
+# Data from above function returns too small SD values 
+replace_SD_and_generate2 <- function(m, s, n_samples = N_SAMPLES) {
+  stopifnot(length(m) == length(s))
+  # Alternately for first part, could do this...see #9
+  # agreed, this is a better way, but with too small sd in the raw data
+  CV <- s / m
+  CV <- replace_na(CV, median(CV, na.rm = TRUE))
+  s <- if_else(is.na(s), m * CV, s)
+  
+  # using biggest reported SD
+  # max_sd = max(s, na.rm = T)
+  # s <- if_else(is.na(s), max_sd, s)
+  
+  # Generate and compute mean
+  # empty_s <- is.na(s)
+  # if(sum(empty_s)) { # entries with no s.d. get a single, collective draw
+  #   raw <- sample(m[which(empty_s)], size = n_samples, replace = TRUE)
+  #   x <- 1
+  # } else {
+  #   raw <- rep(0.0, n_samples)
+  #   x <- 0
+  # }
+  # Others are drawn individually
+  draws <- c()
+  for(i in seq_along(s)) {
+    draws <- c(draws, rnorm(n = n_samples, mean = m[i], s = s[i]))
+  }
+  sample(draws, n_samples, replace = FALSE)
+}
 # The primary top-down and bottom-up bootstrapping figures all have similar
 # annotations. The following two functions handle this.
 
