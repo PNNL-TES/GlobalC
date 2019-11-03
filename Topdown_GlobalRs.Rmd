@@ -92,7 +92,7 @@ source('functions.R')
 # Set chunks defaults; these options will be applied to all subsequent chunks
 knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, 
                       echo = FALSE, warning = FALSE,
-                      fig.height = 4, fig.width = 8, cache = FALSE)
+                      fig.height = 4, fig.width = 8, cache = TRUE)
 ```
 
 
@@ -197,7 +197,7 @@ sub_srdb %>%
                            Ecosystem_type == "Forest" & Leaf_habit == 'Mixed' ~ "Mixed",
                            TRUE ~ "Other")) -> sub_srdb
 
-sub_srdb %>% count(Ecosystem_type) 
+sub_srdb %>% count(IGBP2) 
 
 plot_Rroot_Rs(GlobalRs, sub_srdb, NPP) 
 ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
@@ -215,8 +215,11 @@ ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```{r plot Ra-GPP ratio}
 # only one point from tundra
 var_RaGpp <- prep_RaGpp(RaGPP, srdb_v4)
-var_RaGpp %>% count(Ecosystem)
+
+var_RaGpp$Ecosystem <- ifelse(is.na(var_RaGpp$Ecosystem), var_RaGpp$Ecosystem_type, var_RaGpp$Ecosystem)
 var_RaGpp %>% count(Leaf_habit)
+var_RaGpp %>% count(Ecosystem)
+var_RaGpp %>% count(Ecosystem_type)
 
 var_RaGpp %>% 
   mutate(IGBP2 = case_when(
@@ -229,11 +232,12 @@ var_RaGpp %>%
     TRUE ~ "NOTA")
   ) -> var_RaGpp
 
-var_RaGpp %>% count(IGBP2)
 var_RaGpp %>% count(Ecosystem)
 
 plot_RaGPP(var_RaGpp)
 ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
+
+var_RaGpp %>% count(IGBP2)
 
 var_RaGpp %>% 
   group_by(Ecosystem) %>% 
@@ -298,13 +302,13 @@ var_agr_froot <- Froot[Froot$Ecosystem == "Agriculture",]$Froot # samples of Fro
 var_for_froot <- Froot[Froot$Ecosystem == "Forest",]$Froot #  forest
 var_gra_froot <- Froot[Froot$Ecosystem == "Grassland",]$Froot #  grassland
 var_sav_froot <- Froot[Froot$Ecosystem == "Savanna",]$Froot #  savanna
-var_wet_froot <- Froot[Froot$Ecosystem == "Wetland",]$Froot #  agriculture
+var_wet_froot <- Froot[Froot$Ecosystem == "Wetland",]$Froot 
 var_rest_froot <- Froot$Froot # for those ecosystems with no data, use all data from Froot
 # only separate into ef and the rest
 var_ef_froot <- Froot[Froot$IGBP2 == "EF",]$Froot # Froot data for ef
 var_df_froot <- Froot[Froot$IGBP2 == "DF",]$Froot # Froot data for df
 var_mf_froot <- Froot[Froot$IGBP2 == "MF",]$Froot # Froot data for mf
-var_other_froot <- Froot[Froot$IGBP2 == "Other",]$Froot # samples of Froot for non-ef
+var_other_froot <- Froot[Froot$IGBP2 == "Other",]$Froot # samples of Froot for non-forest
 ```
 
 
@@ -315,8 +319,11 @@ QUANTILES <- c(0.025, 0.5, 0.975)  # Generate mean and 95% CI
 set.seed(20190827)
 
 # Rs and GPP draws used by bootstrapping GPP and Rs blocks below
-bootstrap_data <- tibble(Rs_raw = replace_SD_and_generate(GlobalRs$Rs, GlobalRs$SD),
-                         GPP_raw = replace_SD_and_generate(GPP$GPP, GPP$SD))
+bootstrap_data <- tibble(Rs_raw = replace_SD_and_generate2(GlobalRs$Rs, GlobalRs$SD),
+                         GPP_raw = replace_SD_and_generate2(GPP$GPP, GPP$SD))
+
+sd(bootstrap_data$Rs_raw) # why sd so small, not as aspected
+sd(bootstrap_data$GPP_raw) # why sd so small, not as aspected
 ```
 
 
@@ -588,7 +595,7 @@ bootstrap_data %>%
     NPP = sample(NPP$NPP, N_SAMPLES, replace = TRUE),
     HerbComsum = rnorm(n = N_SAMPLES, mean = 2.2, sd = 0.2),
     # Fire = sample(var_Fire$Amount_Pg, N_SAMPLES, replace = TRUE),
-    Fire = replace_SD_and_generate(var_Fire$Amount_Pg, var_Fire$SD), # Another way to do fire resample (use mean and SD)
+    Fire = replace_SD_and_generate2(var_Fire$Amount_Pg, var_Fire$SD), # Another way to do fire resample (use mean and SD)
     sink = rnorm(n = N_SAMPLES, mean = 2.10, sd = 0.28),
     
     # Step 2. Ra-to-GPP ratio boosting
@@ -696,6 +703,26 @@ print(p2_rs2)
 cat("\n\nRs implied by GPP quantiles: ", rsg_qt, "\n")
 cat("\n\nBottom-up Rs quantiles: ", rsg_qt_raw, "\n")
 ggsave("outputs/Figure1_rs_weighted.jpg", width = 8, height = 4)
+```
+
+
+### Scenario 3 - SRDB Rs:GPP ratios
+```{r SRDB Rs:GPP ratios for RSG, results='asis'}
+# Calculation are the same as above
+
+ratio_results %>%
+  select(`Rs implied by SRDB Rs:GPP` = Rs, `Bottom-up Rs` = Rs_raw) %>% 
+  gather(Rs_type) ->
+  rs_ratio_figure_data
+
+p1_rsg3 <- ggdraw() +
+  draw_plot(rs_base_figure %+% rs_ratio_figure_data) +
+  draw_plot(p_gpp_marg, x = 0.55, y = 0.6, width = 0.4, height = 0.5) 
+print(p1_rsg3)
+
+cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
+cat("\n\nTop-down GPP quantiles: ", gpp_qt_raw, "\n")
+ggsave("outputs/Figure1_gpp_simple.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
 ### RSG and components relationship
@@ -922,7 +949,8 @@ ratios %>%
 p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) + 
   geom_boxplot() +
   #  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), size = 0.75) +
-  geom_jitter(alpha = I(0.25)) + 
+  # geom_jitter(alpha = I(0.25)) + 
+  geom_quasirandom(alpha = I(0.25)) +
   ylab("Ratio of Rs to GPP") + xlab("") +
   coord_cartesian(ylim = c(0, 2)) #+
 #  geom_label()
@@ -952,6 +980,66 @@ Froot %>% count(Ecosystem)
 mean(Froot$Froot)
 ```
 
+
+### Abstract
+```{r Calculation for SI}
+slope_Rs <- coefficients(summary( lm(Rs ~ Pub_year, data = GlobalRs) ))[2,1] %>% round(2)
+slope_GPP <- coefficients(summary( lm(GPP ~ Pub_year, data = GPP) ))[2,1] %>% round(2)
+```
+
+Terrestrial plants sequestrate carbon from atmosphere through photosynthesis (i.e., gross primary productivity, GPP); correspondingly, roughly same amount of carbon was decomposed and returned back to the atmosphere by respiratory flexes. There’s been lots of progress in quantifying and constraining global GPP using satellite data products and upscaled flux data (Top-down approach). Global scale respiration estimates are generally derived from scaling site scale measurements across the globe (bottom-up approaches). However, the inconsistency between these estimates have not been evaluated, the inherent causes need be explored for better understanding terrestrial carbon cycling under global climate change.   
+
+Here, we collected historical global GPP estimates (which are almost all “top-down”, fundamentally driven by satellite products and FLUXNET measurements), partitioning these values into their net primary production (NPP) and autotrophic respiration components, and calculated the implied resulting global soil respiration (RSG, `r round(mean(rs_results$Rs_topdown2), 0)`±`r round(sd(rs_results$Rs_topdown2), 0)` (Pg C yr-1), mean±sd, same here after), with only `r p_Rs2 * 100` % probability that this GPP-driven RSG estimates are consistent with previous bottom-up RSG estimates from the literature, which averaged `r round(mean(rs_results$Rs_raw), 0)`±`r round(sd(rs_results$Rs_raw), 0)` Pg C yr-1. In a second step, we partitioned bottom-up RSG values into shoot and root respiration, and calculated the resulting implied global GPP (`r round(mean(gpp_results$GPP2), 0)`±`r round(sd(gpp_results$GPP2), 0)` Pg C yr-1), with only `r p_gpp2 * 100`% probability these values are consistent with top-down global GPP estimates, which averaged `r round(mean(gpp_results$GPP_raw), 0)`±`r round(sd(gpp_results$GPP_raw), 0)` Pg C yr-1.    
+
+Our findings highlight the inconsistence between bottom-up and top-down based GPP and RSG estimates that have a ~20 Pg C gap between them. The reasons of the inconsistency need further study for better understanding global terrestrial carbon cycling in the future.
+
+
+### Text for supplemental information  
+Soil respiration consumed the photosynthetic carbon assimilation, which was fixed by plant, or called gross primary production (GPP). Plant autotrophic respiration (including leaf respiration and stem respiration (Rshoot) and root respiration (Rroot)) consumed part of GPP, the left part was called net primary productivity (NPP). Part of NPP consumed by heterotrophic respiration (Rh), other part of NPP was consumed by herbivores, burned by fire or becomes long term carbon storage (carbon sink), and the sum of root respiration (Rroot) and heterotrophic respiration (Rh) is soil respiration. Theoretically, if we know the pathway of each part of global annual GPP, we can estimate global mean annual soil respiration (top-down RSG). Similarly, if we can accurately measure each component of carbon cycle, we can estimate GPP (bottom-up GPP). Here we conducted a summary analysis of global terrestrial carbon cycling to compare and explore the consistency of top-down and bottom-up GPP and global RS estimates. To make this comparison, we evaluated two approaches to partitioning the global carbon cycle from known estimates of the various fluxes and calculated the unknowns (Figure S1–S5 and Table S1–S4). 
+
+#### GPP implied by RSG  
+In the past decades, many models have been developed to estimate global RS (bottom-up global RS estimates, n=`r nrow(GlobalRs)`, Figure S1, most of the estimates were based on the field measured RS data, e.g., SRDB). RS consists of heterotrophic respiration (Rh) and root respiration (Rroot). Despite the difficulty, many studies separated RS into Rroot and Rh and many of those Rroot-to-RS ratio (RC) have been compiled into the SRDB-V4 (Figure S2). We used all RC values from SRDB-V4 whenever it is larger than 0 and smaller than 1, totally `r nrow(var_RC)` RC values were used in this study. RC values covered 9 vegetation types, but the majority were from forest, grassland, agriculture, and shrubland, all other vegetation types only have `r var_RC %>% filter(IGBP2 == "Other") %>% nrow()` samples (Figure S2 c). 
+
+In addition, root respiration is only part of autotrophic respiration, and the rest part is shoot respiration. Many studies have been conducted to separate Ra into Rroot and Rshoot, and thus Rroot-to-Ra ratio, Rroot-to-Rshoot ratio can be calculated. According to the bottom-up Global RS estimates, Root-to-RS ratio (RC), and Rroot-to-Rshoot ratio (data come from SRDB), Rroot and Rshoot, GPP can be calculated (bottom-up GPP, Figure S1 and equation 1-3).
+
+We collected `r nrow(GlobalRs)` published RSG estimates from articles, with approximately half of studies reported RSG standard deviation (SD, n=`r GlobalRs %>% filter(!is.na(SD)) %>% nrow()`, Table S1) and change rate during a period (n=`r GlobalRs %>% filter(!is.na(IncreaseRate)) %>% nrow()`, Table S1). The reported RSG range from `r min(GlobalRs$Rs)` to `r max(GlobalRs$Rs)` Pg C yr-1, with an average RSG of `r mean(GlobalRs$Rs) %>% round(2)` Pg C yr-1. The RSG were published from `r min(GlobalRs$Pub_year)` to `r max(GlobalRs$Pub_year)`, and the RSG estimate showed a clear increase trend from the earlier years to the modern year (increase rate = `r slope_Rs` Pg C yr-2, Figure S1 b). However, this rate is much higher than the average increase rate reported by previous studies (mean = `r round(mean(GlobalRs$IncreaseRate, na.rm=T), 2) ` Pg C yr-2, n=`r GlobalRs %>% filter(!is.na(IncreaseRate)) %>% nrow()`, Figure S1 c).
+
+Then Rshoot can be calculated based on the Rroot and Rroot-to-Rshoot ratio, finally, bottom-up GPP can be calculated (Figure S1). We then compare the bottom-up GPP with GPP from publication in the past decades (top-down GPP) to determine the consistency between the bottom-up and top-down GPP. The following equations were used to calculate GPP from RSG:
+
+__Equations (1 to 3)__  
+Rroot = Rs × Rroot-Rs ratio (i.e., RC in SRDB)     (1)  
+Rshoot = Rroot × Rroot-Rshoot ratio     (2) 
+GPP = NPP + Rroot + Rshoot     (3)                                                             
+
+
+#### RSG implied by GPP
+
+Many efforts have been made to estimate GPP based on both remote sensing and FLUXNET data in the past decades (n=`r nrow(GPP)`, Figure S1). We collected `r nrow(GPP)` GPP estimates from published articles, with only `r GPP %>% filter(!is.na(SD)) %>% nrow()` of estimates reported corresponding SD, and `r GPP %>% filter(!is.na(Trend)) %>% nrow()` estimates reported corresponding trend during a period (Table S2). The reported GPP estimates were from `r min(GPP$Pub_year)` to `r max(GPP$Pub_year)`, ranged from `r min(GPP$GPP)` to `r max(GPP$GPP)` Pg, and with an average of `r mean(GPP$GPP) %>% round(2)` Pg C yr-1. There is a clear positive relationship between GPP and estimate-year, with an increase rate of `r slope_GPP` Pg C yr-2, Figure S1 e), which is bigger than the mean of reported increase rates (`r mean(GPP$Trend, na.rm=T) %>% round(2)` Pg C yr-2, Figure S1 f). Furthermore, the extreme high (`r max(GPP$GPP)` Pg) and low (`r min(GPP$GPP)` Pg) GPP estimates does not affect the overall mean GPP, as the average does not change when both extreme high and low GPP values were excluded.
+
+GPP can be further separated into NPP, carbon consumed by herbivore, carbon burned by fire, carbon going to terrestrial as carbon sink, and carbon consumed by autotrophic respiration (Ra). Global NPP estimates were directly from a previous meta-analysis (Table S3 and Figure S2 a). Based on 251estimates (Table S2), global annual mean NPP from 1862 to 2011 was `r mean(NPP$NPP) %>% round(2)` Pg C yr-1 (±`r sd(NPP$NPP) %>% round(2)`, SD). In order to estimate Rh, we collected published estimates on NPP going to the terrestrial (Csink), NPP components burned by fire, and NPP components consumed by herbivores (Table S3). When substract carbon consumed by herbivores, fire, and land sink from NPP, global Rh between 1961 and 2014 can be estimated (Rh = NPP - Herbivores - Csink – Fire, Figure S1 and Table S1-S3). 
+
+The difference between GPP and NPP is autotrophic respiration (Ra), Ra is a major component of the terrestrial carbon cycling and it consumes a major part of plants sequestrated carbon by photosynthesis (GPP). Ra-to-GPP-ratio is required to estimate Ra based on GPP. Ra-to-GPP-ratio used in this study were from two sources: (1) We conducted a literature search and collected `r nrow(RaGPP)` Ra-to-GPP-ratio estimates (Table S5); (2) We obtained additional `r nrow(var_RaGpp) - nrow(RaGPP)` Ra-to-PP-ratio estimates from SRDB-V4. Ra-to-GPP-ratio used in this study covered 9 vegetation types, but mainly from forest and grassland, all the other vegetation types only have `r var_RaGpp %>% filter(IGBP2 =="Other") %>% nrow()` samples (Figure S4).
+
+Autotrophic respiration (Ra) consists of root respiration (Rroot) and shoot respiration (Rshoot), Rroot-to-Ra ratio is required to separate Ra into Rroot and Rshoot. 
+Rroot-to-Ra ratio used in this study were from two sources: (1) We collected `r nrow(FlFsFr)` Rroot-to-Ra ratio estimates from `r FlFsFr %>% count(Reference) %>% nrow()` studies (Table S4); (2) We obtained additional `r nrow(Froot) - nrow(FlFsFr)` Rroot-to-Ra ratio estimates from SRDB-V4 (Table S4). Rroot-to-Ra ratio covered 7 vegetation types (Figure S3), but mainly from forest, all other vegetation types only have `r Froot %>% filter(IGBP2 == "Other") %>% nrow()` samples. 
+
+Finally, according to the top-down GPP, NPP, Ra-to-GPP ratio, Rroot-to-Ra ratio, and Rshoot-to-Ra ratio, GPP can be separated into Rh, Rshoot, and Rroot, and thus, global RS can be calculated (Up-panel in Figure S1 and equations 4-10). We then compare the top-down RSG with RSG from publication in the past decades (bottom-up RSG) to determine the consistency between the bottom-up and top-down RSG.
+
+__Equations (4 to 7)__  
+Ra = GPP – NPP     (4)
+Ra = ecosystem-respiration – heterotrophic-respiration     (5)
+Ra = GPP × Ra-GPP ratio     (6)  
+Rh = NPP - Fire_C - Herb_C     (7)
+Rroot = Ra × Rroot-Ra ratio     (8)  
+Rshoot = Ra × Rshoot-Ra ratio     (9)
+Rs = Ra + Rh     (10)
+
+
+_**Bootstrap resampling**_  
+We used a bootstrap resampling approach to get the best estimate for each component in the bottom-up and top-down process. Sample size of each component in the bottom-up and top-down approach is different, and many of them do not following normal distribution (Figure S1-S4). We thus used a boosting resampling approach to regenerate the samples for each component (details please see the Github repository). For the Rroot-to-RS-ratio (RC), Rroot-to-Ra-ratio, and Ra-to-GPP ratio, we further separated them by ecosystem types, and weighted by their area (area of each ecosystem were from the IGBP ecosystem land classification, https://climatedataguide.ucar.edu/climate-data/ceres-igbp-land-classification).
+
+
+_**Components important analysis**_
 
 ```{r not used}
 # Each row gets the closest latitude and longitude values to AGB and SOC data
