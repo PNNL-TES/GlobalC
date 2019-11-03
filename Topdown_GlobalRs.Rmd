@@ -92,7 +92,7 @@ source('functions.R')
 # Set chunks defaults; these options will be applied to all subsequent chunks
 knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, 
                       echo = FALSE, warning = FALSE,
-                      fig.height = 4, fig.width = 8, cache = TRUE)
+                      fig.height = 4, fig.width = 8, cache = F)
 ```
 
 
@@ -1025,7 +1025,7 @@ Rroot-to-Ra ratio used in this study were from two sources: (1) We collected `r 
 
 Finally, according to the top-down GPP, NPP, Ra-to-GPP ratio, Rroot-to-Ra ratio, and Rshoot-to-Ra ratio, GPP can be separated into Rh, Rshoot, and Rroot, and thus, global RS can be calculated (Up-panel in Figure S1 and equations 4-10). We then compare the top-down RSG with RSG from publication in the past decades (bottom-up RSG) to determine the consistency between the bottom-up and top-down RSG.
 
-__Equations (4 to 7)__  
+__Equations (4 to 10)__  
 Ra = GPP – NPP     (4)
 Ra = ecosystem-respiration – heterotrophic-respiration     (5)
 Ra = GPP × Ra-GPP ratio     (6)  
