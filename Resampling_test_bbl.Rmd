@@ -38,10 +38,11 @@ GlobalRs %>% filter(Pub_year > 1980) -> GlobalRs
 * Method 1 - ignore SD and resample from `r nrow (GlobalRs)` or `r nrow (GPP)` with replacement
 * Method 2 - using SD, but calculated based on mean and coefficient of variability
 * Method 3 - using SD, but using the maximum if missing
+* Method 4 - using SD only when available, otherwise 0 SD
 
 ```{r}
 set.seed(20191111)
-N_SAMPLES = 50000
+N_SAMPLES = 5000
 
 method1 <- function(n, x) {
   mean(sample(x, n, replace = TRUE))
@@ -55,24 +56,29 @@ method2 <- function(n, x, s, f = median) {
 method3 <- function(n, x, s) {
   method2(n, x, s, max)
 }
+method4 <- function(n, x, s) {
+  method2(n, x, replace_na(s, 0))
+}
 
 sample_size <- 10
 
 # resample global soil respiration (RSG)
 resample_RSG <- tibble(RSG1_no_SD = sapply(rep(sample_size, N_SAMPLES), method1, GlobalRs$Rs),
-                       RSG2_cal_SD = sapply(rep(sample_size, N_SAMPLES), method2, GlobalRs$Rs, GlobalRs$SD),
-                       RSG3_max_SD = sapply(rep(sample_size, N_SAMPLES), method3, GlobalRs$Rs, GlobalRs$SD)
+                       RSG2_miss_SD_median = sapply(rep(sample_size, N_SAMPLES), method2, GlobalRs$Rs, GlobalRs$SD),
+                       RSG3_miss_SD_max = sapply(rep(sample_size, N_SAMPLES), method3, GlobalRs$Rs, GlobalRs$SD),
+                       RSG4_miss_SD_zero = sapply(rep(sample_size, N_SAMPLES), method4, GlobalRs$Rs, GlobalRs$SD)
                        )
 
 # resample gross primary production (GPP)
 resample_GPP <- tibble(GPP1_no_SD = sapply(rep(sample_size, N_SAMPLES), method1, GPP$GPP),
-                       GPP2_cal_SD = sapply(rep(sample_size, N_SAMPLES), method2, GPP$GPP, GPP$SD),
-                       GPP3_max_SD = sapply(rep(sample_size, N_SAMPLES), method3, GPP$GPP, GPP$SD)
+                       GPP2_miss_SD_median = sapply(rep(sample_size, N_SAMPLES), method2, GPP$GPP, GPP$SD),
+                       GPP3_miss_SD_max = sapply(rep(sample_size, N_SAMPLES), method3, GPP$GPP, GPP$SD),
+                       GPP4_miss_SD_zero = sapply(rep(sample_size, N_SAMPLES), method4, GPP$GPP, GPP$SD)
                        )
 ```
 
 
-## Compare the results of different re-sampling methods
+## Compare the results of different re-sampling methods (N = `r N_SAMPLES`)
 ```{r}
 # comparing RSG resample results
 resample_RSG %>%
@@ -81,7 +87,6 @@ resample_RSG %>%
   theme_cowplot() +
   geom_density(stat = 'density', alpha = 0.5) +
   #  theme(legend.position = c(0.75, 0.75)) +
-  coord_cartesian(xlim = c(0, 140)) +
   # reverse the color scale so that teal (color 1) is always observations, 
   # while pink is always implied fluxes
   scale_fill_discrete("", h.start = 180) + scale_color_discrete(h.start = 180) +
@@ -95,19 +100,9 @@ resample_GPP %>%
   theme_cowplot() +
   geom_density(stat = 'density', alpha = 0.5) +
   #  theme(legend.position = c(0.75, 0.75)) +
-  coord_cartesian(xlim = c(0, 250)) +
   # reverse the color scale so that teal (color 1) is always observations, 
   # while pink is always implied fluxes
   scale_fill_discrete("", h.start = 180) + scale_color_discrete(h.start = 180) +
   ylab("Density") +
-  xlab(expression(R[S]~(Pg~C~yr^{-1}))) 
+  xlab(expression(GPP~(Pg~C~yr^{-1}))) 
 ```
-
-
-```{r}
-# double peek issue - we lack RSG estimates between 80 and 90 Pg
-# I added one more RSG estimate by using Konings (2019)'s Rh estimates and Tang (2020)'s Ra estimates, see csv url links 
-# but it does not help a lot
-GlobalRs %>% ggplot(aes(x = Pub_year, y = Rs)) + geom_point()
-```
-
