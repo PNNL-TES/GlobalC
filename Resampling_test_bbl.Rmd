@@ -44,20 +44,26 @@ GlobalRs %>% filter(Pub_year > 1980) -> GlobalRs
 set.seed(20191111)
 N_SAMPLES = 5000
 
-method1 <- function(n, x) {
+method1 <- function(n, x) {       # ignore all errors
   mean(sample(x, n, replace = TRUE))
 }
-method2 <- function(n, x, s, f = median) {
+method2 <- function(n, x, s, f = median) {  # replace NA errors with median error
   cv <- s / x
   cv <- replace_na(cv, f(cv, na.rm = TRUE))
   s <- if_else(is.na(s), x * cv, s)
   mean(rnorm(n, mean = x, sd = s))
 }
-method3 <- function(n, x, s) {
+method3 <- function(n, x, s) {    # replace NA errors with max error
   method2(n, x, s, max)
 }
-method4 <- function(n, x, s) {
+method4 <- function(n, x, s) {    # replace NA errors with zero
   method2(n, x, replace_na(s, 0))
+}
+method5 <- function(n, x, s) {    # only values without errors
+  method1(n, x[is.na(s)])
+}
+method6 <- function(n, x, s) {    # only values with errors
+  method1(n, x[!is.na(s)])
 }
 
 sample_size <- 10
