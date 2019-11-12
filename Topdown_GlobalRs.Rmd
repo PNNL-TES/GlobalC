@@ -597,9 +597,14 @@ bootstrap_data %>%
   mutate(
     # Step 1. prepare other components, NPP and NPP consumed by fire etc.
     NPP = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, NPP$NPP),
+    # Carbon comsumed by herbivor animnals (mean:2.2, SD: 0.2), from
+    # Doughty, C. E. & Field, C. B. Agricultural net primary production in relation to that liberated by the extinction of Pleistocene mega-herbivores: 
+    # an estimate of agricultural carrying capacity? Environ. Res. Lett. 5, 044001 (2010).
     HerbComsum = rnorm(n = N_SAMPLES, mean = 2.2, sd = 0.2),
     # Fire = sample(var_Fire$Amount_Pg, N_SAMPLES, replace = TRUE),
     Fire = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, var_Fire$Amount_Pg, var_Fire$SD),
+    # Carbon going to terrestrial as carbon sink (mean = 2.1, SD = 0.28), from
+    # Le Quéré, C. et al. Global carbon budget 2015. Earth Syst. Sci. Data 7, 349–396 (2015).
     sink = rnorm(n = N_SAMPLES, mean = 2.10, sd = 0.28),
     
     # Step 2. Ra-to-GPP ratio boosting
