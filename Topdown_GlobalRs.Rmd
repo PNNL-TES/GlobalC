@@ -139,17 +139,17 @@ Froot %>% mutate(IGBP2 = case_when(
   IGBP %in% c('MF', 'Mixed') & Ecosystem == 'Forest' ~ "MF",
   TRUE ~ "Other"
 )) -> Froot
+
 ```
 
 
-```{r handle missing SD}
+```{r missing SD issue}
 # GPP %>% select(GPP, SD) %>% filter (!is.na(SD)) %>% ggplot(aes(GPP, SD)) + geom_point()
 # GPP %>% select(GPP, SD) %>% filter (!is.na(SD)) %>% lm(GPP, SD) %>% summary()
 
 # GlobalRs %>% select(Rs, SD) %>% filter (!is.na(SD)) %>% ggplot(aes(Rs, SD)) + geom_point()
 # GlobalRs %>% select(Rs, SD) %>% filter (!is.na(SD)) %>% lm(Rs, SD) %>% summary()
 ```
-
 
 
 
@@ -314,13 +314,16 @@ var_other_froot <- Froot[Froot$IGBP2 == "Other",]$Froot # samples of Froot for n
 
 ```{r bootstrap-creation}
 # Bootstrap settings
+RESAMPLE <- method3
+RESAMPLE_noSD <- method1
 N_SAMPLES <- 50000
+sample_size <- 10
 QUANTILES <- c(0.025, 0.5, 0.975)  # Generate mean and 95% CI
 set.seed(20190827)
 
 # Rs and GPP draws used by bootstrapping GPP and Rs blocks below
-bootstrap_data <- tibble(Rs_raw = replace_calSD_and_generate(GlobalRs$Rs, GlobalRs$SD),
-                         GPP_raw = replace_calSD_and_generate(GPP$GPP, GPP$SD))
+bootstrap_data <- tibble(Rs_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GlobalRs$Rs, GlobalRs$SD),
+                         GPP_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GPP$GPP, GPP$SD))
 
 sd(bootstrap_data$Rs_raw) # why sd so small, not as aspected
 sd(bootstrap_data$GPP_raw) # why sd so small, not as aspected
@@ -340,47 +343,48 @@ sd(bootstrap_data$GPP_raw) # why sd so small, not as aspected
 bootstrap_data %>% 
   mutate(
     # Step 1. Prepare NPP, boosting from ITO paper
-    NPP = sample(NPP$NPP, N_SAMPLES, replace = TRUE),
+    NPP = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, NPP$NPP),
     
     # Step 2. sampling Rroot-to Rs ratio (RC)
-    Rc_agr = sample(var_agr_rc$RC_annual, N_SAMPLES, replace = TRUE),
+    Rc_agr = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_agr_rc$RC_annual),
+      
     # forest further separate into 3 groups
-    Rc_df = sample(var_df_rc$RC_annual, N_SAMPLES, replace = TRUE),
-    Rc_ef = sample(var_ef_rc$RC_annual, N_SAMPLES, replace = TRUE),
-    Rc_mf = sample(var_mf_rc$RC_annual, N_SAMPLES, replace = TRUE), 
+    Rc_df = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_df_rc$RC_annual),
+    Rc_ef = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_ef_rc$RC_annual),
+    Rc_mf = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_mf_rc$RC_annual), 
     # other ecosystems
-    Rc_gra = sample(var_gra_rc$RC_annual, N_SAMPLES, replace = TRUE),
-    Rc_shr = sample(var_shr_rc$RC_annual, N_SAMPLES, replace = TRUE),
+    Rc_gra = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_gra_rc$RC_annual),
+    Rc_shr = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_shr_rc$RC_annual),
     # for other ecosystems we use samples from all RC records
-    Rc_rest = sample(var_rest_rc$RC_annual, N_SAMPLES, replace = TRUE), 
+    Rc_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_rest_rc$RC_annual), 
     
     # Step 3. Sampling Rroot-to-Ra ratio (Froot)
-    Froot_df = sample(var_df_froot, N_SAMPLES, replace = TRUE),
-    Froot_ef = sample(var_ef_froot, N_SAMPLES, replace = TRUE),
-    Froot_mf = sample(var_mf_froot, N_SAMPLES, replace = TRUE),
+    Froot_df = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_df_froot),
+    Froot_ef = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_ef_froot),
+    Froot_mf = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_mf_froot),
     # for other ecosystems we use samples from all RC records
-    Froot_rest = sample(var_rest_froot, N_SAMPLES, replace = TRUE),
+    Froot_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_rest_froot),
     
     # Step 4. calculation ********************
     # Rc = replicate( n_rep, var_RC$RC_annual, N_SAMPLES, replace = TRUE) %>% mean() ), # scenario 0: Rc not separate into different ecosystems, not used
-    Rc = sample(var_RC$RC_annual, N_SAMPLES, replace = TRUE),
+    Rc = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RC$RC_annual),
     
-    # Scenario 2: Rc separate into 4 groups: agriculture, forest, grassland, and rest (all other ecosystems with obs<40, take samples from all RC records)
-    # only separate into four groups, agriculture, forest, grassland and the rest
-    # 1-(0.191 + 0.214 + 0.153 + 0.268)
+    # Scenario 2: Rc separate into groups: agriculture, deciduous forest, grassland, etc 
+    # all other ecosystems with obs<40, take samples from all RC records
+    # area of rest ecosystem = 1-sum(agriculture, forest, grassland, etc)
     Rc2 = (Rc_agr * ag_area + Rc_df * df_area + Rc_ef * ef_area + Rc_mf * mf_area + 
              Rc_gra * gra_area + Rc_shr * shr_area + Rc_rest * 
              (1 - ag_area - df_area - ef_area-mf_area - gra_area - shr_area)), 
     
     # Scenario 1: Froot not separated into different ecosystems
-    Froot = sample(Froot$Froot, N_SAMPLES, replace = TRUE) ,
+    Froot = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, Froot$Froot),
     
     FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of scenario 1
     # Bottom up estimate of GPP, scenario 1
     Rroot = Rs_raw * Rc, # root respiration
     Rshoot = Rroot * FsFr, # shoot respiration
     
-    # Scenario 2: separate into 2 ecosystems and weighted by area
+    # Scenario 2: separate into different ecosystems and weighted by area
     # Froot %>% count(Ecosystem)
     Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area + 
       Froot_rest * (1 - df_area - ef_area - mf_area),
@@ -412,8 +416,8 @@ gpp_figure_data %>%
   ggplot(aes(value, fill = GPP_type)) +
   theme_cowplot() +
   geom_density(stat = 'density', alpha = 0.5) +
-  # theme(legend.position = c(0.75, 0.25)) +
-  coord_cartesian(xlim = c(50, 350)) +
+  theme(legend.position = c(0.75, 0.35)) +
+  coord_cartesian(xlim = c(70, 250)) +
   scale_fill_discrete("") + ylab("Density") +
   xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
   gpp_base_figure
@@ -424,7 +428,7 @@ p_gpp_marg <- ggMarginal(p_gpp, type = "densigram", margins = "y", fill = "red")
 
 p1_gpp <- ggdraw() +
   draw_plot(gpp_base_figure) +
-  draw_plot(p_gpp_marg, x = 0.35, y = 0.4, width = 0.4, height = 0.5)
+  draw_plot(p_gpp_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5)
 print(p1_gpp)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
@@ -445,7 +449,7 @@ gpp_results %>%
 
 p1_gpp2 <- ggdraw() +
   draw_plot(gpp_base_figure %+% gpp_figure2_data) +
-  draw_plot(p_gpp_marg, x = 0.35, y = 0.4, width = 0.4, height = 0.5)
+  draw_plot(p_gpp_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5)
 print(p1_gpp2)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
@@ -486,7 +490,7 @@ ratio_results %>%
 
 p1_gpp3 <- ggdraw() +
   draw_plot(gpp_base_figure %+% gpp_ratio_figure_data) +
-  draw_plot(p_gpp_marg, x = 0.35, y = 0.6, width = 0.4, height = 0.5) 
+  draw_plot(p_gpp_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5) 
 print(p1_gpp3)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
@@ -578,8 +582,8 @@ var_RaGpp %>% count(IGBP2)
 var_RaGpp_df <- var_RaGpp %>% filter(IGBP2 == "Deciduous") %>% pull(RaGPP_ratio)
 var_RaGpp_ef <- var_RaGpp %>% filter(IGBP2 == "Evergreen") %>% pull(RaGPP_ratio)
 # mixed forest are from all forests due to lack of data
-var_RaGpp_mf <- var_RaGpp %>% filter(Ecosystem == "Forest") %>% pull(RaGPP_ratio)
-var_RaGpp_gra <- var_RaGpp %>% filter(Ecosystem == "Grassland") %>% pull(RaGPP_ratio)
+var_RaGpp_mf <- var_RaGpp %>% filter(IGBP2 == "Forest") %>% pull(RaGPP_ratio)
+var_RaGpp_gra <- var_RaGpp %>% filter(IGBP2 == "Grassland") %>% pull(RaGPP_ratio)
 ```
 
 ## Bootstrapping RSG
@@ -592,28 +596,28 @@ var_RaGpp_gra <- var_RaGpp %>% filter(Ecosystem == "Grassland") %>% pull(RaGPP_r
 bootstrap_data %>% 
   mutate(
     # Step 1. prepare other components, NPP and NPP consumed by fire etc.
-    NPP = sample(NPP$NPP, N_SAMPLES, replace = TRUE),
+    NPP = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, NPP$NPP),
     HerbComsum = rnorm(n = N_SAMPLES, mean = 2.2, sd = 0.2),
     # Fire = sample(var_Fire$Amount_Pg, N_SAMPLES, replace = TRUE),
-    Fire = replace_calSD_and_generate(var_Fire$Amount_Pg, var_Fire$SD), # Another way to do fire resample (use mean and SD)
+    Fire = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, var_Fire$Amount_Pg, var_Fire$SD),
     sink = rnorm(n = N_SAMPLES, mean = 2.10, sd = 0.28),
     
     # Step 2. Ra-to-GPP ratio boosting
     # RaGpp = sample(var_RaGpp$RaGPP_ratio, N_SAMPLES, replace = TRUE),
-    RaGpp_df = sample(var_RaGpp_df, N_SAMPLES, replace = TRUE),
-    RaGpp_ef = sample(var_RaGpp_ef, N_SAMPLES, replace = TRUE),
-    RaGpp_mf = sample(var_RaGpp_mf, N_SAMPLES, replace = TRUE),
-    RaGpp_gra = sample(var_RaGpp_gra, N_SAMPLES, replace = TRUE),
+    RaGpp_df = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RaGpp_df),
+    RaGpp_ef = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RaGpp_ef),
+    RaGpp_mf = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RaGpp_mf),
+    RaGpp_gra = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RaGpp_gra),
     # for other ecosystems, we use samples from all Froot
-    RaGpp_rest = sample(var_RaGpp$RaGPP_ratio, N_SAMPLES, replace = TRUE),
+    RaGpp_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RaGpp$RaGPP_ratio),
     
     # Step 3. Sampling Rroot-to-Ra ratio (Froot)
-    Froot_df = sample(var_df_froot, N_SAMPLES, replace = TRUE),
-    Froot_ef = sample(var_ef_froot, N_SAMPLES, replace = TRUE),
-    Froot_mf = sample(var_mf_froot, N_SAMPLES, replace = TRUE),
-    Froot_gra = sample(var_gra_froot, N_SAMPLES, replace = TRUE),
+    Froot_df = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_df_froot),
+    Froot_ef = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_ef_froot),
+    Froot_mf = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_mf_froot),
+    Froot_gra = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_gra_froot),
     # for other ecosystems, we use samples from all Froot
-    Froot_rest = sample(var_rest_froot, N_SAMPLES, replace = TRUE), 
+    Froot_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_rest_froot),
     
     # Calculation **********
     # Scenario 1
@@ -622,7 +626,7 @@ bootstrap_data %>%
     RaGpp2 = RaGpp_df * df_area + RaGpp_ef * ef_area + RaGpp_mf * mf_area + 
       RaGpp_gra * gra_area + RaGpp_rest * (1 - df_area - ef_area - mf_area - gra_area),
     
-    # get Froot (Froot2 is better, from bottom-up section, see above results)
+    # get Froot (weight by area of ecosystem type)
     Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area +
       Froot_rest * (1 - df_area-ef_area-mf_area),
     
@@ -661,8 +665,8 @@ rs_figure_data %>%
   ggplot(aes(value, fill = Rs_type)) +
   theme_cowplot() +
   geom_density(stat = 'density', alpha = 0.5) +
-  #  theme(legend.position = c(0.75, 0.75)) +
-  coord_cartesian(xlim = c(0, 120)) +
+  theme(legend.position = c(0.75, 0.35)) +
+  coord_cartesian(xlim = c(50, 120)) +
   # reverse the color scale so that teal (color 1) is always observations, 
   # while pink is always implied fluxes
   scale_fill_discrete("", h.start = 180) + scale_color_discrete(h.start = 180) +
@@ -676,7 +680,7 @@ p_rs_marg <- ggMarginal(p_rs, type = "densigram", margins = "y", fill = "red")
 
 p2_rs <- ggdraw() +
   draw_plot(rs_base_figure) +
-  draw_plot(p_rs_marg, x = 0.1, y = 0.4, width = 0.4, height = 0.5)
+  draw_plot(p_rs_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5)
 print(p2_rs)
 
 cat("\n\nRs implied by GPP quantiles: ", rsg_qt, "\n")
@@ -697,7 +701,7 @@ rs_results %>%
 
 p2_rs2 <- ggdraw() +
   draw_plot(rs_base_figure %+% rs_figure_data) +
-  draw_plot(p_rs_marg, x = 0.1, y = 0.4, width = 0.4, height = 0.5)
+  draw_plot(p_rs_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5)
 print(p2_rs2)
 
 cat("\n\nRs implied by GPP quantiles: ", rsg_qt, "\n")
@@ -717,7 +721,7 @@ ratio_results %>%
 
 p1_rsg3 <- ggdraw() +
   draw_plot(rs_base_figure %+% rs_ratio_figure_data) +
-  draw_plot(p_gpp_marg, x = 0.55, y = 0.6, width = 0.4, height = 0.5) 
+  draw_plot(p_gpp_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5) 
 print(p1_rsg3)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
@@ -1008,7 +1012,7 @@ Then Rshoot can be calculated based on the Rroot and Rroot-to-Rshoot ratio, fina
 
 __Equations (1 to 3)__  
 Rroot = Rs × Rroot-Rs ratio (i.e., RC in SRDB)     (1)  
-Rshoot = Rroot × Rroot-Rshoot ratio     (2) 
+Rshoot = Rroot × Rroot-Rshoot ratio     (2)  
 GPP = NPP + Rroot + Rshoot     (3)                                                             
 
 

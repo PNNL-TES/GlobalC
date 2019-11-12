@@ -18,4 +18,4 @@ ID,Pub_year,Year,Rs,SD,IncreaseRate,Rs_Reference,Rh,Ra,URL,
 17,2019,1986,87.9,18.6,,Warner (2019),,,"Warner, D. L., Bond-Lamberty, B., Jian, J., Stell, E. & Vargas, R. Spatial predictions and associated uncertainty of annual soil respiration at the global scale. Global Biogeochem. Cycles (2019).",
 18,2000,2000,69,,,Peng and Apps (2000),,,https://content.iospress.com/articles/journal-of-environmental-sciences/jes12-3-01,
 19,2016,2016,95.5,,,Oertel et al. (2016),,,dx.doi.org/10.1016/j.chemer.2016.04.002,
-20,2019,1996,87.4,19.6,,,43.6,43.8,"https://www.biogeosciences.net/16/2269/2019/bg-16-2269-2019.pdf, https://www.earth-syst-sci-data-discuss.net/essd-2019-18/essd-2019-18.pdf",Rh from Konings and Ra from Tang ESSD data
+20,2019,1996,87.4,,,,57.2,43.8,"https://www.earth-syst-sci-data-discuss.net/essd-2019-123/, https://www.earth-syst-sci-data-discuss.net/essd-2019-18/essd-2019-18.pdf",Rh from Konings and Ra from Tang ESSD data
