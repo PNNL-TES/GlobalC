@@ -4,7 +4,6 @@
 # data processing function - data calculation, clean, and combine etc
 #******************************************************************************************************************
 
-
 # Function to calculate Rroot/Ra ratio and Rshoot/Ra ratio
 # Ra = Rroot + Rshoot (total autotrophic respiration)
 # Rroot/Ra or Rshoot/Ra ratio were from two resources: 1) collected from published article, stored in FsFlFr.csv; 2) from srdb_v4.csv
@@ -418,107 +417,8 @@ make_label <- function(qt_data) {
   paste0("Mean and 95% CI: ", qt_data[2], " (", qt_data[1], ", ", qt_data[3], ")")
 }
 
-
-# Given a figure, the types (character vector) of information it has, the two
-# quantile vectors (see above), and position information, return annotated figure
-annotations <- function(figure, types, x_qt, x_qt_raw, xpos) {
-  stopifnot(length(x_qt) == 3)
-  stopifnot(length(x_qt_raw) == 3)
-  
-  ann_dat <- tibble(Type = types,
-                    GPP_type = NA, Rs_type = NA,
-                    x = xpos, y = c(0.035, 0.025),
-                    label = c(make_label(x_qt), make_label(x_qt_raw)))
-  figure + geom_text(data = ann_dat,
-                     aes(x = x, y = y, label = label, color = Type),
-                     hjust = 0, show.legend = FALSE)
-}
-
-
-# Given mean and standard deviation vectors, generate the basic bootstrapping
-# draws. We do this by first drawing from any `m` entries without corresponding `s`
-# values, and then individually draw from all `m` values with corresponding `s`'s,
-# one at a time. These `n_samples` are then averaged across the `n_samples` draws.
-replace_generate_avg <- function(m, s, n_samples = N_SAMPLES) {
-  stopifnot(length(m) == length(s))
-  # Alternately for first part, could do this...see #9
-  # agreed, this is a better way, but with too small sd in the raw data
-  # CV <- s / m
-  # CV <- replace_na(CV, median(CV, na.rm = TRUE))
-  # s <- if_else(is.na(s), m * CV, s)
-  
-  # using biggest reported SD
-  max_sd = max(s, na.rm = T)
-  s <- if_else(is.na(s), max_sd, s)
-  
-  # Generate and compute mean
-  empty_s <- is.na(s)
-  if(sum(empty_s)) { # entries with no s.d. get a single, collective draw
-    raw <- sample(m[which(empty_s)], size = n_samples, replace = TRUE)
-    x <- 1
-  } else {
-    raw <- rep(0.0, n_samples)
-    x <- 0
-  }
-  # Others are drawn individually
-  for(i in which(!empty_s)) {
-    raw <- raw + rnorm(n = n_samples, mean = m[i], sd = s[i])
-    x <- x + 1
-  }
-  raw / x
-}
-
-
-# When replace_generate_avg (above function), mean of each sample was used as the final results
-# And data from above function returns too small SD values 
-# In replace_calSD_and_generate, results were not averaged, using SD information, SD = mean * CV when missing
-replace_calSD_and_generate <- function(m, s, n_samples = N_SAMPLES) {
-  stopifnot(length(m) == length(s))
-  # Alternately for first part, could do this...see #9
-  # agreed, this is a better way, but with too small sd in the raw data
-  CV <- s / m
-  CV <- replace_na(CV, median(CV, na.rm = TRUE))
-  s <- if_else(is.na(s), m * CV, s)
-  
-  # Generate and compute mean
-  # empty_s <- is.na(s)
-  # if(sum(empty_s)) { # entries with no s.d. get a single, collective draw
-  #   raw <- sample(m[which(empty_s)], size = n_samples, replace = TRUE)
-  #   x <- 1
-  # } else {
-  #   raw <- rep(0.0, n_samples)
-  #   x <- 0
-  # }
-  # Others are drawn individually
-  draws <- c()
-  for(i in seq_along(s)) {
-    draws <- c(draws, rnorm(n = n_samples, mean = m[i], s = s[i]))
-  }
-  sample(draws, n_samples, replace = FALSE)
-}
-
-# samilar as replace_calSD_and_generate function
-# but set SD = maximum reported SD if SD not reported
-replace_maxSD_and_generate <- function(m, s, n_samples = N_SAMPLES) {
-  stopifnot(length(m) == length(s))
-  # Alternately for first part, could do this...see #9
-
-  # using biggest reported SD
-  max_sd = max(s, na.rm = T)
-  s <- if_else(is.na(s), max_sd, s)
-  
-  draws <- c()
-  for(i in seq_along(s)) {
-    draws <- c(draws, rnorm(n = n_samples, mean = m[i], s = s[i]))
-  }
-  sample(draws, n_samples, replace = FALSE)
-}
-
-
 # The primary top-down and bottom-up bootstrapping figures all have similar
 # annotations. The following two functions handle this.
-
-
 # Given a figure, the types (character vector) of information it has, the two
 # quantile vectors (see above), and position information, return annotated figure
 annotations <- function(figure, types, x_qt, x_qt_raw, xpos) {
@@ -533,6 +433,8 @@ annotations <- function(figure, types, x_qt, x_qt_raw, xpos) {
                      aes(x = x, y = y, label = label, color = Type),
                      hjust = 0, show.legend = FALSE)
 }
+
+
 
 # Given a vector `x` and the quantiles of the 'raw' distribution, i.e. the 
 # standard top-down GPP or bottom-up Rs, compute the probability they agree
@@ -559,6 +461,36 @@ t_test <- function(x, y, alternative = "two.sided", ...) {
          ", p-value = ", format(z$p.value, digits = 3, scientific = FALSE))
 }
 
+
+
+#*****************************************************************************************************************
+# resampling functions
+#*****************************************************************************************************************
+
+# * Method 1 - ignore SD and resample from `r nrow (GlobalRs)` or `r nrow (GPP)` with replacement
+# * Method 2 - using SD, but calculated based on mean and coefficient of variability
+# * Method 3 - using SD, but using the maximum if missing
+# * Method 4 - using SD only when available, otherwise 0 SD
+
+method1 <- function(n, x) {       # ignore all errors
+  mean(sample(x, n, replace = TRUE))
+}
+method2 <- function(n, x, s, f = median) {  # replace NA errors with median error
+  cv <- s / x
+  cv <- replace_na(cv, f(cv, na.rm = TRUE))
+  s <- if_else(is.na(s), x * cv, s)
+  mean(rnorm(n, mean = x, sd = s))
+}
+method3 <- function(n, x, s) {    # replace NA errors with max error
+  method2(n, x, s, max)
+}
+method4 <- function(n, x, s) {    # replace NA errors with zero
+  method2(n, x, replace_na(s, 0))
+}
+
+
+#*****************************************************************************************************************
+# functions not used
 #*****************************************************************************************************************
 # boots function
 # bootsting <- function (sdata) {
