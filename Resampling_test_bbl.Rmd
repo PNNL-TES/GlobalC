@@ -59,12 +59,11 @@ method3 <- function(n, x, s) {    # replace NA errors with max error
 method4 <- function(n, x, s) {    # replace NA errors with zero
   method2(n, x, replace_na(s, 0))
 }
-method5 <- function(n, x, s) {    # only values without errors
-  method1(n, x[is.na(s)])
-}
-method6 <- function(n, x, s) {    # only values with errors
-  method1(n, x[!is.na(s)])
-}
+
+RESAMPLE <- method3
+
+# x <- RESAMPLE(...)
+
 
 sample_size <- 10
 
