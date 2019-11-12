@@ -1,7 +1,87 @@
 # Helper functions
 
-#************************************************************
-# plot sites distribution
+#******************************************************************************************************************
+# data processing function - data calculation, clean, and combine etc
+#******************************************************************************************************************
+
+
+# Function to calculate Rroot/Ra ratio and Rshoot/Ra ratio
+# Ra = Rroot + Rshoot (total autotrophic respiration)
+# Rroot/Ra or Rshoot/Ra ratio were from two resources: 1) collected from published article, stored in FsFlFr.csv; 2) from srdb_v4.csv
+# and results from above two data sources will be combined
+
+cal_Froot <- function (sdata, sdata2) {
+  # Froot and Fshoot data from digitized papers
+  sdata %>%
+    select(Latitude, Longitude, Fshoot, Froot, Ecosystem, IGBP) %>% 
+    mutate(Fshoot = if_else(is.na(Fshoot), 100 - Froot, as.numeric(Fshoot)),
+           Froot = if_else(is.na(Froot), 100 - Fshoot, as.numeric(Froot)),
+           # data in FsFlFr were in percentage, scale to decimal (to match srdb_v4))
+           Froot = Froot / 100,
+           Fshoot = Fshoot / 100) ->
+    comb_data
+  
+  # use data from srdb_v4 to calculate Rroot/Ra ratio, Rroot/(RE-NPP)
+  # Ra_annual in srdb_v4 is Rroot
+  # Ra = Rroot + Rshoot = ER - Rh
+  sdata2 %>% 
+    # select(Study_number, Biome, Ecosystem_type, Leaf_habit, Latitude, Longitude, Ra_annual, ER, GPP, NPP) %>% 
+    select(Latitude, Longitude, Ecosystem_type, Leaf_habit, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>% 
+    filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER)) %>% 
+    mutate(ER = if_else(is.na(ER), GPP, ER), # If ER not available, use GPP (assume NEP very small)
+           # If Rh_annual not available, use NPP (assume NEP very small)
+           Rh_annual = if_else(is.na(Rh_annual), NPP, Rh_annual),
+           Ra_annual = if_else(is.na(Ra_annual), Rs_annual - Rh_annual, Ra_annual)) -> 
+    sub_srdb
+  
+  # If RE available but Ra_annual is not, we could also estimate Ra_annual based on the Bond_Lamberty (2004) model
+  # We can get 22 more data, but don't know whether should keep those points (it does not change the results too much)
+  # sub_srdb$Ra_annual <- ifelse(is.na(sub_srdb$Ra_annual), (-7.97+0.93*sqrt(sub_srdb$Rs_annual))^2, sub_srdb$Ra_annual)
+  
+  # In srdb Ra_annual = Rroot, so Froot = Rroot / Ra (fraction of Rroot to autotrophic respiration)
+  sub_srdb$Froot <- sub_srdb$Ra_annual / (sub_srdb$ER - sub_srdb$Rh_annual)
+  sub_srdb <- subset(sub_srdb, !is.na(Froot) & Froot < 0.9 & Froot > 0.1)
+  
+  # mean(sub_srdb$Froot)
+  
+  sub_srdb$Fshoot <- 1 - sub_srdb$Froot
+  sub_srdb %>% select(Latitude, Longitude, Fshoot, Froot, Ecosystem_type, Leaf_habit) -> sub_srdb
+  colnames(sub_srdb) <- colnames(comb_data)
+  
+  comb_data <- rbind(comb_data, sub_srdb)
+  comb_data[comb_data$Ecosystem  ==  'Cropland', ]$Ecosystem <- "Agriculture"
+  return (comb_data)
+}
+
+
+# Prepare and calculate Ra-GPP ratio 
+# data are from two sources: 1) from published papers, stored in RaGPP.csv; 2) from srdb_v4.csv
+# data from above two sources will be combined
+prep_RaGpp <- function(RaGPP, srdb_v4) {
+  RaGPP %>% 
+    select(Ecosystem, Leaf_habit, RaGPP_ratio) %>% 
+    mutate(Source = "Meta-papers") -> sdata2
+  
+  srdb_v4 %>% 
+    select(Ecosystem_type, Leaf_habit, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>% 
+    filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER)) %>% 
+    mutate(ER = if_else(is.na(ER), GPP, ER), # assume NEP very small
+           RaGPP_ratio = (ER - NPP) / GPP,
+           Source = "srdb_v4") %>% 
+    filter(RaGPP_ratio > 0, RaGPP_ratio < 1, !is.na(Ecosystem_type)) %>%
+    select(Ecosystem_type, Leaf_habit, RaGPP_ratio, Source) %>% 
+    bind_rows(sdata2)
+}
+
+
+
+
+
+
+#******************************************************************************************************************
+# functions to make figures
+#******************************************************************************************************************
+# plot RC (root respiration to soil respiration ratio), Ra-GPP ratio, and Rroot-Ra ratio sites spatial distribution
 plot_sites <- function (sdata, sdata2, srdb_v4) {
   # prepare data for word map
   worldMap <- map_data(map = "world")
@@ -76,8 +156,10 @@ plot_sites <- function (sdata, sdata2, srdb_v4) {
 }
 
 
-# plot GPP
-plot_GPP <- function (sdata, sdata2) {
+# plot GPP and RSG 
+# plot GPP, GPP vs published year relationship, and reported GPP trend
+# plot RSG, RSG vs published year relationship, and reported RSG trend
+plot_GPP_RSG <- function (sdata, sdata2) {
   
   obs_gpp <- nrow(sdata)
   sdata$Global <- paste0("n = ", obs_gpp)
@@ -140,7 +222,7 @@ plot_GPP <- function (sdata, sdata2) {
     # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_boxplot(width = 0.1) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
-    ylab(expression(R[S]~(Pg~yr^{-1}))) +
+    ylab(expression(R[SG]~(Pg~yr^{-1}))) +
     xlab("Global")
   
   # plot Rs~Pub_year relationship
@@ -176,7 +258,24 @@ plot_GPP <- function (sdata, sdata2) {
 }
 
 
-# plot NPP and Rab/Rh
+# Plot Rroot-Ra ratio and group by ecosystem
+plot_Rroot_Ra_ratio <- function (sdata) {
+  # plot Froot (root respiration/autotrophic respiration ratio) by ecosystem type
+  Fl_plot <- ggplot(sdata, aes(x = IGBP2, y=Froot)) + geom_violin() +
+    # geom_jitter(shape = 16, position = position_jitter(0.2), col = "gray") +
+    geom_quasirandom(col = 'gray') +
+    geom_boxplot(width = 0.1) +
+    ylab("Froot") +
+    # stat_summary(fun.y=median, geom="point", size=2, color="red") +
+    scale_x_discrete(limits = c("DF", "EF", "MF", "Other"),
+                     labels = c("DF (n=13)","EF (n=91)", "MF (n=7)", "Other (n=11)") ) +
+    theme(axis.title.x=element_blank()) +
+    ylab("Rroot-Ra ratio")
+  
+  print(Fl_plot)
+}
+
+# plot Ra-GPP ratio and grouped by exosystem
 plot_RaGPP <- function (sdata2) {
   
   var_obs <- nrow(sdata2)
@@ -205,66 +304,9 @@ plot_RaGPP <- function (sdata2) {
 }
 
 
-# FlFsFr %>%
-#   select(Fshoot, Froot, Ecosystem) ->
-#   comb_data
-# comb_data$Fshoot <- ifelse(is.na(comb_data$Fshoot), 100-comb_data$Froot, comb_data$Fshoot)
-# comb_data$Froot <- ifelse(is.na(comb_data$Froot), 100-comb_data$Fshoot, comb_data$Froot)
-# gather(comb_data, key = "Fraction", value = "Percentage", -Ecosystem) -> comb_data
 
-
-# Function to calculate Rroot/Ra ratio and Rshoot/Ra ratio
-# Ra = Rroot + Rshoot (total autotrophic respiration)
-# Rrrot/Ra or Rshoot/Ra ratio were from two resources: 1) collected from published article, stored in FsFlFr (sdata); 2) from srdb_v4 (sdata2)
-#install.packages("reshapes") # Old package replaced by gather
-# library(reshape2)
-# FsFfFrReshape <- melt(FsFfFr,id.vars = 'IGBP', measure.vars = c('Fl','Fs','Fr'))
-cal_Froot <- function (sdata, sdata2) {
-  # Froot and Fshoot data from digitized papers
-  sdata %>%
-    select(Latitude, Longitude, Fshoot, Froot, Ecosystem, IGBP) %>% 
-    mutate(Fshoot = if_else(is.na(Fshoot), 100 - Froot, as.numeric(Fshoot)),
-           Froot = if_else(is.na(Froot), 100 - Fshoot, as.numeric(Froot)),
-           # data in FsFlFr were in percentage, scale to decimal (to match srdb_v4))
-           Froot = Froot / 100,
-           Fshoot = Fshoot / 100) ->
-    comb_data
-  
-  # use data from srdb_v4 to calculate Rroot/Ra ratio, Rroot/(RE-NPP)
-  # Ra_annual in srdb_v4 is Rroot
-  # Ra = Rroot + Rshoot = ER - Rh
-  sdata2 %>% 
-    # select(Study_number, Biome, Ecosystem_type, Leaf_habit, Latitude, Longitude, Ra_annual, ER, GPP, NPP) %>% 
-    select(Latitude, Longitude, Ecosystem_type, Leaf_habit, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>% 
-    filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER)) %>% 
-    mutate(ER = if_else(is.na(ER), GPP, ER), # If ER not available, use GPP (assume NEP very small)
-           # If Rh_annual not available, use NPP (assume NEP very small)
-           Rh_annual = if_else(is.na(Rh_annual), NPP, Rh_annual),
-           Ra_annual = if_else(is.na(Ra_annual), Rs_annual - Rh_annual, Ra_annual)) -> 
-    sub_srdb
-  
-  # If RE available but Ra_annual is not, we could also estimate Ra_annual based on the Bond_Lamberty (2004) model
-  # We can get 22 more data, but don't know whether should keep those points (it does not change the results too much)
-  # sub_srdb$Ra_annual <- ifelse(is.na(sub_srdb$Ra_annual), (-7.97+0.93*sqrt(sub_srdb$Rs_annual))^2, sub_srdb$Ra_annual)
-  
-  # In srdb Ra_annual = Rroot, so Froot = Rroot / Ra (fraction of Rroot to autotrophic respiration)
-  sub_srdb$Froot <- sub_srdb$Ra_annual / (sub_srdb$ER - sub_srdb$Rh_annual)
-  sub_srdb <- subset(sub_srdb, !is.na(Froot) & Froot < 0.9 & Froot > 0.1)
-  
-  # mean(sub_srdb$Froot)
-  
-  sub_srdb$Fshoot <- 1 - sub_srdb$Froot
-  sub_srdb %>% select(Latitude, Longitude, Fshoot, Froot, Ecosystem_type, Leaf_habit) -> sub_srdb
-  colnames(sub_srdb) <- colnames(comb_data)
-  
-  comb_data <- rbind(comb_data, sub_srdb)
-  comb_data[comb_data$Ecosystem  ==  'Cropland', ]$Ecosystem <- "Agriculture"
-  return (comb_data)
-}
-
-
-# plot global Rs
-plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
+# plot Rroot-to-Rs ratio and group by ecosystem
+plot_Rroot_Rs_NPP <- function (sdata, sdata2, sdata3) {
   sub_Rs <- subset(sdata, !is.na(sdata$Rs))
   Rs_obs <- nrow(sub_Rs)
   sub_Rs$label <- paste0("n = ", Rs_obs)
@@ -370,12 +412,34 @@ plot_Rroot_Rs <- function (sdata, sdata2, sdata3) {
 #*****************************************************************************************************************
 # Added or moved by Ben
 #*****************************************************************************************************************
+# Given a length 3 vector of quantiles (2.5%, 50%, 97.5%) return a nice label
+make_label <- function(qt_data) {
+  stopifnot(length(qt_data) == 3)
+  paste0("Mean and 95% CI: ", qt_data[2], " (", qt_data[1], ", ", qt_data[3], ")")
+}
+
+
+# Given a figure, the types (character vector) of information it has, the two
+# quantile vectors (see above), and position information, return annotated figure
+annotations <- function(figure, types, x_qt, x_qt_raw, xpos) {
+  stopifnot(length(x_qt) == 3)
+  stopifnot(length(x_qt_raw) == 3)
+  
+  ann_dat <- tibble(Type = types,
+                    GPP_type = NA, Rs_type = NA,
+                    x = xpos, y = c(0.035, 0.025),
+                    label = c(make_label(x_qt), make_label(x_qt_raw)))
+  figure + geom_text(data = ann_dat,
+                     aes(x = x, y = y, label = label, color = Type),
+                     hjust = 0, show.legend = FALSE)
+}
+
 
 # Given mean and standard deviation vectors, generate the basic bootstrapping
 # draws. We do this by first drawing from any `m` entries without corresponding `s`
 # values, and then individually draw from all `m` values with corresponding `s`'s,
 # one at a time. These `n_samples` are then averaged across the `n_samples` draws.
-replace_SD_and_generate <- function(m, s, n_samples = N_SAMPLES) {
+replace_generate_avg <- function(m, s, n_samples = N_SAMPLES) {
   stopifnot(length(m) == length(s))
   # Alternately for first part, could do this...see #9
   # agreed, this is a better way, but with too small sd in the raw data
@@ -404,18 +468,17 @@ replace_SD_and_generate <- function(m, s, n_samples = N_SAMPLES) {
   raw / x
 }
 
-# Data from above function returns too small SD values 
-replace_SD_and_generate2 <- function(m, s, n_samples = N_SAMPLES) {
+
+# When replace_generate_avg (above function), mean of each sample was used as the final results
+# And data from above function returns too small SD values 
+# In replace_calSD_and_generate, results were not averaged, using SD information, SD = mean * CV when missing
+replace_calSD_and_generate <- function(m, s, n_samples = N_SAMPLES) {
   stopifnot(length(m) == length(s))
   # Alternately for first part, could do this...see #9
   # agreed, this is a better way, but with too small sd in the raw data
   CV <- s / m
   CV <- replace_na(CV, median(CV, na.rm = TRUE))
   s <- if_else(is.na(s), m * CV, s)
-  
-  # using biggest reported SD
-  # max_sd = max(s, na.rm = T)
-  # s <- if_else(is.na(s), max_sd, s)
   
   # Generate and compute mean
   # empty_s <- is.na(s)
@@ -433,21 +496,36 @@ replace_SD_and_generate2 <- function(m, s, n_samples = N_SAMPLES) {
   }
   sample(draws, n_samples, replace = FALSE)
 }
+
+# samilar as replace_calSD_and_generate function
+# but set SD = maximum reported SD if SD not reported
+replace_maxSD_and_generate <- function(m, s, n_samples = N_SAMPLES) {
+  stopifnot(length(m) == length(s))
+  # Alternately for first part, could do this...see #9
+
+  # using biggest reported SD
+  max_sd = max(s, na.rm = T)
+  s <- if_else(is.na(s), max_sd, s)
+  
+  draws <- c()
+  for(i in seq_along(s)) {
+    draws <- c(draws, rnorm(n = n_samples, mean = m[i], s = s[i]))
+  }
+  sample(draws, n_samples, replace = FALSE)
+}
+
+
 # The primary top-down and bottom-up bootstrapping figures all have similar
 # annotations. The following two functions handle this.
 
-# Given a length 3 vector of quantiles (2.5%, 50%, 97.5%) return a nice label
-make_label <- function(qt_data) {
-  stopifnot(length(qt_data) == 3)
-  paste0("Mean and 95% CI: ", qt_data[2], " (", qt_data[1], ", ", qt_data[3], ")")
-}
+
 # Given a figure, the types (character vector) of information it has, the two
 # quantile vectors (see above), and position information, return annotated figure
 annotations <- function(figure, types, x_qt, x_qt_raw, xpos) {
   stopifnot(length(x_qt) == 3)
   stopifnot(length(x_qt_raw) == 3)
-
-    ann_dat <- tibble(Type = types,
+  
+  ann_dat <- tibble(Type = types,
                     GPP_type = NA, Rs_type = NA,
                     x = xpos, y = c(0.035, 0.025),
                     label = c(make_label(x_qt), make_label(x_qt_raw)))
@@ -455,7 +533,6 @@ annotations <- function(figure, types, x_qt, x_qt_raw, xpos) {
                      aes(x = x, y = y, label = label, color = Type),
                      hjust = 0, show.legend = FALSE)
 }
-
 
 # Given a vector `x` and the quantiles of the 'raw' distribution, i.e. the 
 # standard top-down GPP or bottom-up Rs, compute the probability they agree
@@ -472,40 +549,6 @@ prob_agreement <- function(x, raw_quantiles) {
 }
 
 
-# Prepare Ra-GPP ratio 
-prep_RaGpp <- function(RaGPP, srdb_v4) {
-  RaGPP %>% 
-    select(Ecosystem, Leaf_habit, RaGPP_ratio) %>% 
-    mutate(Source = "Meta-papers") -> sdata2
-  
-  srdb_v4 %>% 
-    select(Ecosystem_type, Leaf_habit, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>% 
-    filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER)) %>% 
-    mutate(ER = if_else(is.na(ER), GPP, ER), # assume NEP very small
-           RaGPP_ratio = (ER - NPP) / GPP,
-           Source = "srdb_v4") %>% 
-    filter(RaGPP_ratio > 0, RaGPP_ratio < 1, !is.na(Ecosystem_type)) %>%
-    select(Ecosystem_type, Leaf_habit, RaGPP_ratio, Source) %>% 
-    bind_rows(sdata2)
-}
-
-# Plot froot
-plot_froot <- function (sdata) {
-  # plot Froot (root respiration/autotrophic respiration ratio) by ecosystem type
-  Fl_plot <- ggplot(sdata, aes(x = IGBP2, y=Froot)) + geom_violin() +
-    # geom_jitter(shape = 16, position = position_jitter(0.2), col = "gray") +
-    geom_quasirandom(col = 'gray') +
-    geom_boxplot(width = 0.1) +
-    ylab("Froot") +
-    # stat_summary(fun.y=median, geom="point", size=2, color="red") +
-    scale_x_discrete(limits = c("DF", "EF", "MF", "Other"),
-                     labels = c("DF (n=13)","EF (n=91)", "MF (n=7)", "Other (n=11)") ) +
-    theme(axis.title.x=element_blank()) +
-    ylab("Rroot-Ra ratio")
-  
-  print(Fl_plot)
-}
-
 # Perform a Student's t-test and return results nicely formatted for a table
 t_test <- function(x, y, alternative = "two.sided", ...) {
   stopifnot(is.numeric(x))
@@ -515,8 +558,6 @@ t_test <- function(x, y, alternative = "two.sided", ...) {
          ", df = ", format(z$parameter, digits = 1, scientific = FALSE), 
          ", p-value = ", format(z$p.value, digits = 3, scientific = FALSE))
 }
-
-
 
 #*****************************************************************************************************************
 # boots function
@@ -559,3 +600,5 @@ t_test <- function(x, y, alternative = "two.sided", ...) {
 # summary(result)
 # hist(result)
 # abline(v = quantile(result, c(0.025, 0.975)), col = "red", lty = "dashed")
+
+

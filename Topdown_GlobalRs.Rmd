@@ -19,7 +19,7 @@ output:
 * NPP - net primary production
 * NEP - net ecosystem production
 
-* Froot - Rroot / Ra (root autotrophic respiration to total autotrophic respiration fraction/ratio, calculation please see plot_froot function)
+* Froot - Rroot / Ra (root autotrophic respiration to total autotrophic respiration fraction/ratio, calculation please see plot_Rroot_Ra_ratio function)
 * Fshoot - Rshoot / Ra (1-Froot)
 * FsFr - (1-Froot)/Froot (FsFr = Rshoot/Rroot ratio)
 * RC - (root respiration / soil respiration)
@@ -93,6 +93,7 @@ source('functions.R')
 knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, 
                       echo = FALSE, warning = FALSE,
                       fig.height = 4, fig.width = 8, cache = F)
+
 ```
 
 
@@ -160,7 +161,7 @@ Froot %>% mutate(IGBP2 = case_when(
 # panel (a). all 65 GPP estimates
 # panel (b). GPP vs year, the red dots in panel c are calculated trend from panel b (increasing rate = 0.2 if outliers removed, 0.42 if outliers kept)
 # panel (c). 16 GPP estimates reported GPP increase trend
-plot_GPP(GPP, GlobalRs)
+plot_GPP_RSG (GPP, GlobalRs)
 ggsave("outputs/FigureS1.jpg", width = 8, height = 6, dpi = 300, units = "in")
 
 # A couple of simpler figures for Ben's Japan presentation
@@ -184,7 +185,7 @@ ggsave("outputs/p_rs.png", plot = p_rs_marg, width = 8, height = 5)
 
 ```{r plot RC, fig.height=6, fig.width=8}
 # Plot global Rs, NPP, Fire-burned Carbon, and RC by ecosystem (root respiration to soil respiration ratio)
-# more details please see function plot_Rroot_Rs()
+# more details please see function plot_Rroot_Rs_NPP ()
 # prepare data first
 sub_srdb %>% count(Leaf_habit) 
 
@@ -199,7 +200,7 @@ sub_srdb %>%
 
 sub_srdb %>% count(IGBP2) 
 
-plot_Rroot_Rs(GlobalRs, sub_srdb, NPP) 
+plot_Rroot_Rs_NPP (GlobalRs, sub_srdb, NPP) 
 ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
@@ -207,7 +208,7 @@ ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```{r plot Rroot-Ra ratio, fig.height = 4, fig.width = 6}
 # potential issue: only two points from grassland
 # no point from tundra 
-plot_froot(Froot)
+plot_Rroot_Ra_ratio(Froot)
 ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
 
@@ -319,8 +320,8 @@ QUANTILES <- c(0.025, 0.5, 0.975)  # Generate mean and 95% CI
 set.seed(20190827)
 
 # Rs and GPP draws used by bootstrapping GPP and Rs blocks below
-bootstrap_data <- tibble(Rs_raw = replace_SD_and_generate2(GlobalRs$Rs, GlobalRs$SD),
-                         GPP_raw = replace_SD_and_generate2(GPP$GPP, GPP$SD))
+bootstrap_data <- tibble(Rs_raw = replace_calSD_and_generate(GlobalRs$Rs, GlobalRs$SD),
+                         GPP_raw = replace_calSD_and_generate(GPP$GPP, GPP$SD))
 
 sd(bootstrap_data$Rs_raw) # why sd so small, not as aspected
 sd(bootstrap_data$GPP_raw) # why sd so small, not as aspected
@@ -331,7 +332,7 @@ sd(bootstrap_data$GPP_raw) # why sd so small, not as aspected
 ```{r gpp-bootstrap}
 # Bottom-up approach to estimate GPP
 # Rroot = Rs * RC (Rroot to Rs ratio, from srdb)
-# Froot = Rroot / Ra (root autotrophic respiration to total autotrophic respiration fraction/ratio, calculation please see plot_froot function)
+# Froot = Rroot / Ra (root autotrophic respiration to total autotrophic respiration fraction/ratio, calculation please see plot_Rroot_Ra_ratio function)
 # Fshoot = 1-Froot
 # FsFr = (1-Froot)/Froot (FsFr = Rshoot/Rroot ratio)
 # Ra = Rroot + Rshoot
@@ -595,7 +596,7 @@ bootstrap_data %>%
     NPP = sample(NPP$NPP, N_SAMPLES, replace = TRUE),
     HerbComsum = rnorm(n = N_SAMPLES, mean = 2.2, sd = 0.2),
     # Fire = sample(var_Fire$Amount_Pg, N_SAMPLES, replace = TRUE),
-    Fire = replace_SD_and_generate2(var_Fire$Amount_Pg, var_Fire$SD), # Another way to do fire resample (use mean and SD)
+    Fire = replace_calSD_and_generate(var_Fire$Amount_Pg, var_Fire$SD), # Another way to do fire resample (use mean and SD)
     sink = rnorm(n = N_SAMPLES, mean = 2.10, sd = 0.28),
     
     # Step 2. Ra-to-GPP ratio boosting
