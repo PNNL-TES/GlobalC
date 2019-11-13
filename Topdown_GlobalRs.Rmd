@@ -995,17 +995,10 @@ slope_Rs <- coefficients(summary( lm(Rs ~ Pub_year, data = GlobalRs) ))[2,1] %>%
 slope_GPP <- coefficients(summary( lm(GPP ~ Pub_year, data = GPP) ))[2,1] %>% round(2)
 ```
 
-Terrestrial plants sequester carbon from the atmosphere through photosynthesis (i.e., gross primary productivity, GPP); roughly the same amount of carbon is decomposed and returned back to the atmosphere by respiratory fluxes, in particular the global soil-to-atmosphere CO[2] flux (soil respiration, R[S]). 
-Significant progress in quantifying and constraining global GPP has been achieved using top-down approaches, i.e. satellite data products; conversely, global R[S] estimates are generally derived by upscaling site-scale measurements. 
-The uncertainty in these large flux estimates is poorly constrained, however, and their consistency has not been previously evaluated.
+Top-down global GPP: (`r round(mean(rs_results$Rs_topdown2), 0)`±`r round(sd(rs_results$Rs_topdown2), 0)` Pg C yr^{-1}) 
 
-We partitioned historical global GPP estimates into their net primary production (NPP) and autotrophic respiration components and calculated the implied resulting global R[S]; we also used global R[S] estimates to estimate the implied global GPP.
-Here we show that the R[S] implied by global GPP (`r round(mean(rs_results$Rs_topdown2), 0)`±`r round(sd(rs_results$Rs_topdown2), 0)` Pg C yr^{-1}) is fundamentally inconsistent (X%, P = 0.xxx) with bottom-up global R[S] estimates (x ± y). 
-Similarly, partitioning bottom-up R[S] values into shoot and root respiration, resulted in GPP values significantly different than top-down estimates. 
-We also show that the global R[S] to global GPP ratio is consistent with neither site-level measurements of the R[S]:GPP ratio, nor with CMIP6 model results.
+Bottom-up global R[S]: (x ± y). 
 
-Our findings demonstrate a significant inconsistency between bottom-up and top-down based GPP and RSG estimates, which have a ≥20 Pg C gap between them.
-[ better last sentence ]
 
 ### Text for supplemental information  
 Soil respiration consumed the photosynthetic carbon assimilation, which was fixed by plant, or called gross primary production (GPP). Plant autotrophic respiration (including leaf respiration and stem respiration (Rshoot) and root respiration (Rroot)) consumed part of GPP, the left part was called net primary productivity (NPP). Part of NPP consumed by heterotrophic respiration (Rh), other part of NPP was consumed by herbivores, burned by fire or becomes long term carbon storage (carbon sink), and the sum of root respiration (Rroot) and heterotrophic respiration (Rh) is soil respiration. Theoretically, if we know the pathway of each part of global annual GPP, we can estimate global mean annual soil respiration (top-down RSG). Similarly, if we can accurately measure each component of carbon cycle, we can estimate GPP (bottom-up GPP). Here we conducted a summary analysis of global terrestrial carbon cycling to compare and explore the consistency of top-down and bottom-up GPP and global RS estimates. To make this comparison, we evaluated two approaches to partitioning the global carbon cycle from known estimates of the various fluxes and calculated the unknowns (Figure S1–S5 and Table S1–S4). 
