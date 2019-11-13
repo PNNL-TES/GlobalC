@@ -348,7 +348,7 @@ bootstrap_data %>%
     
     # Step 2. sampling Rroot-to Rs ratio (RC)
     Rc_agr = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_agr_rc$RC_annual),
-      
+    
     # forest further separate into 3 groups
     Rc_df = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_df_rc$RC_annual),
     Rc_ef = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_ef_rc$RC_annual),
@@ -898,6 +898,7 @@ Presumably, as a matter of mathematics, the ratio of global Rs to global GPP sho
 topdown <- data.frame(GPP = GPP$GPP, Rs = mean(GlobalRs$Rs))
 topdown$Source <- paste0("Global GPP\n(N = ", nrow(topdown), ")")
 topdown$Type <- "Global"
+topdown$Scale <- "Global"
 
 srdb_v4 %>% 
   filter(!is.na(GPP), !is.na(Rs_annual), Ecosystem_state != "Managed") %>% 
@@ -905,6 +906,7 @@ srdb_v4 %>%
   srdb
 srdb$Source <- paste0("SRDB\n(N = ", nrow(srdb), ")")
 srdb$Type <- "Observations"
+srdb$Scale <- "Local"
 
 read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>% 
   select(Biome, Ecosystem_type, FLUXNET_SITE_ID, GPP = gpp_fluxnet, Rs = Rs_annual) %>% 
@@ -912,10 +914,11 @@ read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>%
   fluxnet
 fluxnet$Source <- paste0("FLUXNET\n(N = ", nrow(fluxnet), ")")
 fluxnet$Type <- "Observations"
+fluxnet$Scale <- "Local"
 
-cmip6_data_file <- "data/CMIP/1.cmip6_global_monthly_means.csv"
-if(file.exists(cmip6_data_file)) {
-  read.csv(cmip6_data_file, stringsAsFactors = FALSE) %>% 
+cmip6_global_data_file <- "data/CMIP/1.cmip6_global_monthly_means.csv"
+if(file.exists(cmip6_global_data_file)) {
+  read.csv(cmip6_global_data_file, stringsAsFactors = FALSE) %>% 
     as_tibble() %>% 
     filter(model != "IPSL-CM6A-LR") %>% 
     select(era, model, experiment, ensemble, variable, time, value, LandArea) %>% 
@@ -923,30 +926,44 @@ if(file.exists(cmip6_data_file)) {
     group_by(era, variable, model, experiment, ensemble, year) %>% 
     # units are kgC/m2/s, one month per row; need to go to PgC/yr
     summarise(value = sum(value * LandArea * 1000 * 60 * 60 * 24 * 365 / 1e15 / 12)) -> 
-    model_data
+    model_global_data
   
-  model_data %>% 
+  model_global_data %>% 
     filter(variable != "gpp") %>% 
     group_by(era, model, experiment, ensemble, year) %>% 
     summarise(variable = "Rs", 
               value = sum(value)) %>% 
-    bind_rows(filter(model_data, variable == "gpp")) %>% 
+    bind_rows(filter(model_global_data, variable == "gpp")) %>% 
     spread(variable, value) %>% 
     filter(year >= 2005) %>% 
     group_by(era, model, experiment, ensemble) %>% 
     summarise(gpp = mean(gpp), Rs = mean(Rs)) ->
-    model_ratios
+    model_global_ratios
   
-  model_ratios %>% 
-    mutate(GPP = gpp, Source = paste0("CMIP5/6\n(N = ", nrow(model_ratios), ")"), Type = "Models") ->
-    cmip
+  model_global_ratios %>% 
+    mutate(GPP = gpp, 
+           Scale = "Global",
+           Source = paste0("Global CMIP6\n(N = ", nrow(model_global_ratios), ")"),
+           Type = "Models") ->
+    cmip_global
 } else {
-  cmip <- data.frame(Source = "CMIP6\n(N = 0)", Type = "Models", stringsAsFactors = FALSE)
+  cmip_global <- data.frame(Source = "Global CMIP6\n(N = 0)", Scale = "Global",
+                            Type = "Models", stringsAsFactors = FALSE)
 }
 
-bind_rows(topdown, srdb, fluxnet, cmip) %>% 
+cmip6_local_data_file <- "data/CMIP/1.cmip6_local_annual_means.csv"
+if(file.exists(cmip6_local_data_file)) {
+  # ... process it
+} else {
+  cmip_local <- data.frame(Source = "CMIP6\n(N = 0)", 
+                           Scale = "Local",
+                           Type = "Models", 
+                           stringsAsFactors = FALSE)
+}
+
+bind_rows(topdown, srdb, fluxnet, cmip_global, cmip_local) %>% 
   mutate(Ratio = Rs / GPP,
-         Source = factor(Source, unique(Source)[c(2, 3, 1, 4)])) ->
+         Source = factor(Source, unique(Source)[c(2, 3, 5, 4, 1)])) ->
   ratios
 
 ratios %>% 
@@ -960,8 +977,7 @@ p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) +
   # geom_jitter(alpha = I(0.25)) + 
   geom_quasirandom(alpha = I(0.25)) +
   ylab("Ratio of Rs to GPP") + xlab("") +
-  coord_cartesian(ylim = c(0, 2)) #+
-#  geom_label()
+  coord_cartesian(ylim = c(0, 2))
 print(p_ratios)
 
 ggsave("outputs/Figure2.png")
