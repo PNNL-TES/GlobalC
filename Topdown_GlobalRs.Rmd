@@ -915,7 +915,7 @@ fluxnet$Type <- "Observations"
 
 cmip6_data_file <- "data/CMIP/1.cmip6_global_monthly_means.csv"
 if(file.exists(cmip6_data_file)) {
-  read.csv(read.csv(cmip6_data_file, stringsAsFactors = FALSE)) %>% 
+  read.csv(cmip6_data_file, stringsAsFactors = FALSE) %>% 
     as_tibble() %>% 
     filter(model != "IPSL-CM6A-LR") %>% 
     select(era, model, experiment, ensemble, variable, time, value, LandArea) %>% 
