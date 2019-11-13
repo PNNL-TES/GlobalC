@@ -995,29 +995,24 @@ slope_Rs <- coefficients(summary( lm(Rs ~ Pub_year, data = GlobalRs) ))[2,1] %>%
 slope_GPP <- coefficients(summary( lm(GPP ~ Pub_year, data = GPP) ))[2,1] %>% round(2)
 ```
 
-Terrestrial plants sequester carbon from the atmosphere through photosynthesis (i.e., gross primary productivity, GPP); roughly the same amount of carbon is decomposed and returned back to the atmosphere by respiratory fluxes, in particular the global soil-to-atmosphere CO[2] flux (soil respiration, R[S]). 
-Significant progress in quantifying and constraining global GPP has been achieved using top-down approaches, i.e. satellite data products; conversely, global R[S] estimates are generally derived by upscaling site-scale measurements. 
-The uncertainty in these large flux estimates is poorly constrained, however, and their consistency has not been previously evaluated.
+Top-down global GPP: (`r round(mean(rs_results$Rs_topdown2), 0)`±`r round(sd(rs_results$Rs_topdown2), 0)` Pg C yr^{-1}) 
 
-We partitioned historical global GPP estimates into their net primary production (NPP) and autotrophic respiration components and calculated the implied resulting global R[S]; we also used global R[S] estimates to estimate the implied global GPP.
-Here we show that the R[S] implied by global GPP (`r round(mean(rs_results$Rs_topdown2), 0)`±`r round(sd(rs_results$Rs_topdown2), 0)` Pg C yr^{-1}) is fundamentally inconsistent (X%, P = 0.xxx) with bottom-up global R[S] estimates (x ± y). 
-Similarly, partitioning bottom-up R[S] values into shoot and root respiration, resulted in GPP values significantly different than top-down estimates. 
-We also show that the global R[S] to global GPP ratio is consistent with neither site-level measurements of the R[S]:GPP ratio, nor with CMIP6 model results.
+Bottom-up global R[S]: (x ± y). 
 
-Our findings demonstrate a significant inconsistency between bottom-up and top-down based GPP and RSG estimates, which have a ≥20 Pg C gap between them.
-[ better last sentence ]
 
-### Text for supplemental information  
-Soil respiration consumed the photosynthetic carbon assimilation, which was fixed by plant, or called gross primary production (GPP). Plant autotrophic respiration (including leaf respiration and stem respiration (Rshoot) and root respiration (Rroot)) consumed part of GPP, the left part was called net primary productivity (NPP). Part of NPP consumed by heterotrophic respiration (Rh), other part of NPP was consumed by herbivores, burned by fire or becomes long term carbon storage (carbon sink), and the sum of root respiration (Rroot) and heterotrophic respiration (Rh) is soil respiration. Theoretically, if we know the pathway of each part of global annual GPP, we can estimate global mean annual soil respiration (top-down RSG). Similarly, if we can accurately measure each component of carbon cycle, we can estimate GPP (bottom-up GPP). Here we conducted a summary analysis of global terrestrial carbon cycling to compare and explore the consistency of top-down and bottom-up GPP and global RS estimates. To make this comparison, we evaluated two approaches to partitioning the global carbon cycle from known estimates of the various fluxes and calculated the unknowns (Figure S1–S5 and Table S1–S4). 
+### Text for methods / supplemental information
 
-#### GPP implied by RSG  
-In the past decades, many models have been developed to estimate global RS (bottom-up global RS estimates, n=`r nrow(GlobalRs)`, Figure S1, most of the estimates were based on the field measured RS data, e.g., SRDB). RS consists of heterotrophic respiration (Rh) and root respiration (Rroot). Despite the difficulty, many studies separated RS into Rroot and Rh and many of those Rroot-to-RS ratio (RC) have been compiled into the SRDB-V4 (Figure S2). We used all RC values from SRDB-V4 whenever it is larger than 0 and smaller than 1, totally `r nrow(var_RC)` RC values were used in this study. RC values covered 9 vegetation types, but the majority were from forest, grassland, agriculture, and shrubland, all other vegetation types only have `r var_RC %>% filter(IGBP2 == "Other") %>% nrow()` samples (Figure S2 c). 
+We conducted an analysis of global terrestrial carbon cycling to compare and explore the consistency of top-down and bottom-up global gross primary production (GPP) and soil respiration (R[S]) estimates. Soil respiration, the soil-to-atmosphere CO2 flux measured worldwide, is the sum of root respiration (Rroot) and heterotrophic respiration (Rh). These source fluxes both consume carbon fixed by plants at some point in the past via photosynthesis or GPP. Plant autotrophic respiration (including leaf respiration and stem respiration, Rshoot, and root respiration, Rroot) consumes part of GPP, and the remainder is termed net primary productivity (NPP). Part of NPP is in turn consumed by heterotrophic respiration (Rh), another part is consumed by herbivores or burned in fires, with the remainder comprising long term carbon storage (the terrestrial carbon sink). Theoretically, if we know how GPP is partitioned at each step, we can estimate mean annual soil respiration at site or global scales, producing a top-down estimate of R[S]; similarly, we can estimate GPP via a bottom-up approach that starts with R[S]. To make this comparison, we evaluated two approaches to partitioning the global carbon cycle from known estimates of the various fluxes and calculated the unknowns (Figure S1–S5 and Table S1–S4). 
 
-In addition, root respiration is only part of autotrophic respiration, and the rest part is shoot respiration. Many studies have been conducted to separate Ra into Rroot and Rshoot, and thus Rroot-to-Ra ratio, Rroot-to-Rshoot ratio can be calculated. According to the bottom-up Global RS estimates, Root-to-RS ratio (RC), and Rroot-to-Rshoot ratio (data come from SRDB), Rroot and Rshoot, GPP can be calculated (bottom-up GPP, Figure S1 and equation 1-3).
+#### GPP implied by RSG
 
-We collected `r nrow(GlobalRs)` published RSG estimates from articles, with approximately half of studies reported RSG standard deviation (SD, n=`r GlobalRs %>% filter(!is.na(SD)) %>% nrow()`, Table S1) and change rate during a period (n=`r GlobalRs %>% filter(!is.na(IncreaseRate)) %>% nrow()`, Table S1). The reported RSG range from `r min(GlobalRs$Rs)` to `r max(GlobalRs$Rs)` Pg C yr-1, with an average RSG of `r mean(GlobalRs$Rs) %>% round(2)` Pg C yr-1. The RSG were published from `r min(GlobalRs$Pub_year)` to `r max(GlobalRs$Pub_year)`, and the RSG estimate showed a clear increase trend from the earlier years to the modern year (increase rate = `r slope_Rs` Pg C yr-2, Figure S1 b). However, this rate is much higher than the average increase rate reported by previous studies (mean = `r round(mean(GlobalRs$IncreaseRate, na.rm=T), 2) ` Pg C yr-2, n=`r GlobalRs %>% filter(!is.na(IncreaseRate)) %>% nrow()`, Figure S1 c).
+In the past decades, many estimates of global RS (bottom-up global RS estimates, n=`r nrow(GlobalRs)`) have been made and are summarized in **Figure S1**. Most of these estimates were based on the field measured RS data. RS consists of heterotrophic respiration (Rh) and root respiration (Rroot), and some studies have separated RS into these source fluxes; the resulting Rroot-to-RS ratios (RC) have been compiled into the SRDB-V4 (**Figure S2**). We used all RC values from SRDB-V4 ≥0 and ≤1, in total `r nrow(var_RC)` separate RC values RC values. These covered 9 vegetation types, but the majority were from forest, grassland, agriculture, and shrubland; all other vegetation types had only `r var_RC %>% filter(IGBP2 == "Other") %>% nrow()` samples (**Figure S2c**). 
 
-Then Rshoot can be calculated based on the Rroot and Rroot-to-Rshoot ratio, finally, bottom-up GPP can be calculated (Figure S1). We then compare the bottom-up GPP with GPP from publication in the past decades (top-down GPP) to determine the consistency between the bottom-up and top-down GPP. The following equations were used to calculate GPP from RSG:
+In addition, root respiration is only part of autotrophic respiration, and the rest  is shoot respiration. Many studies have separated Ra into Rroot and Rshoot, and thus Rroot-to-Ra ratio, Rroot-to-Rshoot ratio can be calculated. According to the bottom-up Global RS estimates, Root-to-RS ratio (RC), and Rroot-to-Rshoot ratio (data come from SRDB), Rroot and Rshoot, GPP can be calculated (bottom-up GPP, **Figure S1** and **Equations 1-3**).
+
+We collected `r nrow(GlobalRs)` published RSG estimates from articles, with approximately half of studies reported RSG standard deviation (SD, n=`r GlobalRs %>% filter(!is.na(SD)) %>% nrow()`, **Table S1**) and change rate during a period (n=`r GlobalRs %>% filter(!is.na(IncreaseRate)) %>% nrow()`, **Table S1**). The reported RSG range from `r min(GlobalRs$Rs)` to `r max(GlobalRs$Rs)` Pg C yr-1, with an average RSG of `r mean(GlobalRs$Rs) %>% round(2)` Pg C yr-1. The RSG were published from `r min(GlobalRs$Pub_year)` to `r max(GlobalRs$Pub_year)`, and the RSG estimate showed a clear increase trend from the earlier years to the modern year (increase rate = `r slope_Rs` Pg C yr-2, Figure S1 b). However, this rate is much higher than the average increase rate reported by previous studies (mean = `r round(mean(GlobalRs$IncreaseRate, na.rm=T), 2) ` Pg C yr-2, n=`r GlobalRs %>% filter(!is.na(IncreaseRate)) %>% nrow()`, Figure S1 c).
+
+Then Rshoot can be calculated based on the Rroot and Rroot-to-Rshoot ratio, finally, bottom-up GPP can be calculated (**Figure S1**). We then compare the bottom-up GPP with GPP from publication in the past decades (top-down GPP) to determine the consistency between the bottom-up and top-down GPP. The following equations were used to calculate GPP from RSG:
 
 __Equations (1 to 3)__  
 Rroot = Rs × Rroot-Rs ratio (i.e., RC in SRDB)     (1)  
@@ -1047,10 +1042,15 @@ Rroot = Ra × Rroot-Ra ratio     (8)
 Rshoot = Ra × Rshoot-Ra ratio     (9)
 Rs = Ra + Rh     (10)
 
-
 _**Bootstrap resampling**_  
+
 We used a bootstrap resampling approach to get the best estimate for each component in the bottom-up and top-down process. Sample size of each component in the bottom-up and top-down approach is different, and many of them do not following normal distribution (Figure S1-S4). We thus used a boosting resampling approach to regenerate the samples for each component (details please see the Github repository). For the Rroot-to-RS-ratio (RC), Rroot-to-Ra-ratio, and Ra-to-GPP ratio, we further separated them by ecosystem types, and weighted by their area (area of each ecosystem were from the IGBP ecosystem land classification, https://climatedataguide.ucar.edu/climate-data/ceres-igbp-land-classification).
 
+We evaluated X different resampling methods, which differed in how they treated the presence and absence of errors associated with each flux estimate. ... We used the most conservative approach, i.e. that resulted in the widest distributions of GPP and R[S].
+
+_**Statistical analysis**_  
+
+Summarize stats and software used.
 
 _**Components important analysis**_
 
@@ -1058,14 +1058,14 @@ _**Components important analysis**_
 # Each row gets the closest latitude and longitude values to AGB and SOC data
 # AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
 # Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Longitude*2, 0)/2-0.25) -> Froot
-# there are no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
+# there is no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
 # left_join(Froot, AGB) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
 # left_join(Froot, SOC) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
 
-# Each row get the closest latitude and longitude values to AGB and SOC data
+# Each row gets the closest latitude and longitude values to AGB and SOC data
 # AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
 # Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Longitude*2, 0)/2-0.25) -> Froot
-# there are no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
+# there is no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
 # left_join(Froot, AGB) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
 # left_join(Froot, SOC) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
 
