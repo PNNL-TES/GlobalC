@@ -467,9 +467,9 @@ t_test <- function(x, y, alternative = "two.sided", ...) {
 # resampling functions
 #*****************************************************************************************************************
 
-# * Method 1 - ignore SD and resample from `r nrow (GlobalRs)` or `r nrow (GPP)` with replacement
-# * Method 2 - using SD, but calculated based on mean and coefficient of variability
-# * Method 3 - using SD, but using the maximum if missing
+# * Method 1 - ignore SD and just resample with replacement
+# * Method 2 - use SD; missing SDs calculated based on mean of coefficient of variability
+# * Method 3 - like Method 2 but use the maximum CV if missing
 # * Method 4 - using SD only when available, otherwise 0 SD
 
 method1 <- function(n, x) {       # ignore all errors

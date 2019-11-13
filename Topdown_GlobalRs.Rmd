@@ -326,8 +326,8 @@ set.seed(20190827)
 bootstrap_data <- tibble(Rs_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GlobalRs$Rs, GlobalRs$SD),
                          GPP_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GPP$GPP, GPP$SD))
 
-sd(bootstrap_data$Rs_raw) # why sd so small, not as aspected
-sd(bootstrap_data$GPP_raw) # why sd so small, not as aspected
+sd(bootstrap_data$Rs_raw) # why sd so small, not as expected
+sd(bootstrap_data$GPP_raw) # why sd so small, not as expected
 ```
 
 
@@ -913,11 +913,9 @@ read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>%
 fluxnet$Source <- paste0("FLUXNET\n(N = ", nrow(fluxnet), ")")
 fluxnet$Type <- "Observations"
 
-cmip5_data_file <- "data/CMIP/1.cmip5_global_monthly_means.csv"
 cmip6_data_file <- "data/CMIP/1.cmip6_global_monthly_means.csv"
-if(file.exists(cmip5_data_file) && file.exists(cmip6_data_file)) {
-  read.csv(cmip5_data_file, stringsAsFactors = FALSE) %>% 
-    bind_rows(read.csv(cmip6_data_file, stringsAsFactors = FALSE)) %>% 
+if(file.exists(cmip6_data_file)) {
+  read.csv(read.csv(cmip6_data_file, stringsAsFactors = FALSE)) %>% 
     as_tibble() %>% 
     filter(model != "IPSL-CM6A-LR") %>% 
     select(era, model, experiment, ensemble, variable, time, value, LandArea) %>% 
