@@ -899,6 +899,7 @@ topdown <- data.frame(GPP = GPP$GPP, Rs = mean(GlobalRs$Rs))
 topdown$Source <- paste0("Global GPP\n(N = ", nrow(topdown), ")")
 topdown$Type <- "Global"
 topdown$Scale <- "Global"
+topdown_mean <- mean(topdown$Rs / topdown$GPP)
 
 srdb_v4 %>% 
   filter(!is.na(GPP), !is.na(Rs_annual), Ecosystem_state != "Managed") %>% 
@@ -968,15 +969,15 @@ bind_rows(topdown, srdb, fluxnet, cmip_global, cmip_local) %>%
 
 ratios %>% 
   group_by(Source) %>% 
-  summarise(Ratio = round(median(Ratio, na.rm = TRUE), 3)) %>%
+  summarise(Ratio_median = round(median(Ratio, na.rm = TRUE), 3),
+            Ratio_sd = round(sd(Ratio, na.rm = TRUE), 3)) %>%
   knitr::kable(type = "markdown")
 
 p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) + 
   geom_boxplot() +
-  #  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), size = 0.75) +
-  # geom_jitter(alpha = I(0.25)) + 
   geom_quasirandom(alpha = I(0.25)) +
-  ylab("Ratio of Rs to GPP") + xlab("") +
+  geom_hline(yintercept = topdown_mean, linetype = 2, color = "red", alpha = 0.33) +
+  ylab(expression(Ratio~of~R[S]~to~GPP)) + xlab("") +
   coord_cartesian(ylim = c(0, 2))
 print(p_ratios)
 
