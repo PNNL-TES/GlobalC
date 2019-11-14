@@ -118,12 +118,6 @@ var_Fire <- read_file('Fire_burn_C.csv')
 IGBP <- read_file('IGBP.txt') %>% 
   left_join(read_file("igbp_mapping.csv"), by = "IGBP2001Pr")
 
-# DGRsD <- read_file('DGRsD.csv')
-AGB <- read_file('GLC2000_Point.txt') %>% 
-  filter(RASTERVALU != -9999)
-
-SOC <- read_file('SOC_Point.txt')
-
 srdb_v4 %>% 
   select(Study_number, Biome, Ecosystem_type, Leaf_habit, 
          Latitude, Longitude, RC_annual, Ra_annual, Rh_annual) %>% 
@@ -504,19 +498,18 @@ ggsave("outputs/Figure1_gpp_simple.jpg", width = 8, height = 4, dpi = 300, units
 ```{r}
 gpp_results %>% ggplot() + aes(Rc) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
+  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) ) +
+  geom_density(aes(Rc2), stat = 'density', col = "gray", fill = rgb(0, 0, 1, alpha = 0.5) ) -> RC_fig
 
-gpp_results %>% ggplot() + aes(Rc2) + 
-  # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
 
 gpp_results %>% ggplot() + aes(Rroot) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
+  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) ) +
+  geom_density(aes(Rroot2), stat = 'density', col = "gray", fill = rgb(0, 0, 1, alpha = 0.5) ) -> Rroot_fig
 
-gpp_results %>% ggplot() + aes(Rroot2) + 
-  # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
+
+plot_grid(RC_fig, Rroot_fig)
+
 
 # GPP ~ NPP
 ggplot(gpp_results, aes(NPP, GPP2)) +
@@ -973,9 +966,9 @@ ratios %>%
 
 p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) + 
   geom_boxplot() +
-  #  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), size = 0.75) +
+  # geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), size = 0.75) +
   # geom_jitter(alpha = I(0.25)) + 
-  geom_quasirandom(alpha = I(0.25)) +
+  geom_quasirandom(alpha = I(0.15)) +
   ylab("Ratio of Rs to GPP") + xlab("") +
   coord_cartesian(ylim = c(0, 2))
 print(p_ratios)
@@ -1050,13 +1043,13 @@ Rroot-to-Ra ratio used in this study were from two sources: (1) We collected `r 
 Finally, according to the top-down GPP, NPP, Ra-to-GPP ratio, Rroot-to-Ra ratio, and Rshoot-to-Ra ratio, GPP can be separated into Rh, Rshoot, and Rroot, and thus, global RS can be calculated (Up-panel in Figure S1 and equations 4-10). We then compare the top-down RSG with RSG from publication in the past decades (bottom-up RSG) to determine the consistency between the bottom-up and top-down RSG.
 
 __Equations (4 to 10)__  
-Ra = GPP – NPP     (4)
-Ra = ecosystem-respiration – heterotrophic-respiration     (5)
-Ra = GPP × Ra-GPP ratio     (6)  
-Rh = NPP - Fire_C - Herb_C     (7)
-Rroot = Ra × Rroot-Ra ratio     (8)  
-Rshoot = Ra × Rshoot-Ra ratio     (9)
-Rs = Ra + Rh     (10)
+Ra = GPP – NPP     (4)  
+Ra = ecosystem-respiration – heterotrophic-respiration     (5)  
+Ra = GPP × Ra-GPP ratio     (6)    
+Rh = NPP - Fire_C - Herb_C     (7)  
+Rroot = Ra × Rroot-Ra ratio     (8)    
+Rshoot = Ra × Rshoot-Ra ratio     (9)  
+Rs = Ra + Rh     (10)  
 
 _**Bootstrap resampling**_  
 
@@ -1068,9 +1061,90 @@ _**Statistical analysis**_
 
 Summarize stats and software used.
 
+## Compare the results of different re-sampling methods (N = `r N_SAMPLES`)
+
+```{r}
+
+sample_size_tst <- function(test_size, N_SAMPLES) {
+  
+# resample global soil respiration (RSG)
+resample_RSG <- tibble(RSG1_no_SD = sapply(rep(test_size, N_SAMPLES), method1, GlobalRs$Rs),
+                       RSG2_miss_SD_median = sapply(rep(test_size, N_SAMPLES), method2, GlobalRs$Rs, GlobalRs$SD),
+                       RSG3_miss_SD_max = sapply(rep(test_size, N_SAMPLES), method3, GlobalRs$Rs, GlobalRs$SD),
+                       RSG4_miss_SD_zero = sapply(rep(test_size, N_SAMPLES), method4, GlobalRs$Rs, GlobalRs$SD)
+                       )
+
+# comparing RSG resample results
+resample_RSG %>%
+  gather(Rs_resample_type) %>% 
+  ggplot(aes(value, fill = Rs_resample_type)) +
+  theme_cowplot() +
+  geom_density(stat = 'density', alpha = 0.5) +
+  #  theme(legend.position = c(0.75, 0.75)) +
+  # reverse the color scale so that teal (color 1) is always observations, 
+  # while pink is always implied fluxes
+  scale_fill_discrete("", h.start = 180) + scale_color_discrete(h.start = 180) +
+  ylab("Density") +
+  xlab(expression(R[S]~(Pg~C~yr^{-1}))) -> RSG_sample_fig
+
+# resample gross primary production (GPP)
+resample_GPP <- tibble(GPP1_no_SD = sapply(rep(test_size, N_SAMPLES), method1, GPP$GPP),
+                       GPP2_miss_SD_median = sapply(rep(test_size, N_SAMPLES), method2, GPP$GPP, GPP$SD),
+                       GPP3_miss_SD_max = sapply(rep(test_size, N_SAMPLES), method3, GPP$GPP, GPP$SD),
+                       GPP4_miss_SD_zero = sapply(rep(test_size, N_SAMPLES), method4, GPP$GPP, GPP$SD)
+                       )
+
+# comparing GPP resample results
+resample_GPP %>%
+  gather(GPP_resample_type) %>% 
+  ggplot(aes(value, fill = GPP_resample_type)) +
+  theme_cowplot() +
+  geom_density(stat = 'density', alpha = 0.5) +
+  #  theme(legend.position = c(0.75, 0.75)) +
+  # reverse the color scale so that teal (color 1) is always observations, 
+  # while pink is always implied fluxes
+  scale_fill_discrete("", h.start = 180) + scale_color_discrete(h.start = 180) +
+  ylab("Density") +
+  xlab(expression(GPP~(Pg~C~yr^{-1}))) -> GPP_sample_fig
+
+plot_grid(RSG_sample_fig, GPP_sample_fig, ncol = 1)
+}
+
+```
+
+
+## test effect of sample size
+```{r, fig.height=6, fig.width=8}
+set.seed(20191114)
+
+sample_size_tst(3, 50000)
+sample_size_tst(5, 50000)
+sample_size_tst(10, 50000)
+sample_size_tst(20, 50000)
+```
+
+## test effect of resample time
+```{r, fig.height=6, fig.width=8}
+set.seed(20191114)
+
+sample_size_tst(10, 1000)
+sample_size_tst(10, 5000)
+sample_size_tst(10, 10000)
+sample_size_tst(10, 50000)
+```
+
+
 _**Components important analysis**_
 
+
 ```{r not used}
+
+# DGRsD <- read_file('DGRsD.csv')
+# AGB <- read_file('GLC2000_Point.txt') %>% 
+#   filter(RASTERVALU != -9999)
+
+# SOC <- read_file('SOC_Point.txt')
+
 # Each row gets the closest latitude and longitude values to AGB and SOC data
 # AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
 # Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Longitude*2, 0)/2-0.25) -> Froot
@@ -1092,3 +1166,10 @@ _**Components important analysis**_
 #   geom_vline(xintercept = c(quantile (rs_results$Rs, QUANTILES)),col = "red", linetype = "dotted", size = 1.5) +
 #   annotate("text", x = quantile(rs_results$Rs, 0.98), y = 5000, label = paste0("95%CI (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")"), hjust = 0)
 ```
+
+
+## Questions 
+* 1. Why set sample_size = 10 ? looks like the results change if set different number.
+* 2. In figure 3, what is the range? 95% CI, SD, quantile?
+* 3. Use RSG stand for global soil respiration?
+

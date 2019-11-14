@@ -1,6 +1,8 @@
 ---
 title: "Resampling_test_bbl"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
 ```{r preliminaries, message=FALSE, echo=FALSE}
