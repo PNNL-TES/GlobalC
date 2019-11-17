@@ -976,6 +976,19 @@ p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) +
 print(p_ratios)
 
 ggsave("outputs/Figure2.png")
+
+# Test whether global group is significantly higher than others
+ratios %>% 
+  select(Source, Ratio, Scale, Type) %>% 
+  as_tibble() %>% 
+  na.omit() %>% 
+  mutate(globalcase = Type == "Global") ->
+  ratiotest
+cat("Test whether global RS:GPP higher than all others:")
+wilcox.test(Ratio ~ globalcase, data = ratiotest, alternative = "less")
+cat("Test whether global RS:GPP higher than observations:")
+ratiotest_obs <- filter(ratiotest, Type %in% c("Global", "Observations"))
+wilcox.test(Ratio ~ globalcase, data = ratiotest_obs, alternative = "less")
 ```
 
 Note that the arithmetic mean of Rs:GPP in SRDB is `r round(Rs_to_GPP_unweighted, 3)` (median `r round(median(srdb_v4$Rs_annual / srdb_v4$GPP, na.rm = TRUE), 3)`), while the weighted (by area of ecosystem types globally) is `r round(Rs_to_GPP_weighted, 3)`. This close agreement implies that SRDB is in fact a pretty good representation of the land surface (and/or that Rs:GPP doesn't vary much).
