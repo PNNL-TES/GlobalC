@@ -118,12 +118,6 @@ var_Fire <- read_file('Fire_burn_C.csv')
 IGBP <- read_file('IGBP.txt') %>% 
   left_join(read_file("igbp_mapping.csv"), by = "IGBP2001Pr")
 
-# DGRsD <- read_file('DGRsD.csv')
-AGB <- read_file('GLC2000_Point.txt') %>% 
-  filter(RASTERVALU != -9999)
-
-SOC <- read_file('SOC_Point.txt')
-
 srdb_v4 %>% 
   select(Study_number, Biome, Ecosystem_type, Leaf_habit, 
          Latitude, Longitude, RC_annual, Ra_annual, Rh_annual) %>% 
@@ -162,7 +156,7 @@ Froot %>% mutate(IGBP2 = case_when(
 # panel (b). GPP vs year, the red dots in panel c are calculated trend from panel b (increasing rate = 0.2 if outliers removed, 0.42 if outliers kept)
 # panel (c). 16 GPP estimates reported GPP increase trend
 plot_GPP_RSG (GPP, GlobalRs)
-ggsave("outputs/FigureS1.jpg", width = 8, height = 6, dpi = 300, units = "in")
+ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 
 # A couple of simpler figures for Ben's Japan presentation
 p_gpp <- ggplot(GPP, aes(Year, GPP)) + geom_point() + 
@@ -201,7 +195,7 @@ sub_srdb %>%
 sub_srdb %>% count(IGBP2) 
 
 plot_Rroot_Rs_NPP (GlobalRs, sub_srdb, NPP) 
-ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
+ggsave("outputs/FigureS3.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
 ### Plot Rroot-Ra ratio
@@ -209,7 +203,7 @@ ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 # potential issue: only two points from grassland
 # no point from tundra 
 plot_Rroot_Ra_ratio(Froot)
-ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
+ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
 
 ### Plot Ra to GPP ratio
@@ -236,7 +230,7 @@ var_RaGpp %>%
 var_RaGpp %>% count(Ecosystem)
 
 plot_RaGPP(var_RaGpp)
-ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
+ggsave("outputs/FigureS5.jpg", width = 6, height = 4, dpi = 300, units = "in")
 
 var_RaGpp %>% count(IGBP2)
 
@@ -251,6 +245,7 @@ var_RaGpp %>%
 ```{r plot spatial distribution, echo=FALSE, warning=FALSE}
 # Figure. Sites distribution -- FlFsFr sites and RC/HC sites
 plot_sites(srdb_v4, Froot, srdb_v4)
+ggsave("outputs/FigureS6.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
 
 
@@ -317,7 +312,7 @@ var_other_froot <- Froot[Froot$IGBP2 == "Other",]$Froot # samples of Froot for n
 # Bootstrap settings
 RESAMPLE <- method3
 RESAMPLE_noSD <- method1
-N_SAMPLES <- 50000
+N_SAMPLES <- 10000
 sample_size <- 10
 QUANTILES <- c(0.025, 0.5, 0.975)  # Generate mean and 95% CI
 set.seed(20190827)
@@ -504,19 +499,18 @@ ggsave("outputs/Figure1_gpp_simple.jpg", width = 8, height = 4, dpi = 300, units
 ```{r}
 gpp_results %>% ggplot() + aes(Rc) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
+  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) ) +
+  geom_density(aes(Rc2), stat = 'density', col = "gray", fill = rgb(0, 0, 1, alpha = 0.5) ) -> RC_fig
 
-gpp_results %>% ggplot() + aes(Rc2) + 
-  # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
 
 gpp_results %>% ggplot() + aes(Rroot) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
+  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) ) +
+  geom_density(aes(Rroot2), stat = 'density', col = "gray", fill = rgb(0, 0, 1, alpha = 0.5) ) -> Rroot_fig
 
-gpp_results %>% ggplot() + aes(Rroot2) + 
-  # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
+
+plot_grid(RC_fig, Rroot_fig)
+
 
 # GPP ~ NPP
 ggplot(gpp_results, aes(NPP, GPP2)) +
@@ -1017,9 +1011,7 @@ Top-down global GPP: (`r round(mean(rs_results$Rs_topdown2), 0)`±`r round(sd(rs
 Bottom-up global R[S]: (x ± y). 
 
 
-### Text for methods / supplemental information
-
-We conducted an analysis of global terrestrial carbon cycling to compare and explore the consistency of top-down and bottom-up global gross primary production (GPP) and soil respiration (R[S]) estimates. Soil respiration, the soil-to-atmosphere CO2 flux measured worldwide, is the sum of root respiration (Rroot) and heterotrophic respiration (Rh). These source fluxes both consume carbon fixed by plants at some point in the past via photosynthesis or GPP. Plant autotrophic respiration (including leaf respiration and stem respiration, Rshoot, and root respiration, Rroot) consumes part of GPP, and the remainder is termed net primary productivity (NPP). Part of NPP is in turn consumed by heterotrophic respiration (Rh), another part is consumed by herbivores or burned in fires, with the remainder comprising long term carbon storage (the terrestrial carbon sink). Theoretically, if we know how GPP is partitioned at each step, we can estimate mean annual soil respiration at site or global scales, producing a top-down estimate of R[S]; similarly, we can estimate GPP via a bottom-up approach that starts with R[S]. To make this comparison, we evaluated two approaches to partitioning the global carbon cycle from known estimates of the various fluxes and calculated the unknowns (Figure S1–S5 and Table S1–S4). 
+### Text for supplemental information
 
 #### GPP implied by RSG
 
@@ -1031,7 +1023,7 @@ We collected `r nrow(GlobalRs)` published RSG estimates from articles, with appr
 
 Then Rshoot can be calculated based on the Rroot and Rroot-to-Rshoot ratio, finally, bottom-up GPP can be calculated (**Figure S1**). We then compare the bottom-up GPP with GPP from publication in the past decades (top-down GPP) to determine the consistency between the bottom-up and top-down GPP. The following equations were used to calculate GPP from RSG:
 
-__Equations (1 to 3)__  
+
 Rroot = Rs × Rroot-Rs ratio (i.e., RC in SRDB)     (1)  
 Rshoot = Rroot × Rroot-Rshoot ratio     (2)  
 GPP = NPP + Rroot + Rshoot     (3)                                                             
@@ -1050,14 +1042,13 @@ Rroot-to-Ra ratio used in this study were from two sources: (1) We collected `r 
 
 Finally, according to the top-down GPP, NPP, Ra-to-GPP ratio, Rroot-to-Ra ratio, and Rshoot-to-Ra ratio, GPP can be separated into Rh, Rshoot, and Rroot, and thus, global RS can be calculated (Up-panel in Figure S1 and equations 4-10). We then compare the top-down RSG with RSG from publication in the past decades (bottom-up RSG) to determine the consistency between the bottom-up and top-down RSG.
 
-__Equations (4 to 10)__  
-Ra = GPP – NPP     (4)
-Ra = ecosystem-respiration – heterotrophic-respiration     (5)
-Ra = GPP × Ra-GPP ratio     (6)  
-Rh = NPP - Fire_C - Herb_C     (7)
-Rroot = Ra × Rroot-Ra ratio     (8)  
-Rshoot = Ra × Rshoot-Ra ratio     (9)
-Rs = Ra + Rh     (10)
+Ra = GPP – NPP     (4)  
+Ra = ecosystem-respiration – heterotrophic-respiration     (5)  
+Ra = GPP × Ra-GPP ratio     (6)    
+Rh = NPP - Fire_C - Herb_C     (7)  
+Rroot = Ra × Rroot-Ra ratio     (8)    
+Rshoot = Ra × Rshoot-Ra ratio     (9)  
+Rs = Ra + Rh     (10)  
 
 _**Bootstrap resampling**_  
 
@@ -1069,9 +1060,24 @@ _**Statistical analysis**_
 
 Summarize stats and software used.
 
+
+## Compare the results of different re-sampling methods (N = `r N_SAMPLES`)
+```{r sample method comparison}
+sample_size_tst(10, 10000)
+ggsave("outputs/FigureS7.jpg", width = 8, height = 6, dpi = 300, units = "in")
+```
+
+
 _**Components important analysis**_
 
 ```{r not used}
+
+# DGRsD <- read_file('DGRsD.csv')
+# AGB <- read_file('GLC2000_Point.txt') %>% 
+#   filter(RASTERVALU != -9999)
+
+# SOC <- read_file('SOC_Point.txt')
+
 # Each row gets the closest latitude and longitude values to AGB and SOC data
 # AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
 # Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Longitude*2, 0)/2-0.25) -> Froot
@@ -1093,3 +1099,7 @@ _**Components important analysis**_
 #   geom_vline(xintercept = c(quantile (rs_results$Rs, QUANTILES)),col = "red", linetype = "dotted", size = 1.5) +
 #   annotate("text", x = quantile(rs_results$Rs, 0.98), y = 5000, label = paste0("95%CI (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")"), hjust = 0)
 ```
+
+
+
+
