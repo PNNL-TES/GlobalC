@@ -45,12 +45,11 @@
 2011,2002,2001-2003,118,26,,"Ryu et al., 2011",,,Satellite,MODIS,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2011GB004053
 2011,1993,1982-2004,117,,,"Bonan et al., 2011",Only fluxnet data based results (Table 3) used,,FLUXNET_MTE,,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2010JG001593
 2010,2002,1998-2005,123,,,"Beer et al., 2010","Table 3 of Bonan et al., 2011",,FLUXNET_MTE,,https://science.sciencemag.org/content/329/5993/834
-2011,2000,1992-2008,119,6,,"Jung et al., 2011","Table 3 of Bonan et al., 2011",,FLUXNET_MTE,,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2010JG001566
+2011,2000,1992-2008,119,6,0.083,"Jung et al., 2011","Table 3 of Bonan et al., 2011",,FLUXNET_MTE,,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2010JG001566
 2010,2002,2000-2003,110.5,21.3,,"Yuan et al., 2010",,,Satellite,MODIS,https://www.sciencedirect.com/science/article/pii/S0034425710000556
 2004,2000,2000,134,,,"Gerber et al., 2004",Year set to 2000,Table 1,Model,LPJ_DGVM,https://onlinelibrary.wiley.com/doi/full/10.1111/j.1529-8817.2003.00807.x
 2007,2000,2000,141,,,"Raddatz et al., 2007",Figure 7,Coupled,Model,AOGCM,https://link.springer.com/article/10.1007/s00382-007-0247-8
 2007,2010,2010,147.5,,,"Raddatz et al., 2007",Figure 7,Uncoupled,Model,AOGCM,https://link.springer.com/article/10.1007/s00382-007-0247-8
-2015,2004,1997-2010,119,,0.0181,"Anav et al., 2015",Table 3,,Satellite,MTE,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2015RG000483
 2015,2004,1997-2010,112,,0.005,"Anav et al., 2015",Table 3,,Satellite,MODIS,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2015RG000484
 2015,2004,1997-2010,148,,0.078,"Anav et al., 2015",Table 3,,Model,CARBONES,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2015RG000485
 2015,2004,1997-2010,147,,0.417,"Anav et al., 2015",Table 3,,Model,CLM4CN,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2015RG000486
@@ -66,7 +65,6 @@
 2011,1995,1980-2009,162.5,,,"Welp et al., 2011",The global damping time constant method,,O18,Isotope,https://www.nature.com/articles/nature10421
 2019,2009,2003-2015,147,16,,"Badgley et al., 2019",,,Satellite,NIRv (remote sensing) and FLUXNET,https://drive.google.com/drive/u/2/folders/0B-d-e6WMvTaEWkFURGllbWNqU0E
 2018,2007,,140,,,"Joiner et al., 2018",,,Satellite,SIF (remote sensing) and FLUXNET,https://drive.google.com/drive/u/2/folders/0B-d-e6WMvTaEWkFURGllbWNqU0E
-2011,2000,1992-2008,119,6,0.083,"Jung et al., 2011",MPI-BGC,Ryu(2019)RSE,Satellite,MTE and FLUXNET,https://drive.google.com/drive/u/2/folders/0B-d-e6WMvTaEWkFURGllbWNqU0E
 2019,2007,2000-2014,144,,0.069,Ryu2019,Figure 3,"(Kondo et al., 2015)",FLUXNET,SVR (Regression),https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1002/2014JG002866
 2019,1997,1982-2013,109,,0.01,Ryu2019,Figure 3,"(Jung et al., 2017)",FLUXNET,FLUXCOM ANN,https://www.sciencedirect.com/science/article/pii/S0034425719300161
 2019,1997,1982-2013,120,,-0.01,Ryu2019,Figure 3,"(Jung et al., 2017)",FLUXNET,FLUXCOM MARS,https://www.sciencedirect.com/science/article/pii/S0034425719300161

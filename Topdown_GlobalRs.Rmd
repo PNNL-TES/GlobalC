@@ -195,7 +195,7 @@ sub_srdb %>%
 sub_srdb %>% count(IGBP2) 
 
 plot_Rroot_Rs_NPP (GlobalRs, sub_srdb, NPP) 
-ggsave("outputs/FigureS3.jpg", width = 8, height = 6, dpi = 300, units = "in")
+ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
 ### Plot Rroot-Ra ratio
@@ -203,7 +203,7 @@ ggsave("outputs/FigureS3.jpg", width = 8, height = 6, dpi = 300, units = "in")
 # potential issue: only two points from grassland
 # no point from tundra 
 plot_Rroot_Ra_ratio(Froot)
-ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
+ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
 
 ### Plot Ra to GPP ratio
@@ -230,7 +230,7 @@ var_RaGpp %>%
 var_RaGpp %>% count(Ecosystem)
 
 plot_RaGPP(var_RaGpp)
-ggsave("outputs/FigureS5.jpg", width = 6, height = 4, dpi = 300, units = "in")
+ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
 
 var_RaGpp %>% count(IGBP2)
 
@@ -737,6 +737,25 @@ ggplot(rs_results, aes(x = Ra1)) +
   geom_histogram(aes(Ra3), col = "blue", fill = "skyblue", bins = 30, alpha = 0.5) +
   xlab(expression(Ra1~or~Ra3~"("~Pg~C~yr^{-1}~")")) +
   ylab(expression(count))
+
+# Ra1 = GPP * Ra-GPP ratio
+# Ra2 = GPP - NPP
+rs_results %>% select(`RA = GPP * Ra-GPP ratio` = Ra1, `RA = GPP - NPP` = Ra2) %>% 
+  gather(RA_calculation) %>% 
+  ggplot(aes(value, fill = RA_calculation)) +
+  geom_density(stat = 'density', alpha = 0.5) +
+  # theme(legend.position = c(0.15, 0.35)) +
+  coord_cartesian(xlim = c(10, 100)) +
+  scale_fill_discrete("") + ylab("Density") + 
+  xlab(expression(R[A]~(Pg~C~yr^{-1}))) +
+  theme_cowplot() 
+ 
+ggsave("outputs/FigureS6_RA_Method.jpg", width = 8, height = 4, dpi = 300, units = "in")
+
+
+
+
+
 
 # Rs ~ GPP
 ggplot(rs_results, aes(GPP_raw, Rs_topdown)) +
