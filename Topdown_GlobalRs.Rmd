@@ -893,6 +893,7 @@ topdown <- data.frame(GPP = GPP$GPP, Rs = mean(GlobalRs$Rs))
 topdown$Source <- paste0("Global GPP\n(N = ", nrow(topdown), ")")
 topdown$Type <- "Global"
 topdown$Scale <- "Global"
+topdown_mean <- mean(topdown$Rs / topdown$GPP)
 
 srdb_v4 %>% 
   filter(!is.na(GPP), !is.na(Rs_annual), Ecosystem_state != "Managed") %>% 
@@ -962,19 +963,32 @@ bind_rows(topdown, srdb, fluxnet, cmip_global, cmip_local) %>%
 
 ratios %>% 
   group_by(Source) %>% 
-  summarise(Ratio = round(median(Ratio, na.rm = TRUE), 3)) %>%
+  summarise(Ratio_median = round(median(Ratio, na.rm = TRUE), 3),
+            Ratio_sd = round(sd(Ratio, na.rm = TRUE), 3)) %>%
   knitr::kable(type = "markdown")
 
 p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) + 
   geom_boxplot() +
-  # geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), size = 0.75) +
-  # geom_jitter(alpha = I(0.25)) + 
-  geom_quasirandom(alpha = I(0.15)) +
-  ylab("Ratio of Rs to GPP") + xlab("") +
+  geom_quasirandom(alpha = I(0.25)) +
+  geom_hline(yintercept = topdown_mean, linetype = 2, color = "red", alpha = 0.33) +
+  ylab(expression(Ratio~of~R[S]~to~GPP)) + xlab("") +
   coord_cartesian(ylim = c(0, 2))
 print(p_ratios)
 
 ggsave("outputs/Figure2.png")
+
+# Test whether global group is significantly higher than others
+ratios %>% 
+  select(Source, Ratio, Scale, Type) %>% 
+  as_tibble() %>% 
+  na.omit() %>% 
+  mutate(globalcase = Type == "Global") ->
+  ratiotest
+cat("Test whether global RS:GPP higher than all others:")
+wilcox.test(Ratio ~ globalcase, data = ratiotest, alternative = "less")
+cat("Test whether global RS:GPP higher than observations:")
+ratiotest_obs <- filter(ratiotest, Type %in% c("Global", "Observations"))
+wilcox.test(Ratio ~ globalcase, data = ratiotest_obs, alternative = "less")
 ```
 
 Note that the arithmetic mean of Rs:GPP in SRDB is `r round(Rs_to_GPP_unweighted, 3)` (median `r round(median(srdb_v4$Rs_annual / srdb_v4$GPP, na.rm = TRUE), 3)`), while the weighted (by area of ecosystem types globally) is `r round(Rs_to_GPP_weighted, 3)`. This close agreement implies that SRDB is in fact a pretty good representation of the land surface (and/or that Rs:GPP doesn't vary much).
