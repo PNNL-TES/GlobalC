@@ -1,11 +1,13 @@
 ---
-title: "TopdownApproach"
+title: "GlobalC"
 author: "Jinshi"
 date: "May 19, 2019"
 output:
   html_document: default
   word_document: default
 ---
+
+## summary
 
 ## Abbreviations
 * Rroot - root respiration
@@ -17,7 +19,7 @@ output:
 * NPP - net primary production
 * NEP - net ecosystem production
 
-* Froot - Rroot / Ra (root autotrophic respiration to total autotrophic respiration fraction/ratio, calculation please see plot_froot function)
+* Froot - Rroot / Ra (root autotrophic respiration to total autotrophic respiration fraction/ratio, calculation please see plot_Rroot_Ra_ratio function)
 * Fshoot - Rshoot / Ra (1-Froot)
 * FsFr - (1-Froot)/Froot (FsFr = Rshoot/Rroot ratio)
 * RC - (root respiration / soil respiration)
@@ -74,11 +76,15 @@ library(cowplot)
 library(ggmap)
 library(maps)
 library(mapdata)
+# install.packages("ggExtra")
 library(ggExtra)
 
 library(tidyr)
 library(hexbin)
 library(dplyr)
+
+# install.packages('ggbeeswarm')
+library(ggbeeswarm)
 
 # Source all needed functions
 source('functions.R')
@@ -86,7 +92,8 @@ source('functions.R')
 # Set chunks defaults; these options will be applied to all subsequent chunks
 knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, 
                       echo = FALSE, warning = FALSE,
-                      fig.height = 4, fig.width = 8, cache = TRUE)
+                      fig.height = 4, fig.width = 8, cache = F)
+
 ```
 
 
@@ -98,23 +105,18 @@ read_file <- function(x) read.csv(file.path(DATA_DIR, x), stringsAsFactors = FAL
 
 srdb_v4 <- read_file('srdbv4.csv') # SRDB_V4 data
 FlFsFr <- read_file('FlFsFrSummary.csv') # Froot (Rroot/Rs) and Fshoot (Rshoot/Rs) from 39 papers
-GPP <- read_file('GlobalGPP_Sum.csv') # 65 GPP estimates from published paper
-GPP %>% filter(Year > 1980) -> GPP
+GPP <- read_file('GlobalGPP_Sum.csv') # GPP estimates from published paper
+GPP %>% filter(Pub_year > 1980 & Flag != "Model") -> GPP
 NPP <- read_file('ITONPP.CSV') # 251 NPP estimates from ITO (2011)
-GlobalRs <- read_file('GlobalRs.csv') # 27 estimates of global Rs
-GlobalRs %>% filter(Year > 1980) -> GlobalRs
+GlobalRs <- read_file('GlobalRs.csv') # estimates of global Rs
+GlobalRs %>% filter(Pub_year > 1980) -> GlobalRs
 # (Ra/GPP) Piao, Shilong, et al. "Forest annual carbon cost: A global‐scale analysis of autotrophic respiration." Ecology 91.3 (2010): 652-661.
 RaGPP <- read_file('RaGPP.csv') 
+var_Fire <- read_file('Fire_burn_C.csv')
 
 # IGBP data, and information to map it with other data
 IGBP <- read_file('IGBP.txt') %>% 
   left_join(read_file("igbp_mapping.csv"), by = "IGBP2001Pr")
-
-# DGRsD <- read_file('DGRsD.csv')
-AGB <- read_file('GLC2000_Point.txt') %>% 
-  filter(RASTERVALU != -9999)
-
-SOC <- read_file('SOC_Point.txt')
 
 srdb_v4 %>% 
   select(Study_number, Biome, Ecosystem_type, Leaf_habit, 
@@ -132,23 +134,29 @@ Froot %>% mutate(IGBP2 = case_when(
   IGBP %in% c('MF', 'Mixed') & Ecosystem == 'Forest' ~ "MF",
   TRUE ~ "Other"
 )) -> Froot
+
 ```
 
-## Sites spatial distribution
-```{r plot spatial distribution, echo=FALSE, warning=FALSE}
-# Figure. Sites distribution -- FlFsFr sites and RC/HC sites
-plot_sites(srdb_v4, FlFsFr)
+
+```{r missing SD issue}
+# GPP %>% select(GPP, SD) %>% filter (!is.na(SD)) %>% ggplot(aes(GPP, SD)) + geom_point()
+# GPP %>% select(GPP, SD) %>% filter (!is.na(SD)) %>% lm(GPP, SD) %>% summary()
+
+# GlobalRs %>% select(Rs, SD) %>% filter (!is.na(SD)) %>% ggplot(aes(Rs, SD)) + geom_point()
+# GlobalRs %>% select(Rs, SD) %>% filter (!is.na(SD)) %>% lm(Rs, SD) %>% summary()
 ```
+
 
 
 ## Ratio by vegetation types {.tabset .tabset-fade .tabset-pills}
 ### Plot GPP
 ```{r plot GPP and RSG, fig.height = 6, fig.width = 8, cache=FALSE}
+# Use ggbeeswarm to replot those figures, see https://github.com/eclarke/ggbeeswarm
 # panel (a). all 65 GPP estimates
 # panel (b). GPP vs year, the red dots in panel c are calculated trend from panel b (increasing rate = 0.2 if outliers removed, 0.42 if outliers kept)
 # panel (c). 16 GPP estimates reported GPP increase trend
-plot_GPP(GPP, GlobalRs)
-ggsave("outputs/FigureS1.jpg", width = 8, height = 6, dpi = 300, units = "in")
+plot_GPP_RSG (GPP, GlobalRs)
+ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 
 # A couple of simpler figures for Ben's Japan presentation
 p_gpp <- ggplot(GPP, aes(Year, GPP)) + geom_point() + 
@@ -158,7 +166,7 @@ p_gpp <- ggplot(GPP, aes(Year, GPP)) + geom_point() +
 p_gpp_marg <- ggMarginal(p_gpp, type = "densigram", margins = "y", fill = "red")
 ggsave("outputs/p_gpp.png", plot = p_gpp_marg, width = 8, height = 5)
 
-p_rs <- ggplot(GlobalRs, aes(Year_published, Rs)) + geom_point() + 
+p_rs <- ggplot(GlobalRs, aes(Pub_year, Rs)) + geom_point() + 
   geom_errorbar(aes(ymin = Rs - SD, ymax = Rs + SD), na.rm = TRUE) + 
   geom_smooth(method = "lm") + theme_cowplot() +
   xlab("Year") + ylab(expression(R[S]~(Pg~C~yr^-1)))
@@ -171,12 +179,9 @@ ggsave("outputs/p_rs.png", plot = p_rs_marg, width = 8, height = 5)
 
 ```{r plot RC, fig.height=6, fig.width=8}
 # Plot global Rs, NPP, Fire-burned Carbon, and RC by ecosystem (root respiration to soil respiration ratio)
-# more details please see function plot_Rroot_Rs()
+# more details please see function plot_Rroot_Rs_NPP ()
 # prepare data first
-sub_srdb %>% 
-  select(Leaf_habit) %>% 
-  group_by(Leaf_habit) %>% 
-  summarise(count = n())
+sub_srdb %>% count(Leaf_habit) 
 
 sub_srdb %>% 
   mutate(IGBP2 = case_when(Ecosystem_type == "Agriculture" ~ "Agriculture",
@@ -186,11 +191,10 @@ sub_srdb %>%
                            Ecosystem_type == "Forest" & Leaf_habit == 'Evergreen' ~ "EF",
                            Ecosystem_type == "Forest" & Leaf_habit == 'Mixed' ~ "Mixed",
                            TRUE ~ "Other")) -> sub_srdb
-sub_srdb %>% 
-  group_by(Ecosystem_type) %>% 
-  summarise(count = n())
 
-plot_Rroot_Rs(GlobalRs, sub_srdb, NPP) 
+sub_srdb %>% count(IGBP2) 
+
+plot_Rroot_Rs_NPP (GlobalRs, sub_srdb, NPP) 
 ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
@@ -198,7 +202,7 @@ ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```{r plot Rroot-Ra ratio, fig.height = 4, fig.width = 6}
 # potential issue: only two points from grassland
 # no point from tundra 
-plot_froot(Froot)
+plot_Rroot_Ra_ratio(Froot)
 ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
 
@@ -206,8 +210,11 @@ ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```{r plot Ra-GPP ratio}
 # only one point from tundra
 var_RaGpp <- prep_RaGpp(RaGPP, srdb_v4)
-var_RaGpp %>% count(Ecosystem)
+
+var_RaGpp$Ecosystem <- ifelse(is.na(var_RaGpp$Ecosystem), var_RaGpp$Ecosystem_type, var_RaGpp$Ecosystem)
 var_RaGpp %>% count(Leaf_habit)
+var_RaGpp %>% count(Ecosystem)
+var_RaGpp %>% count(Ecosystem_type)
 
 var_RaGpp %>% 
   mutate(IGBP2 = case_when(
@@ -220,11 +227,12 @@ var_RaGpp %>%
     TRUE ~ "NOTA")
   ) -> var_RaGpp
 
-var_RaGpp %>% count(IGBP2)
 var_RaGpp %>% count(Ecosystem)
 
 plot_RaGPP(var_RaGpp)
 ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
+
+var_RaGpp %>% count(IGBP2)
 
 var_RaGpp %>% 
   group_by(Ecosystem) %>% 
@@ -233,15 +241,30 @@ var_RaGpp %>%
   arrange(desc(Ecosystem))
 ```
 
+## Sites spatial distribution
+```{r plot spatial distribution, echo=FALSE, warning=FALSE}
+# Figure. Sites distribution -- FlFsFr sites and RC/HC sites
+plot_sites(srdb_v4, Froot, srdb_v4)
+ggsave("outputs/FigureS6.jpg", width = 6, height = 4, dpi = 300, units = "in")
+```
+
+
 
 ```{r calculate vegetation areas}
 # IGBP area by type
 IGBP %>% count(IGBP_group)
+# Wrong old calculation
+# IGBP %>% filter(IGBP_group != "WAT") %>% 
+#   group_by(IGBP_group) %>% 
+#   summarise(count = n()) %>% 
+#   mutate(percent = count / sum(count)) -> IGBP_summary
 
-IGBP %>% filter(IGBP_group != "WAT") %>% 
+# Updated calculation
+IGBP %>% 
+  filter(IGBP_group != "WAT") %>% 
   group_by(IGBP_group) %>% 
-  summarise(count = n()) %>% 
-  mutate(percent = count / sum(count)) -> IGBP_summary
+  summarise(rel_area = sum(cos(abs(Latitude) / 180 * pi))) %>% 
+  mutate(percent = rel_area / sum(rel_area)) -> IGBP_summary
 
 ag_area <- IGBP_summary[IGBP_summary$IGBP_group == "CRO",]$percent
 df_area <- IGBP_summary[IGBP_summary$IGBP_group == "DF",]$percent
@@ -275,25 +298,31 @@ var_agr_froot <- Froot[Froot$Ecosystem == "Agriculture",]$Froot # samples of Fro
 var_for_froot <- Froot[Froot$Ecosystem == "Forest",]$Froot #  forest
 var_gra_froot <- Froot[Froot$Ecosystem == "Grassland",]$Froot #  grassland
 var_sav_froot <- Froot[Froot$Ecosystem == "Savanna",]$Froot #  savanna
-var_wet_froot <- Froot[Froot$Ecosystem == "Wetland",]$Froot #  agriculture
+var_wet_froot <- Froot[Froot$Ecosystem == "Wetland",]$Froot 
 var_rest_froot <- Froot$Froot # for those ecosystems with no data, use all data from Froot
 # only separate into ef and the rest
 var_ef_froot <- Froot[Froot$IGBP2 == "EF",]$Froot # Froot data for ef
 var_df_froot <- Froot[Froot$IGBP2 == "DF",]$Froot # Froot data for df
 var_mf_froot <- Froot[Froot$IGBP2 == "MF",]$Froot # Froot data for mf
-var_other_froot <- Froot[Froot$IGBP2 == "Other",]$Froot # samples of Froot for non-ef
+var_other_froot <- Froot[Froot$IGBP2 == "Other",]$Froot # samples of Froot for non-forest
 ```
 
 
 ```{r bootstrap-creation}
 # Bootstrap settings
-N_SAMPLES <- 50000
+RESAMPLE <- method3
+RESAMPLE_noSD <- method1
+N_SAMPLES <- 10000
+sample_size <- 10
 QUANTILES <- c(0.025, 0.5, 0.975)  # Generate mean and 95% CI
 set.seed(20190827)
 
 # Rs and GPP draws used by bootstrapping GPP and Rs blocks below
-bootstrap_data <- tibble(Rs_raw = replace_SD_and_generate(GlobalRs$Rs, GlobalRs$SD),
-                         GPP_raw = replace_SD_and_generate(GPP$GPP, GPP$SD))
+bootstrap_data <- tibble(Rs_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GlobalRs$Rs, GlobalRs$SD),
+                         GPP_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GPP$GPP, GPP$SD))
+
+sd(bootstrap_data$Rs_raw) # why sd so small, not as expected
+sd(bootstrap_data$GPP_raw) # why sd so small, not as expected
 ```
 
 
@@ -301,7 +330,7 @@ bootstrap_data <- tibble(Rs_raw = replace_SD_and_generate(GlobalRs$Rs, GlobalRs$
 ```{r gpp-bootstrap}
 # Bottom-up approach to estimate GPP
 # Rroot = Rs * RC (Rroot to Rs ratio, from srdb)
-# Froot = Rroot / Ra (root autotrophic respiration to total autotrophic respiration fraction/ratio, calculation please see plot_froot function)
+# Froot = Rroot / Ra (root autotrophic respiration to total autotrophic respiration fraction/ratio, calculation please see plot_Rroot_Ra_ratio function)
 # Fshoot = 1-Froot
 # FsFr = (1-Froot)/Froot (FsFr = Rshoot/Rroot ratio)
 # Ra = Rroot + Rshoot
@@ -310,47 +339,48 @@ bootstrap_data <- tibble(Rs_raw = replace_SD_and_generate(GlobalRs$Rs, GlobalRs$
 bootstrap_data %>% 
   mutate(
     # Step 1. Prepare NPP, boosting from ITO paper
-    NPP = sample(NPP$NPP, N_SAMPLES, replace = TRUE),
+    NPP = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, NPP$NPP),
     
     # Step 2. sampling Rroot-to Rs ratio (RC)
-    Rc_agr = sample(var_agr_rc$RC_annual, N_SAMPLES, replace = TRUE),
+    Rc_agr = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_agr_rc$RC_annual),
+    
     # forest further separate into 3 groups
-    Rc_df = sample(var_df_rc$RC_annual, N_SAMPLES, replace = TRUE),
-    Rc_ef = sample(var_ef_rc$RC_annual, N_SAMPLES, replace = TRUE),
-    Rc_mf = sample(var_mf_rc$RC_annual, N_SAMPLES, replace = TRUE), 
+    Rc_df = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_df_rc$RC_annual),
+    Rc_ef = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_ef_rc$RC_annual),
+    Rc_mf = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_mf_rc$RC_annual), 
     # other ecosystems
-    Rc_gra = sample(var_gra_rc$RC_annual, N_SAMPLES, replace = TRUE),
-    Rc_shr = sample(var_shr_rc$RC_annual, N_SAMPLES, replace = TRUE),
+    Rc_gra = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_gra_rc$RC_annual),
+    Rc_shr = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_shr_rc$RC_annual),
     # for other ecosystems we use samples from all RC records
-    Rc_rest = sample(var_rest_rc$RC_annual, N_SAMPLES, replace = TRUE), 
+    Rc_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_rest_rc$RC_annual), 
     
     # Step 3. Sampling Rroot-to-Ra ratio (Froot)
-    Froot_df = sample(var_df_froot, N_SAMPLES, replace = TRUE),
-    Froot_ef = sample(var_ef_froot, N_SAMPLES, replace = TRUE),
-    Froot_mf = sample(var_mf_froot, N_SAMPLES, replace = TRUE),
+    Froot_df = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_df_froot),
+    Froot_ef = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_ef_froot),
+    Froot_mf = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_mf_froot),
     # for other ecosystems we use samples from all RC records
-    Froot_rest = sample(var_rest_froot, N_SAMPLES, replace = TRUE),
+    Froot_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_rest_froot),
     
     # Step 4. calculation ********************
     # Rc = replicate( n_rep, var_RC$RC_annual, N_SAMPLES, replace = TRUE) %>% mean() ), # scenario 0: Rc not separate into different ecosystems, not used
-    Rc = sample(var_RC$RC_annual, N_SAMPLES, replace = TRUE),
+    Rc = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RC$RC_annual),
     
-    # Scenario 2: Rc separate into 4 groups: agriculture, forest, grassland, and rest (all other ecosystems with obs<40, take samples from all RC records)
-    # only separate into four groups, agriculture, forest, grassland and the rest
-    # 1-(0.191 + 0.214 + 0.153 + 0.268)
+    # Scenario 2: Rc separate into groups: agriculture, deciduous forest, grassland, etc 
+    # all other ecosystems with obs<40, take samples from all RC records
+    # area of rest ecosystem = 1-sum(agriculture, forest, grassland, etc)
     Rc2 = (Rc_agr * ag_area + Rc_df * df_area + Rc_ef * ef_area + Rc_mf * mf_area + 
              Rc_gra * gra_area + Rc_shr * shr_area + Rc_rest * 
              (1 - ag_area - df_area - ef_area-mf_area - gra_area - shr_area)), 
     
     # Scenario 1: Froot not separated into different ecosystems
-    Froot = sample(Froot$Froot, N_SAMPLES, replace = TRUE) ,
+    Froot = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, Froot$Froot),
     
     FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of scenario 1
     # Bottom up estimate of GPP, scenario 1
     Rroot = Rs_raw * Rc, # root respiration
     Rshoot = Rroot * FsFr, # shoot respiration
     
-    # Scenario 2: separate into 2 ecosystems and weighted by area
+    # Scenario 2: separate into different ecosystems and weighted by area
     # Froot %>% count(Ecosystem)
     Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area + 
       Froot_rest * (1 - df_area - ef_area - mf_area),
@@ -382,8 +412,8 @@ gpp_figure_data %>%
   ggplot(aes(value, fill = GPP_type)) +
   theme_cowplot() +
   geom_density(stat = 'density', alpha = 0.5) +
-  #  theme(legend.position = c(0.75, 0.75)) +
-  coord_cartesian(xlim = c(50, 350)) +
+  theme(legend.position = c(0.75, 0.35)) +
+  coord_cartesian(xlim = c(70, 250)) +
   scale_fill_discrete("") + ylab("Density") +
   xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
   gpp_base_figure
@@ -394,7 +424,7 @@ p_gpp_marg <- ggMarginal(p_gpp, type = "densigram", margins = "y", fill = "red")
 
 p1_gpp <- ggdraw() +
   draw_plot(gpp_base_figure) +
-  draw_plot(p_gpp_marg, x = 0.35, y = 0.4, width = 0.4, height = 0.5)
+  draw_plot(p_gpp_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5)
 print(p1_gpp)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
@@ -415,7 +445,7 @@ gpp_results %>%
 
 p1_gpp2 <- ggdraw() +
   draw_plot(gpp_base_figure %+% gpp_figure2_data) +
-  draw_plot(p_gpp_marg, x = 0.35, y = 0.4, width = 0.4, height = 0.5)
+  draw_plot(p_gpp_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5)
 print(p1_gpp2)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
@@ -456,7 +486,7 @@ ratio_results %>%
 
 p1_gpp3 <- ggdraw() +
   draw_plot(gpp_base_figure %+% gpp_ratio_figure_data) +
-  draw_plot(p_gpp_marg, x = 0.35, y = 0.4, width = 0.4, height = 0.5)
+  draw_plot(p_gpp_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5) 
 print(p1_gpp3)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
@@ -469,19 +499,18 @@ ggsave("outputs/Figure1_gpp_simple.jpg", width = 8, height = 4, dpi = 300, units
 ```{r}
 gpp_results %>% ggplot() + aes(Rc) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
+  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) ) +
+  geom_density(aes(Rc2), stat = 'density', col = "gray", fill = rgb(0, 0, 1, alpha = 0.5) ) -> RC_fig
 
-gpp_results %>% ggplot() + aes(Rc2) + 
-  # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
 
 gpp_results %>% ggplot() + aes(Rroot) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
+  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) ) +
+  geom_density(aes(Rroot2), stat = 'density', col = "gray", fill = rgb(0, 0, 1, alpha = 0.5) ) -> Rroot_fig
 
-gpp_results %>% ggplot() + aes(Rroot2) + 
-  # geom_histogram(col = "black", fill = "gray", bins = 30) + 
-  geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) )
+
+plot_grid(RC_fig, Rroot_fig)
+
 
 # GPP ~ NPP
 ggplot(gpp_results, aes(NPP, GPP2)) +
@@ -542,14 +571,14 @@ Scenario                 | Agreement (quantiles) | p-value (t.test)
 
 ```{r prepare variables for RSG boostrapping}
 # Froot used the same data as bottom-up approach
-var_Fire <- c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)
+# var_Fire <- c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)
 # prepare RaGPP ratio data
 var_RaGpp %>% count(IGBP2)
 var_RaGpp_df <- var_RaGpp %>% filter(IGBP2 == "Deciduous") %>% pull(RaGPP_ratio)
 var_RaGpp_ef <- var_RaGpp %>% filter(IGBP2 == "Evergreen") %>% pull(RaGPP_ratio)
 # mixed forest are from all forests due to lack of data
-var_RaGpp_mf <- var_RaGpp %>% filter(Ecosystem == "Forest") %>% pull(RaGPP_ratio)
-var_RaGpp_gra <- var_RaGpp %>% filter(Ecosystem == "Grassland") %>% pull(RaGPP_ratio)
+var_RaGpp_mf <- var_RaGpp %>% filter(IGBP2 == "Forest") %>% pull(RaGPP_ratio)
+var_RaGpp_gra <- var_RaGpp %>% filter(IGBP2 == "Grassland") %>% pull(RaGPP_ratio)
 ```
 
 ## Bootstrapping RSG
@@ -562,27 +591,33 @@ var_RaGpp_gra <- var_RaGpp %>% filter(Ecosystem == "Grassland") %>% pull(RaGPP_r
 bootstrap_data %>% 
   mutate(
     # Step 1. prepare other components, NPP and NPP consumed by fire etc.
-    NPP = sample(NPP$NPP, N_SAMPLES, replace = TRUE),
+    NPP = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, NPP$NPP),
+    # Carbon comsumed by herbivor animnals (mean:2.2, SD: 0.2), from
+    # Doughty, C. E. & Field, C. B. Agricultural net primary production in relation to that liberated by the extinction of Pleistocene mega-herbivores: 
+    # an estimate of agricultural carrying capacity? Environ. Res. Lett. 5, 044001 (2010).
     HerbComsum = rnorm(n = N_SAMPLES, mean = 2.2, sd = 0.2),
-    Fire = sample(var_Fire, N_SAMPLES, replace = TRUE),
+    # Fire = sample(var_Fire$Amount_Pg, N_SAMPLES, replace = TRUE),
+    Fire = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, var_Fire$Amount_Pg, var_Fire$SD),
+    # Carbon going to terrestrial as carbon sink (mean = 2.1, SD = 0.28), from
+    # Le Quéré, C. et al. Global carbon budget 2015. Earth Syst. Sci. Data 7, 349–396 (2015).
     sink = rnorm(n = N_SAMPLES, mean = 2.10, sd = 0.28),
     
     # Step 2. Ra-to-GPP ratio boosting
     # RaGpp = sample(var_RaGpp$RaGPP_ratio, N_SAMPLES, replace = TRUE),
-    RaGpp_df = sample(var_RaGpp_df, N_SAMPLES, replace = TRUE),
-    RaGpp_ef = sample(var_RaGpp_ef, N_SAMPLES, replace = TRUE),
-    RaGpp_mf = sample(var_RaGpp_mf, N_SAMPLES, replace = TRUE),
-    RaGpp_gra = sample(var_RaGpp_gra, N_SAMPLES, replace = TRUE),
+    RaGpp_df = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RaGpp_df),
+    RaGpp_ef = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RaGpp_ef),
+    RaGpp_mf = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RaGpp_mf),
+    RaGpp_gra = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RaGpp_gra),
     # for other ecosystems, we use samples from all Froot
-    RaGpp_rest = sample(var_RaGpp$RaGPP_ratio, N_SAMPLES, replace = TRUE),
+    RaGpp_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RaGpp$RaGPP_ratio),
     
     # Step 3. Sampling Rroot-to-Ra ratio (Froot)
-    Froot_df = sample(var_df_froot, N_SAMPLES, replace = TRUE),
-    Froot_ef = sample(var_ef_froot, N_SAMPLES, replace = TRUE),
-    Froot_mf = sample(var_mf_froot, N_SAMPLES, replace = TRUE),
-    Froot_gra = sample(var_gra_froot, N_SAMPLES, replace = TRUE),
+    Froot_df = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_df_froot),
+    Froot_ef = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_ef_froot),
+    Froot_mf = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_mf_froot),
+    Froot_gra = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_gra_froot),
     # for other ecosystems, we use samples from all Froot
-    Froot_rest = sample(var_rest_froot, N_SAMPLES, replace = TRUE), 
+    Froot_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_rest_froot),
     
     # Calculation **********
     # Scenario 1
@@ -591,7 +626,7 @@ bootstrap_data %>%
     RaGpp2 = RaGpp_df * df_area + RaGpp_ef * ef_area + RaGpp_mf * mf_area + 
       RaGpp_gra * gra_area + RaGpp_rest * (1 - df_area - ef_area - mf_area - gra_area),
     
-    # get Froot (Froot2 is better, from bottom-up section, see above results)
+    # get Froot (weight by area of ecosystem type)
     Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area +
       Froot_rest * (1 - df_area-ef_area-mf_area),
     
@@ -630,8 +665,8 @@ rs_figure_data %>%
   ggplot(aes(value, fill = Rs_type)) +
   theme_cowplot() +
   geom_density(stat = 'density', alpha = 0.5) +
-  #  theme(legend.position = c(0.75, 0.75)) +
-  coord_cartesian(xlim = c(0, 120)) +
+  theme(legend.position = c(0.75, 0.35)) +
+  coord_cartesian(xlim = c(50, 120)) +
   # reverse the color scale so that teal (color 1) is always observations, 
   # while pink is always implied fluxes
   scale_fill_discrete("", h.start = 180) + scale_color_discrete(h.start = 180) +
@@ -645,7 +680,7 @@ p_rs_marg <- ggMarginal(p_rs, type = "densigram", margins = "y", fill = "red")
 
 p2_rs <- ggdraw() +
   draw_plot(rs_base_figure) +
-  draw_plot(p_rs_marg, x = 0.1, y = 0.4, width = 0.4, height = 0.5)
+  draw_plot(p_rs_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5)
 print(p2_rs)
 
 cat("\n\nRs implied by GPP quantiles: ", rsg_qt, "\n")
@@ -666,12 +701,32 @@ rs_results %>%
 
 p2_rs2 <- ggdraw() +
   draw_plot(rs_base_figure %+% rs_figure_data) +
-  draw_plot(p_rs_marg, x = 0.1, y = 0.4, width = 0.4, height = 0.5)
+  draw_plot(p_rs_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5)
 print(p2_rs2)
 
 cat("\n\nRs implied by GPP quantiles: ", rsg_qt, "\n")
 cat("\n\nBottom-up Rs quantiles: ", rsg_qt_raw, "\n")
 ggsave("outputs/Figure1_rs_weighted.jpg", width = 8, height = 4)
+```
+
+
+### Scenario 3 - SRDB Rs:GPP ratios
+```{r SRDB Rs:GPP ratios for RSG, results='asis'}
+# Calculation are the same as above
+
+ratio_results %>%
+  select(`Rs implied by SRDB Rs:GPP` = Rs, `Bottom-up Rs` = Rs_raw) %>% 
+  gather(Rs_type) ->
+  rs_ratio_figure_data
+
+p1_rsg3 <- ggdraw() +
+  draw_plot(rs_base_figure %+% rs_ratio_figure_data) +
+  draw_plot(p_gpp_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5) 
+print(p1_rsg3)
+
+cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
+cat("\n\nTop-down GPP quantiles: ", gpp_qt_raw, "\n")
+ggsave("outputs/Figure1_gpp_simple.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
 ### RSG and components relationship
@@ -682,6 +737,25 @@ ggplot(rs_results, aes(x = Ra1)) +
   geom_histogram(aes(Ra3), col = "blue", fill = "skyblue", bins = 30, alpha = 0.5) +
   xlab(expression(Ra1~or~Ra3~"("~Pg~C~yr^{-1}~")")) +
   ylab(expression(count))
+
+# Ra1 = GPP * Ra-GPP ratio
+# Ra2 = GPP - NPP
+rs_results %>% select(`RA = GPP * Ra-GPP ratio` = Ra1, `RA = GPP - NPP` = Ra2) %>% 
+  gather(RA_calculation) %>% 
+  ggplot(aes(value, fill = RA_calculation)) +
+  geom_density(stat = 'density', alpha = 0.5) +
+  # theme(legend.position = c(0.15, 0.35)) +
+  coord_cartesian(xlim = c(10, 100)) +
+  scale_fill_discrete("") + ylab("Density") + 
+  xlab(expression(R[A]~(Pg~C~yr^{-1}))) +
+  theme_cowplot() 
+ 
+ggsave("outputs/FigureS6_RA_Method.jpg", width = 8, height = 4, dpi = 300, units = "in")
+
+
+
+
+
 
 # Rs ~ GPP
 ggplot(rs_results, aes(GPP_raw, Rs_topdown)) +
@@ -825,6 +899,134 @@ knitr::kable(results_w50, digits = 1, format = "markdown")
 ```
 
 
+## Site-specific ratios of GPP to Rs
+
+Presumably, as a matter of mathematics, the ratio of global Rs to global GPP should be the linear combination (sum) of all terrestrial points Neither SRDB nor FLUXNET is an unbiased sample of the land surface, but it may be instructive to look at the Rs:GPP for three data sources:
+
+* Global GPP estimates, comparing them against the mean Rs estimate (~85 Pg C);
+* the SRDB itself, for sites at which both GPP and Rs were measured;
+* and FLUXNET2015 Tier 1, using Rs data measured very close to the towers.
+
+```{r, site-ratios, results='show'}
+topdown <- data.frame(GPP = GPP$GPP, Rs = mean(GlobalRs$Rs))
+topdown$Source <- paste0("Global GPP\n(N = ", nrow(topdown), ")")
+topdown$Type <- "Global"
+topdown$Scale <- "Global"
+topdown_mean <- mean(topdown$Rs / topdown$GPP)
+
+srdb_v4 %>% 
+  filter(!is.na(GPP), !is.na(Rs_annual), Ecosystem_state != "Managed") %>% 
+  select(Rs = Rs_annual, GPP, Biome, Ecosystem_type) ->
+  srdb
+srdb$Source <- paste0("SRDB\n(N = ", nrow(srdb), ")")
+srdb$Type <- "Observations"
+srdb$Scale <- "Local"
+
+read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>% 
+  select(Biome, Ecosystem_type, FLUXNET_SITE_ID, GPP = gpp_fluxnet, Rs = Rs_annual) %>% 
+  filter(!is.na(GPP), !is.na(Rs)) ->
+  fluxnet
+fluxnet$Source <- paste0("FLUXNET\n(N = ", nrow(fluxnet), ")")
+fluxnet$Type <- "Observations"
+fluxnet$Scale <- "Local"
+
+cmip6_global_data_file <- "data/CMIP/1.cmip6_global_monthly_means.csv"
+if(file.exists(cmip6_global_data_file)) {
+  read.csv(cmip6_global_data_file, stringsAsFactors = FALSE) %>% 
+    as_tibble() %>% 
+    filter(model != "IPSL-CM6A-LR") %>% 
+    select(era, model, experiment, ensemble, variable, time, value, LandArea) %>% 
+    mutate(year = floor(time / 10000)) %>% 
+    group_by(era, variable, model, experiment, ensemble, year) %>% 
+    # units are kgC/m2/s, one month per row; need to go to PgC/yr
+    summarise(value = sum(value * LandArea * 1000 * 60 * 60 * 24 * 365 / 1e15 / 12)) -> 
+    model_global_data
+  
+  model_global_data %>% 
+    filter(variable != "gpp") %>% 
+    group_by(era, model, experiment, ensemble, year) %>% 
+    summarise(variable = "Rs", 
+              value = sum(value)) %>% 
+    bind_rows(filter(model_global_data, variable == "gpp")) %>% 
+    spread(variable, value) %>% 
+    filter(year >= 2005) %>% 
+    group_by(era, model, experiment, ensemble) %>% 
+    summarise(gpp = mean(gpp), Rs = mean(Rs)) ->
+    model_global_ratios
+  
+  model_global_ratios %>% 
+    mutate(GPP = gpp, 
+           Scale = "Global",
+           Source = paste0("Global CMIP6\n(N = ", nrow(model_global_ratios), ")"),
+           Type = "Models") ->
+    cmip_global
+} else {
+  cmip_global <- data.frame(Source = "Global CMIP6\n(N = 0)", Scale = "Global",
+                            Type = "Models", stringsAsFactors = FALSE)
+}
+
+cmip6_local_data_file <- "cmip6/output/cmip6-ratio-RS2GPP-fromgridcell.csv"
+if(file.exists(cmip6_local_data_file)) {
+  read.csv(cmip6_local_data_file) %>% 
+    as_tibble() %>% 
+    filter(year >= 2005) ->
+    cmip6_local
+  
+  cmip6_local %>% 
+    mutate(Source = paste0("Local CMIP6\n(N = ", nrow(cmip6_local), ")"),
+           Scale = "Local",
+           Type = "Models") %>% 
+    select(Source, Scale, Type, Ratio = value) ->
+    cmip6_local
+
+  # ... process it
+} else {
+  cmip6_local <- data.frame(Source = "Local CMIP6\n(N = 0)", 
+                           Scale = "Local",
+                           Type = "Models", 
+                           Ratio = NA_real_,
+                           stringsAsFactors = FALSE)
+}
+
+bind_rows(topdown, srdb, fluxnet, cmip_global) %>% 
+  mutate(Ratio = Rs / GPP) %>% 
+  bind_rows(cmip6_local) %>% 
+  mutate(Source = factor(Source, unique(Source)[c(2, 3, 5, 4, 1)])) ->
+  ratios
+
+ratios %>% 
+  group_by(Source) %>% 
+  summarise(Ratio_median = round(median(Ratio, na.rm = TRUE), 3),
+            Ratio_sd = round(sd(Ratio, na.rm = TRUE), 3)) %>%
+  knitr::kable(type = "markdown")
+
+p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) + 
+  geom_quasirandom(alpha = I(0.25)) +
+  geom_boxplot(color = "black", alpha = 0.25) +
+  geom_hline(yintercept = topdown_mean, linetype = 2, color = "red", alpha = 0.33) +
+  ylab(expression(Ratio~of~R[S]~to~GPP)) + xlab("") +
+  coord_cartesian(ylim = c(0, 2))
+print(p_ratios)
+
+ggsave("outputs/Figure2.png")
+
+# Test whether global group is significantly higher than others
+ratios %>% 
+  select(Source, Ratio, Scale, Type) %>% 
+  as_tibble() %>% 
+  na.omit() %>% 
+  mutate(globalcase = Type == "Global") ->
+  ratiotest
+cat("Test whether global RS:GPP higher than all others:")
+wilcox.test(Ratio ~ globalcase, data = ratiotest, alternative = "less")
+cat("Test whether global RS:GPP higher than observations:")
+ratiotest_obs <- filter(ratiotest, Type %in% c("Global", "Observations"))
+wilcox.test(Ratio ~ globalcase, data = ratiotest_obs, alternative = "less")
+```
+
+Note that the arithmetic mean of Rs:GPP in SRDB is `r round(Rs_to_GPP_unweighted, 3)` (median `r round(median(srdb_v4$Rs_annual / srdb_v4$GPP, na.rm = TRUE), 3)`), while the weighted (by area of ecosystem types globally) is `r round(Rs_to_GPP_weighted, 3)`. This close agreement implies that SRDB is in fact a pretty good representation of the land surface (and/or that Rs:GPP doesn't vary much).
+
+
 ## Other diagnoses
 ```{r diagnoses}
 # check
@@ -843,103 +1045,96 @@ Froot %>% count(Ecosystem)
 mean(Froot$Froot)
 ```
 
-## Site-specific ratios of GPP to Rs
 
-Presumably, as a matter of mathematics, the ratio of global Rs to global GPP should be the linear combination (sum) of all terrestrial points Neither SRDB nor FLUXNET is an unbiased sample of the land surface, but it may be instructive to look at the Rs:GPP for three data sources:
-
-* Global GPP estimates, comparing them against the mean Rs estimate (~85 Pg C);
-* the SRDB itself, for sites at which both GPP and Rs were measured;
-* and FLUXNET2015 Tier 1, using Rs data measured very close to the towers.
-
-```{r, site-ratios, results='show'}
-topdown <- data.frame(GPP = GPP$GPP, Rs = mean(GlobalRs$Rs))
-topdown$Source <- paste0("Global GPP\n(N = ", nrow(topdown), ")")
-topdown$Type <- "Global"
-
-srdb_v4 %>% 
-  filter(!is.na(GPP), !is.na(Rs_annual), Ecosystem_state != "Managed") %>% 
-  select(Rs = Rs_annual, GPP, Biome, Ecosystem_type) ->
-  srdb
-srdb$Source <- paste0("SRDB\n(N = ", nrow(srdb), ")")
-srdb$Type <- "Observations"
-
-read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>% 
-  select(Biome, Ecosystem_type, FLUXNET_SITE_ID, GPP = gpp_fluxnet, Rs = Rs_annual) %>% 
-  filter(!is.na(GPP), !is.na(Rs)) ->
-  fluxnet
-fluxnet$Source <- paste0("FLUXNET\n(N = ", nrow(fluxnet), ")")
-fluxnet$Type <- "Observations"
-
-cmip5_data_file <- "data/CMIP/1.cmip5_global_monthly_means.csv"
-cmip6_data_file <- "data/CMIP/1.cmip6_global_monthly_means.csv"
-if(file.exists(cmip5_data_file) && file.exists(cmip6_data_file)) {
-  read.csv(cmip5_data_file, stringsAsFactors = FALSE) %>% 
-    bind_rows(read.csv(cmip6_data_file, stringsAsFactors = FALSE)) %>% 
-    as_tibble() %>% 
-    filter(model != "IPSL-CM6A-LR") %>% 
-    select(era, model, experiment, ensemble, variable, time, value, LandArea) %>% 
-    mutate(year = floor(time / 10000)) %>% 
-    group_by(era, variable, model, experiment, ensemble, year) %>% 
-    # units are kgC/m2/s, one month per row; need to go to PgC/yr
-    summarise(value = sum(value * LandArea * 1000 * 60 * 60 * 24 * 365 / 1e15 / 12)) -> 
-    model_data
-  
-  model_data %>% 
-    filter(variable != "gpp") %>% 
-    group_by(era, model, experiment, ensemble, year) %>% 
-    summarise(variable = "Rs", 
-              value = sum(value)) %>% 
-    bind_rows(filter(model_data, variable == "gpp")) %>% 
-    spread(variable, value) %>% 
-    filter(year >= 2005) %>% 
-    group_by(era, model, experiment, ensemble) %>% 
-    summarise(gpp = mean(gpp), Rs = mean(Rs)) ->
-    model_ratios
-  
-  model_ratios %>% 
-    mutate(GPP = gpp, Source = paste0("CMIP5/6\n(N = ", nrow(model_ratios), ")"), Type = "Models") ->
-    cmip
-} else {
-  cmip <- data.frame(Source = "CMIP6\n(N = 0)", Type = "Models", stringsAsFactors = FALSE)
-}
-
-bind_rows(topdown, srdb, fluxnet, cmip) %>% 
-  mutate(Ratio = Rs / GPP,
-         Source = factor(Source, unique(Source)[c(2, 3, 1, 4)])) ->
-  ratios
-
-ratios %>% 
-  group_by(Source) %>% 
-  summarise(Ratio = round(median(Ratio, na.rm = TRUE), 3)) %>%
-  knitr::kable(type = "markdown")
-
-p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) + 
-  geom_boxplot() +
-  #  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), size = 0.75) +
-  geom_jitter(alpha = I(0.25)) + 
-  ylab("Ratio of Rs to GPP") + xlab("") +
-  coord_cartesian(ylim = c(0, 2)) #+
-#  geom_label()
-print(p_ratios)
-
-ggsave("outputs/Figure2.png")
+### Abstract
+```{r Calculation for SI}
+slope_Rs <- coefficients(summary( lm(Rs ~ Pub_year, data = GlobalRs) ))[2,1] %>% round(2)
+slope_GPP <- coefficients(summary( lm(GPP ~ Pub_year, data = GPP) ))[2,1] %>% round(2)
 ```
 
-Note that the arithmetic mean of Rs:GPP in SRDB is `r round(Rs_to_GPP_unweighted, 3)` (median `r round(median(srdb_v4$Rs_annual / srdb_v4$GPP, na.rm = TRUE), 3)`), while the weighted (by area of ecosystem types globally) is `r round(Rs_to_GPP_weighted, 3)`. This close agreement implies that SRDB is in fact a pretty good representation of the land surface (and/or that Rs:GPP doesn't vary much).
+Top-down global GPP: (`r round(mean(rs_results$Rs_topdown2), 0)`±`r round(sd(rs_results$Rs_topdown2), 0)` Pg C yr^{-1}) 
 
+Bottom-up global R[S]: (x ± y). 
+
+
+### Text for supplemental information
+
+#### GPP implied by RSG
+
+In the past decades, many estimates of global RS (bottom-up global RS estimates, n=`r nrow(GlobalRs)`) have been made and are summarized in **Figure S1**. Most of these estimates were based on the field measured RS data. RS consists of heterotrophic respiration (Rh) and root respiration (Rroot), and some studies have separated RS into these source fluxes; the resulting Rroot-to-RS ratios (RC) have been compiled into the SRDB-V4 (**Figure S2**). We used all RC values from SRDB-V4 ≥0 and ≤1, in total `r nrow(var_RC)` separate RC values RC values. These covered 9 vegetation types, but the majority were from forest, grassland, agriculture, and shrubland; all other vegetation types had only `r var_RC %>% filter(IGBP2 == "Other") %>% nrow()` samples (**Figure S2c**). 
+
+In addition, root respiration is only part of autotrophic respiration, and the rest  is shoot respiration. Many studies have separated Ra into Rroot and Rshoot, and thus Rroot-to-Ra ratio, Rroot-to-Rshoot ratio can be calculated. According to the bottom-up Global RS estimates, Root-to-RS ratio (RC), and Rroot-to-Rshoot ratio (data come from SRDB), Rroot and Rshoot, GPP can be calculated (bottom-up GPP, **Figure S1** and **Equations 1-3**).
+
+We collected `r nrow(GlobalRs)` published RSG estimates from articles, with approximately half of studies reported RSG standard deviation (SD, n=`r GlobalRs %>% filter(!is.na(SD)) %>% nrow()`, **Table S1**) and change rate during a period (n=`r GlobalRs %>% filter(!is.na(IncreaseRate)) %>% nrow()`, **Table S1**). The reported RSG range from `r min(GlobalRs$Rs)` to `r max(GlobalRs$Rs)` Pg C yr-1, with an average RSG of `r mean(GlobalRs$Rs) %>% round(2)` Pg C yr-1. The RSG were published from `r min(GlobalRs$Pub_year)` to `r max(GlobalRs$Pub_year)`, and the RSG estimate showed a clear increase trend from the earlier years to the modern year (increase rate = `r slope_Rs` Pg C yr-2, Figure S1 b). However, this rate is much higher than the average increase rate reported by previous studies (mean = `r round(mean(GlobalRs$IncreaseRate, na.rm=T), 2) ` Pg C yr-2, n=`r GlobalRs %>% filter(!is.na(IncreaseRate)) %>% nrow()`, Figure S1 c).
+
+Then Rshoot can be calculated based on the Rroot and Rroot-to-Rshoot ratio, finally, bottom-up GPP can be calculated (**Figure S1**). We then compare the bottom-up GPP with GPP from publication in the past decades (top-down GPP) to determine the consistency between the bottom-up and top-down GPP. The following equations were used to calculate GPP from RSG:
+
+
+Rroot = Rs × Rroot-Rs ratio (i.e., RC in SRDB)     (1)  
+Rshoot = Rroot × Rroot-Rshoot ratio     (2)  
+GPP = NPP + Rroot + Rshoot     (3)                                                             
+
+
+#### RSG implied by GPP
+
+Many efforts have been made to estimate GPP based on both remote sensing and FLUXNET data in the past decades (n=`r nrow(GPP)`, Figure S1). We collected `r nrow(GPP)` GPP estimates from published articles, with only `r GPP %>% filter(!is.na(SD)) %>% nrow()` of estimates reported corresponding SD, and `r GPP %>% filter(!is.na(Trend)) %>% nrow()` estimates reported corresponding trend during a period (Table S2). The reported GPP estimates were from `r min(GPP$Pub_year)` to `r max(GPP$Pub_year)`, ranged from `r min(GPP$GPP)` to `r max(GPP$GPP)` Pg, and with an average of `r mean(GPP$GPP) %>% round(2)` Pg C yr-1. There is a clear positive relationship between GPP and estimate-year, with an increase rate of `r slope_GPP` Pg C yr-2, Figure S1 e), which is bigger than the mean of reported increase rates (`r mean(GPP$Trend, na.rm=T) %>% round(2)` Pg C yr-2, Figure S1 f). Furthermore, the extreme high (`r max(GPP$GPP)` Pg) and low (`r min(GPP$GPP)` Pg) GPP estimates does not affect the overall mean GPP, as the average does not change when both extreme high and low GPP values were excluded.
+
+GPP can be further separated into NPP, carbon consumed by herbivore, carbon burned by fire, carbon going to terrestrial as carbon sink, and carbon consumed by autotrophic respiration (Ra). Global NPP estimates were directly from a previous meta-analysis (Table S3 and Figure S2 a). Based on 251estimates (Table S2), global annual mean NPP from 1862 to 2011 was `r mean(NPP$NPP) %>% round(2)` Pg C yr-1 (±`r sd(NPP$NPP) %>% round(2)`, SD). In order to estimate Rh, we collected published estimates on NPP going to the terrestrial (Csink), NPP components burned by fire, and NPP components consumed by herbivores (Table S3). When substract carbon consumed by herbivores, fire, and land sink from NPP, global Rh between 1961 and 2014 can be estimated (Rh = NPP - Herbivores - Csink – Fire, Figure S1 and Table S1-S3). 
+
+The difference between GPP and NPP is autotrophic respiration (Ra), Ra is a major component of the terrestrial carbon cycling and it consumes a major part of plants sequestrated carbon by photosynthesis (GPP). Ra-to-GPP-ratio is required to estimate Ra based on GPP. Ra-to-GPP-ratio used in this study were from two sources: (1) We conducted a literature search and collected `r nrow(RaGPP)` Ra-to-GPP-ratio estimates (Table S5); (2) We obtained additional `r nrow(var_RaGpp) - nrow(RaGPP)` Ra-to-PP-ratio estimates from SRDB-V4. Ra-to-GPP-ratio used in this study covered 9 vegetation types, but mainly from forest and grassland, all the other vegetation types only have `r var_RaGpp %>% filter(IGBP2 =="Other") %>% nrow()` samples (Figure S4).
+
+Autotrophic respiration (Ra) consists of root respiration (Rroot) and shoot respiration (Rshoot), Rroot-to-Ra ratio is required to separate Ra into Rroot and Rshoot. 
+Rroot-to-Ra ratio used in this study were from two sources: (1) We collected `r nrow(FlFsFr)` Rroot-to-Ra ratio estimates from `r FlFsFr %>% count(Reference) %>% nrow()` studies (Table S4); (2) We obtained additional `r nrow(Froot) - nrow(FlFsFr)` Rroot-to-Ra ratio estimates from SRDB-V4 (Table S4). Rroot-to-Ra ratio covered 7 vegetation types (Figure S3), but mainly from forest, all other vegetation types only have `r Froot %>% filter(IGBP2 == "Other") %>% nrow()` samples. 
+
+Finally, according to the top-down GPP, NPP, Ra-to-GPP ratio, Rroot-to-Ra ratio, and Rshoot-to-Ra ratio, GPP can be separated into Rh, Rshoot, and Rroot, and thus, global RS can be calculated (Up-panel in Figure S1 and equations 4-10). We then compare the top-down RSG with RSG from publication in the past decades (bottom-up RSG) to determine the consistency between the bottom-up and top-down RSG.
+
+Ra = GPP – NPP     (4)  
+Ra = ecosystem-respiration – heterotrophic-respiration     (5)  
+Ra = GPP × Ra-GPP ratio     (6)    
+Rh = NPP - Fire_C - Herb_C     (7)  
+Rroot = Ra × Rroot-Ra ratio     (8)    
+Rshoot = Ra × Rshoot-Ra ratio     (9)  
+Rs = Ra + Rh     (10)  
+
+_**Bootstrap resampling**_  
+
+We used a bootstrap resampling approach to get the best estimate for each component in the bottom-up and top-down process. Sample size of each component in the bottom-up and top-down approach is different, and many of them do not following normal distribution (Figure S1-S4). We thus used a boosting resampling approach to regenerate the samples for each component (details please see the Github repository). For the Rroot-to-RS-ratio (RC), Rroot-to-Ra-ratio, and Ra-to-GPP ratio, we further separated them by ecosystem types, and weighted by their area (area of each ecosystem were from the IGBP ecosystem land classification, https://climatedataguide.ucar.edu/climate-data/ceres-igbp-land-classification).
+
+We evaluated X different resampling methods, which differed in how they treated the presence and absence of errors associated with each flux estimate. ... We used the most conservative approach, i.e. that resulted in the widest distributions of GPP and R[S].
+
+_**Statistical analysis**_  
+
+Summarize stats and software used.
+
+
+## Compare the results of different re-sampling methods (N = `r N_SAMPLES`)
+```{r sample method comparison}
+sample_size_tst(10, 10000)
+ggsave("outputs/FigureS7.jpg", width = 8, height = 6, dpi = 300, units = "in")
+```
+
+
+_**Components important analysis**_
 
 ```{r not used}
+
+# DGRsD <- read_file('DGRsD.csv')
+# AGB <- read_file('GLC2000_Point.txt') %>% 
+#   filter(RASTERVALU != -9999)
+
+# SOC <- read_file('SOC_Point.txt')
+
 # Each row gets the closest latitude and longitude values to AGB and SOC data
 # AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
 # Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Longitude*2, 0)/2-0.25) -> Froot
-# there are no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
+# there is no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
 # left_join(Froot, AGB) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
 # left_join(Froot, SOC) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
 
-# Each row get the closese latitude and longitude values to AGB and SOC data
+# Each row gets the closest latitude and longitude values to AGB and SOC data
 # AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
 # Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Longitude*2, 0)/2-0.25) -> Froot
-# there are no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
+# there is no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
 # left_join(Froot, AGB) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
 # left_join(Froot, SOC) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
 
@@ -950,3 +1145,7 @@ Note that the arithmetic mean of Rs:GPP in SRDB is `r round(Rs_to_GPP_unweighted
 #   geom_vline(xintercept = c(quantile (rs_results$Rs, QUANTILES)),col = "red", linetype = "dotted", size = 1.5) +
 #   annotate("text", x = quantile(rs_results$Rs, 0.98), y = 5000, label = paste0("95%CI (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")"), hjust = 0)
 ```
+
+
+
+
