@@ -66,8 +66,12 @@ apply(to_process, 1, function(input){
   print('------------------------------------------------') 
   print(base_name)  
 
+  time_nc <- file.path(INTERMED_DIR, paste0(base_name, '_time.nc'))
+  
+  system2(CDO_EXE, args = c('-a', '-copy', input[['raRoot']], time_nc), stdout = TRUE, stderr = TRUE )
+  
   # Import a nc to use as a refernce. 
-  input[['raRoot']] %>% 
+  time_nc %>% 
     nc_open -> 
     nc
   
@@ -139,8 +143,9 @@ apply(to_process, 1, function(input){
 }) %>%  
   bind_rows %>% 
   mutate(year = substr(time, 1, 4), 
-         motnh = substr(time, 5, 6)) %>%
-  write.csv(., file = file.path(OUTPUT_DIR, 'cmip6-ratio-RS2GPP-fromgridcell.csv'), row.names = FALSE)
+         month = substr(time, 5, 6)) %>% 
+  write.csv(file = file.path(OUTPUT_DIR, 'cmip6-ratio-RS2GPP-fromgridcell.csv'), row.names = FALSE)
+
 
 
 
