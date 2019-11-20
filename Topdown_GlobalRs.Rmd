@@ -965,19 +965,33 @@ if(file.exists(cmip6_global_data_file)) {
                             Type = "Models", stringsAsFactors = FALSE)
 }
 
-cmip6_local_data_file <- "data/CMIP/1.cmip6_local_annual_means.csv"
+cmip6_local_data_file <- "cmip6/output/cmip6-ratio-RS2GPP-fromgridcell.csv"
 if(file.exists(cmip6_local_data_file)) {
+  read.csv(cmip6_local_data_file) %>% 
+    as_tibble() %>% 
+    filter(year >= 2005) ->
+    cmip6_local
+  
+  cmip6_local %>% 
+    mutate(Source = paste0("Local CMIP6\n(N = ", nrow(cmip6_local), ")"),
+           Scale = "Local",
+           Type = "Models") %>% 
+    select(Source, Scale, Type, Ratio = value) ->
+    cmip6_local
+
   # ... process it
 } else {
-  cmip_local <- data.frame(Source = "CMIP6\n(N = 0)", 
+  cmip6_local <- data.frame(Source = "Local CMIP6\n(N = 0)", 
                            Scale = "Local",
                            Type = "Models", 
+                           Ratio = NA_real_,
                            stringsAsFactors = FALSE)
 }
 
-bind_rows(topdown, srdb, fluxnet, cmip_global, cmip_local) %>% 
-  mutate(Ratio = Rs / GPP,
-         Source = factor(Source, unique(Source)[c(2, 3, 5, 4, 1)])) ->
+bind_rows(topdown, srdb, fluxnet, cmip_global) %>% 
+  mutate(Ratio = Rs / GPP) %>% 
+  bind_rows(cmip6_local) %>% 
+  mutate(Source = factor(Source, unique(Source)[c(2, 3, 5, 4, 1)])) ->
   ratios
 
 ratios %>% 
@@ -987,8 +1001,8 @@ ratios %>%
   knitr::kable(type = "markdown")
 
 p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) + 
-  geom_boxplot() +
   geom_quasirandom(alpha = I(0.25)) +
+  geom_boxplot(color = "black", alpha = 0.25) +
   geom_hline(yintercept = topdown_mean, linetype = 2, color = "red", alpha = 0.33) +
   ylab(expression(Ratio~of~R[S]~to~GPP)) + xlab("") +
   coord_cartesian(ylim = c(0, 2))
