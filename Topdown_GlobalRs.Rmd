@@ -816,13 +816,6 @@ Scenario                 | Agreement (quantiles) | p-value (t.test)
 3 (simple global Rs:GPP) | `r p_Rs3 * 100` %     | `r p_Rs3_tt`
 
 
-## Topdown and bottomup comparison - Figure 1
-```{r combine GPP and RSG comparison into figure 2, fig.height=7, fig.width=8, cache=FALSE}
-# Scenario 2, RC separate into 4 groups, and Froot separate into 2 groups
-plot_grid(p2_rs2, p1_gpp2, ncol = 1, labels = c("(a)", "(b)"), hjust = 0)
-ggsave("outputs/Figure1.png")
-```
-
 
 ## Combining GPP and Rs
 
@@ -850,6 +843,9 @@ gpp_wm$w <- w
 rs_wm$w <- w
 results <- bind_rows("GPP" = gpp_wm, "Rs" = rs_wm, .id = "which")
 
+# add col_scale column, which enable color gradual change in Figure 1 panel 3
+results %>% mutate(col_scale = 1:46) -> results
+
 results_w75 <- filter(results, w == 0.75)
 results_w50 <- filter(results, w == 0.5)
 results_w25 <- filter(results, w == 0.25)
@@ -857,7 +853,7 @@ myarrow <- arrow(length = unit(0.05, "inches"))
 
 p_joint <- ggplot(results, aes(w, q500, group = which)) +
   geom_vline(xintercept = 0.5, size = 0.25, linetype = 2) +
-  scale_fill_manual(values=c("#999999", "#E69F00")) +
+  # scale_fill_manual(values=c("#999999", "#E69F00")) +
   
   geom_line(size = 1.5) +
   geom_ribbon(aes(fill = which, ymin = q025, ymax = q975), 
@@ -865,7 +861,7 @@ p_joint <- ggplot(results, aes(w, q500, group = which)) +
   coord_cartesian(ylim = c(50, 170), expand = FALSE) +
   scale_color_discrete("", labels = c("GPP", expression(R[S]))) +
   theme(legend.text.align = 0) +
-  scale_fill_manual(values=c("brown", "blueviolet")) +
+  # scale_fill_manual(values=c("brown", "blueviolet")) +
   
   # 75%
   geom_segment(data = results_w75, aes(x = 0, xend = w, yend = q500),
@@ -900,10 +896,17 @@ p_joint <- ggplot(results, aes(w, q500, group = which)) +
   # scale_color_manual(values=c("#999999", "#E69F00"))
 
 print(p_joint)
-ggsave("outputs/Figure3.png")
+# ggsave("outputs/Figure3.png")
 knitr::kable(results_w50, digits = 1, format = "markdown")
 ```
 
+
+## Topdown and bottomup comparison - Figure 1
+```{r combine GPP and RSG comparison into figure 2, fig.height=8, fig.width=6, cache=FALSE}
+# Scenario 2, RC separate into 4 groups, and Froot separate into 2 groups
+plot_grid(p2_rs2, p1_gpp2, ncol = 1, labels = c("(a)", "(b)"), hjust = 0)
+# ggsave("outputs/Figure1.png")
+```
 
 ## Site-specific ratios of GPP to Rs
 
@@ -1139,5 +1142,19 @@ _**Components important analysis**_
 ```
 
 
+## Sites with Rs-GPP ratio from SRDB and Fluxnet
+```{r}
+srdb_v4 %>% 
+  filter(!is.na(GPP), !is.na(Rs_annual), Ecosystem_state != "Managed") %>% 
+  select(Rs = Rs_annual, GPP, Biome, Latitude, Longitude, Ecosystem_type) %>% 
+  mutate(Biome = as.character(Biome), Ecosystem_type = as.character(Ecosystem_type)) -> RsGPP_srdb
+
+
+read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>% 
+  select(Biome, Ecosystem_type, FLUXNET_SITE_ID, Latitude, Longitude, GPP = gpp_fluxnet, Rs = Rs_annual) %>% 
+  filter(!is.na(GPP), !is.na(Rs)) ->
+  RsGPP_fluxnet
+
+```
 
 
