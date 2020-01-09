@@ -114,6 +114,7 @@ GlobalRs %>% filter(Pub_year > 1980) -> GlobalRs
 RaGPP <- read_file('RaGPP.csv') 
 var_Fire <- read_file('Fire_burn_C.csv')
 
+
 # IGBP data, and information to map it with other data
 IGBP <- read_file('IGBP.txt') %>% 
   left_join(read_file("igbp_mapping.csv"), by = "IGBP2001Pr")
@@ -601,6 +602,10 @@ bootstrap_data %>%
     # Carbon going to terrestrial as carbon sink (mean = 2.1, SD = 0.28), from
     # Le Quéré, C. et al. Global carbon budget 2015. Earth Syst. Sci. Data 7, 349–396 (2015).
     sink = rnorm(n = N_SAMPLES, mean = 2.10, sd = 0.28),
+    # Carbon washes away by freshwater (Table S3)
+    DOC = rnorm(n = N_SAMPLES, mean = 2.3, sd = 0.25),
+    # Carbon of BVOCs (there are no SD information, take SD = Mean*0.1, see Table S3)
+    BVOCs = rnorm(n = N_SAMPLES, mean = 1.007, sd = 0.1),
     
     # Step 2. Ra-to-GPP ratio boosting
     # RaGpp = sample(var_RaGpp$RaGPP_ratio, N_SAMPLES, replace = TRUE),
@@ -637,14 +642,14 @@ bootstrap_data %>%
     
     Rroot = Ra_avg1 * Froot2,
     Rshoot = Ra_avg1 * (1 - Froot2),
-    Rs_topdown = NPP - HerbComsum - Fire - sink + Rroot,
+    Rs_topdown = NPP - HerbComsum - Fire - sink - DOC - BVOCs + Rroot,
     
     # Scenario 2
     Ra4 = GPP_raw * RaGpp2, # first way to calculate Ra, Ra = GPP * RaGPP
     Ra_avg2 = (Ra4 + Ra3) / 2,
     Rroot2 = Ra_avg2 * Froot2,
     Rshoot2 = Ra_avg2 * (1 - Froot2),
-    Rs_topdown2 = NPP - HerbComsum - Fire - sink + Rroot2
+    Rs_topdown2 = NPP - HerbComsum - Fire - sink - DOC - BVOCs + Rroot2
   ) ->
   rs_results
 ```
