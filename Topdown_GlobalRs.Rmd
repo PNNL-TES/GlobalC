@@ -245,13 +245,6 @@ ggsave("outputs/FigureS6.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```{r calculate vegetation areas}
 # IGBP area by type
 IGBP %>% count(IGBP_group)
-# Wrong old calculation
-# IGBP %>% filter(IGBP_group != "WAT") %>% 
-#   group_by(IGBP_group) %>% 
-#   summarise(count = n()) %>% 
-#   mutate(percent = count / sum(count)) -> IGBP_summary
-
-# Updated calculation
 IGBP %>% 
   filter(IGBP_group != "WAT") %>% 
   group_by(IGBP_group) %>% 
