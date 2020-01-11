@@ -7,7 +7,7 @@ output:
   word_document: default
 ---
 
-## summary
+## Summary
 
 ## Abbreviations
 * Rroot - root respiration
@@ -24,7 +24,6 @@ output:
 * FsFr - (1-Froot)/Froot (FsFr = Rshoot/Rroot ratio)
 * RC - (root respiration / soil respiration)
 * RaGPP - (Ra/GPP) ratio
-
 
 ## Assumptions
 * __Bottom-up approach:__ 
@@ -92,10 +91,8 @@ source('functions.R')
 # Set chunks defaults; these options will be applied to all subsequent chunks
 knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, 
                       echo = FALSE, warning = FALSE,
-                      fig.height = 4, fig.width = 8, cache = F)
-
+                      fig.height = 4, fig.width = 8, cache = FALSE)
 ```
-
 
 ## Methods
 
@@ -135,9 +132,7 @@ Froot %>% mutate(IGBP2 = case_when(
   IGBP %in% c('MF', 'Mixed') & Ecosystem == 'Forest' ~ "MF",
   TRUE ~ "Other"
 )) -> Froot
-
 ```
-
 
 ```{r missing SD issue}
 # GPP %>% select(GPP, SD) %>% filter (!is.na(SD)) %>% ggplot(aes(GPP, SD)) + geom_point()
@@ -146,8 +141,6 @@ Froot %>% mutate(IGBP2 = case_when(
 # GlobalRs %>% select(Rs, SD) %>% filter (!is.na(SD)) %>% ggplot(aes(Rs, SD)) + geom_point()
 # GlobalRs %>% select(Rs, SD) %>% filter (!is.na(SD)) %>% lm(Rs, SD) %>% summary()
 ```
-
-
 
 ## Ratio by vegetation types {.tabset .tabset-fade .tabset-pills}
 ### Plot GPP
@@ -174,7 +167,6 @@ p_rs <- ggplot(GlobalRs, aes(Pub_year, Rs)) + geom_point() +
 p_rs_marg <- ggMarginal(p_rs, type = "densigram", margins = "y", fill = "red")
 ggsave("outputs/p_rs.png", plot = p_rs_marg, width = 8, height = 5)
 ```
-
 
 ### Plot Rroot-Rs ratio
 
@@ -242,13 +234,12 @@ var_RaGpp %>%
   arrange(desc(Ecosystem))
 ```
 
-## Sites spatial distribution
+## Sites' spatial distribution
 ```{r plot spatial distribution, echo=FALSE, warning=FALSE}
 # Figure. Sites distribution -- FlFsFr sites and RC/HC sites
 plot_sites(srdb_v4, Froot, srdb_v4)
 ggsave("outputs/FigureS6.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
-
 
 
 ```{r calculate vegetation areas}
@@ -325,7 +316,6 @@ bootstrap_data <- tibble(Rs_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, 
 sd(bootstrap_data$Rs_raw) # why sd so small, not as expected
 sd(bootstrap_data$GPP_raw) # why sd so small, not as expected
 ```
-
 
 ## Bootstrapping GPP
 ```{r gpp-bootstrap}
@@ -574,32 +564,15 @@ Scenario                 | Agreement (quantiles) | p-value (t.test)
 
 ### Variance decomposition
 ```{r gpp-variance-decomp, results='show'}
-vd <- tibble(Parameter = colnames(bootstrap_gpp_draws), 
-             GPP_variance = NA_real_, GPP2_variance = NA_real_)
-# For each parameter in turn, 'freeze' it (replace random draws with median,
-# removing all variability) and calculate variance in bootstrapped GPP
-for(i in seq_len(nrow(vd))) {
-  x <- bootstrap_gpp_draws
-  x[vd$Parameter[i]] <- median(unlist(x[vd$Parameter[i]]))
-  vd$GPP_variance[i] <- var(calc_bootstrap_gpp(x)$GPP)
-  vd$GPP2_variance[i] <- var(calc_bootstrap_gpp(x)$GPP2)
-}
-vd %>% 
-  mutate(Contribution = round((var(gpp_results$GPP) - GPP_variance) /
-                                var(gpp_results$GPP), 3),
-         Contribution2 = round((var(gpp_results$GPP2) - GPP2_variance) /
-                                 var(gpp_results$GPP2), 3)) ->
-  vd
-
-vd %>%
-  select(Parameter, GPP_variance, Contribution) %>% 
+variance_decomp(bootstrap_gpp_draws, "GPP", var(gpp_results$GPP), calc_bootstrap_gpp) %>%
+  select(Parameter, GPP_variance = variance, Contribution) %>% 
   filter(Contribution > 0) %>% 
   arrange(desc(Contribution)) %>% 
   knitr::kable(format = "markdown")
-vd %>%
-  select(Parameter, GPP2_variance, Contribution2) %>% 
-  filter(Contribution2 > 0) %>% 
-  arrange(desc(Contribution2)) %>% 
+variance_decomp(bootstrap_gpp_draws, "GPP2", var(gpp_results$GPP2), calc_bootstrap_gpp) %>%
+  select(Parameter, GPP2_variance = variance, Contribution) %>% 
+  filter(Contribution > 0) %>% 
+  arrange(desc(Contribution)) %>% 
   knitr::kable(format = "markdown")
 ```
 
@@ -868,32 +841,15 @@ Scenario                 | Agreement (quantiles) | p-value (t.test)
 
 ### Variance decomposition
 ```{r rs-variance-decomp, results='show'}
-vd <- tibble(Parameter = colnames(bootstrap_rs_draws), 
-             Rs_variance = NA_real_, Rs2_variance = NA_real_)
-# For each parameter in turn, 'freeze' it (replace random draws with median,
-# removing all variability) and calculate variance in bootstrapped Rs
-for(i in seq_len(nrow(vd))) {
-  x <- bootstrap_rs_draws
-  x[vd$Parameter[i]] <- median(unlist(x[vd$Parameter[i]]))
-  vd$Rs_variance[i] <- var(calc_bootstrap_rs(x)$Rs_topdown)
-  vd$Rs2_variance[i] <- var(calc_bootstrap_rs(x)$Rs_topdown2)
-}
-vd %>% 
-  mutate(Contribution = round((var(rs_results$Rs_topdown) - Rs_variance) /
-                                var(rs_results$Rs_topdown), 3),
-         Contribution2 = round((var(rs_results$Rs_topdown2) - Rs2_variance) /
-                                 var(rs_results$Rs_topdown2), 3)) ->
-  vd
-
-vd %>%
-  select(Parameter, Rs_variance, Contribution) %>% 
+variance_decomp(bootstrap_rs_draws, "Rs_topdown", var(rs_results$Rs_topdown), calc_bootstrap_rs) %>%
+  select(Parameter, Rs_topdown_variance = variance, Contribution) %>% 
   filter(Contribution > 0) %>% 
   arrange(desc(Contribution)) %>% 
   knitr::kable(format = "markdown")
-vd %>%
-  select(Parameter, Rs2_variance, Contribution2) %>% 
-  filter(Contribution2 > 0) %>% 
-  arrange(desc(Contribution2)) %>% 
+variance_decomp(bootstrap_rs_draws, "Rs_topdown2", var(rs_results$Rs_topdown2), calc_bootstrap_rs) %>%
+  select(Parameter, Rs_topdown2_variance = variance, Contribution) %>% 
+  filter(Contribution > 0) %>% 
+  arrange(desc(Contribution)) %>% 
   knitr::kable(format = "markdown")
 ```
 
