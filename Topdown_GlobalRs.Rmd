@@ -7,7 +7,7 @@ output:
   word_document: default
 ---
 
-## summary
+## Summary
 
 ## Abbreviations
 * Rroot - root respiration
@@ -24,7 +24,6 @@ output:
 * FsFr - (1-Froot)/Froot (FsFr = Rshoot/Rroot ratio)
 * RC - (root respiration / soil respiration)
 * RaGPP - (Ra/GPP) ratio
-
 
 ## Assumptions
 * __Bottom-up approach:__ 
@@ -92,10 +91,8 @@ source('functions.R')
 # Set chunks defaults; these options will be applied to all subsequent chunks
 knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, 
                       echo = FALSE, warning = FALSE,
-                      fig.height = 4, fig.width = 8, cache = F)
-
+                      fig.height = 4, fig.width = 8, cache = FALSE)
 ```
-
 
 ## Methods
 
@@ -135,9 +132,7 @@ Froot %>% mutate(IGBP2 = case_when(
   IGBP %in% c('MF', 'Mixed') & Ecosystem == 'Forest' ~ "MF",
   TRUE ~ "Other"
 )) -> Froot
-
 ```
-
 
 ```{r missing SD issue}
 # GPP %>% select(GPP, SD) %>% filter (!is.na(SD)) %>% ggplot(aes(GPP, SD)) + geom_point()
@@ -146,8 +141,6 @@ Froot %>% mutate(IGBP2 = case_when(
 # GlobalRs %>% select(Rs, SD) %>% filter (!is.na(SD)) %>% ggplot(aes(Rs, SD)) + geom_point()
 # GlobalRs %>% select(Rs, SD) %>% filter (!is.na(SD)) %>% lm(Rs, SD) %>% summary()
 ```
-
-
 
 ## Ratio by vegetation types {.tabset .tabset-fade .tabset-pills}
 ### Plot GPP
@@ -174,7 +167,6 @@ p_rs <- ggplot(GlobalRs, aes(Pub_year, Rs)) + geom_point() +
 p_rs_marg <- ggMarginal(p_rs, type = "densigram", margins = "y", fill = "red")
 ggsave("outputs/p_rs.png", plot = p_rs_marg, width = 8, height = 5)
 ```
-
 
 ### Plot Rroot-Rs ratio
 
@@ -242,7 +234,7 @@ var_RaGpp %>%
   arrange(desc(Ecosystem))
 ```
 
-## Sites spatial distribution
+## Sites' spatial distribution
 ```{r plot spatial distribution, echo=FALSE, warning=FALSE}
 # Figure. Sites distribution -- FlFsFr sites and RC/HC sites
 plot_sites(srdb_v4, Froot, srdb_v4)
@@ -250,17 +242,9 @@ ggsave("outputs/FigureS6.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
 
 
-
 ```{r calculate vegetation areas}
 # IGBP area by type
 IGBP %>% count(IGBP_group)
-# Wrong old calculation
-# IGBP %>% filter(IGBP_group != "WAT") %>% 
-#   group_by(IGBP_group) %>% 
-#   summarise(count = n()) %>% 
-#   mutate(percent = count / sum(count)) -> IGBP_summary
-
-# Updated calculation
 IGBP %>% 
   filter(IGBP_group != "WAT") %>% 
   group_by(IGBP_group) %>% 
@@ -326,7 +310,6 @@ sd(bootstrap_data$Rs_raw) # why sd so small, not as expected
 sd(bootstrap_data$GPP_raw) # why sd so small, not as expected
 ```
 
-
 ## Bootstrapping GPP
 ```{r gpp-bootstrap}
 # Bottom-up approach to estimate GPP
@@ -337,63 +320,69 @@ sd(bootstrap_data$GPP_raw) # why sd so small, not as expected
 # Ra = Rroot + Rshoot
 # GPP = NPP + Rroot + Rshoot
 
+# Step 1. Prepare samples of all variables that go into the GPP calculation
 bootstrap_data %>% 
   mutate(
-    # Step 1. Prepare NPP, boosting from ITO paper
     NPP = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, NPP$NPP),
     
-    # Step 2. sampling Rroot-to Rs ratio (RC)
+    # Rroot-to Rs ratio (RC)
     Rc_agr = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_agr_rc$RC_annual),
     
-    # forest further separate into 3 groups
+    # forests are separated into 3 groups
     Rc_df = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_df_rc$RC_annual),
     Rc_ef = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_ef_rc$RC_annual),
     Rc_mf = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_mf_rc$RC_annual), 
     # other ecosystems
     Rc_gra = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_gra_rc$RC_annual),
     Rc_shr = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_shr_rc$RC_annual),
-    # for other ecosystems we use samples from all RC records
+    # for other ecosystems we sample from all RC records
     Rc_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_rest_rc$RC_annual), 
     
-    # Step 3. Sampling Rroot-to-Ra ratio (Froot)
+    # Rroot-to-Ra ratio (Froot)
     Froot_df = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_df_froot),
     Froot_ef = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_ef_froot),
     Froot_mf = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_mf_froot),
-    # for other ecosystems we use samples from all RC records
+    # for other ecosystems we sample from all RC records
     Froot_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_rest_froot),
     
-    # Step 4. calculation ********************
-    # Rc = replicate( n_rep, var_RC$RC_annual, N_SAMPLES, replace = TRUE) %>% mean() ), # scenario 0: Rc not separate into different ecosystems, not used
     Rc = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RC$RC_annual),
-    
-    # Scenario 2: Rc separate into groups: agriculture, deciduous forest, grassland, etc 
-    # all other ecosystems with obs<40, take samples from all RC records
-    # area of rest ecosystem = 1-sum(agriculture, forest, grassland, etc)
-    Rc2 = (Rc_agr * ag_area + Rc_df * df_area + Rc_ef * ef_area + Rc_mf * mf_area + 
-             Rc_gra * gra_area + Rc_shr * shr_area + Rc_rest * 
-             (1 - ag_area - df_area - ef_area-mf_area - gra_area - shr_area)), 
     
     # Scenario 1: Froot not separated into different ecosystems
     Froot = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, Froot$Froot),
-    
-    FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of scenario 1
-    # Bottom up estimate of GPP, scenario 1
-    Rroot = Rs_raw * Rc, # root respiration
-    Rshoot = Rroot * FsFr, # shoot respiration
-    
-    # Scenario 2: separate into different ecosystems and weighted by area
-    # Froot %>% count(Ecosystem)
-    Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area + 
-      Froot_rest * (1 - df_area - ef_area - mf_area),
-    FsFr2 = (1 - Froot2) / Froot2, # Froot to Fshoot ratio of scenario 2
-    # Bottom up estimate of GPP, scenario 2
-    Rroot2 = Rs_raw * Rc2,
-    Rshoot2 = Rroot2 * FsFr2,
-    
-    GPP = NPP + Rroot + Rshoot, # scenario 1: GPP
-    GPP2 = NPP + Rroot2 + Rshoot2 # scenario 2: GPP2
-  ) ->
-  gpp_results
+  ) -> bootstrap_gpp_draws
+
+# Step 2. Do the static (no random draws) steps that calculate GPP
+# We define a function to re-use later for variance decomposition
+calc_bootstrap_gpp <- function(x) {
+  x %>% 
+    mutate(
+      # Scenario 2: Rc separate into groups: agriculture, deciduous forest, grassland, etc 
+      # all other ecosystems with obs<40, take samples from all RC records
+      # area of rest ecosystem = 1-sum(agriculture, forest, grassland, etc)
+      Rc2 = (Rc_agr * ag_area + Rc_df * df_area + Rc_ef * ef_area + Rc_mf * mf_area + 
+               Rc_gra * gra_area + Rc_shr * shr_area + Rc_rest * 
+               (1 - ag_area - df_area - ef_area-mf_area - gra_area - shr_area)), 
+      
+      FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of scenario 1
+      # Bottom up estimate of GPP, scenario 1
+      Rroot = Rs_raw * Rc, # root respiration
+      Rshoot = Rroot * FsFr, # shoot respiration
+      
+      # Scenario 2: separate into different ecosystems and weighted by area
+      # Froot %>% count(Ecosystem)
+      Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area + 
+        Froot_rest * (1 - df_area - ef_area - mf_area),
+      FsFr2 = (1 - Froot2) / Froot2, # Froot to Fshoot ratio of scenario 2
+      # Bottom up estimate of GPP, scenario 2
+      Rroot2 = Rs_raw * Rc2,
+      Rshoot2 = Rroot2 * FsFr2,
+      
+      GPP = NPP + Rroot + Rshoot, # scenario 1: GPP
+      GPP2 = NPP + Rroot2 + Rshoot2 # scenario 2: GPP2
+    )
+}
+
+gpp_results <- calc_bootstrap_gpp(bootstrap_gpp_draws)
 ```
 
 
@@ -497,21 +486,18 @@ ggsave("outputs/Figure1_gpp_simple.jpg", width = 8, height = 4, dpi = 300, units
 
 
 ### GPP vs components relationships
-```{r}
+```{r gpp-vs-components}
 gpp_results %>% ggplot() + aes(Rc) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
   geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) ) +
   geom_density(aes(Rc2), stat = 'density', col = "gray", fill = rgb(0, 0, 1, alpha = 0.5) ) -> RC_fig
-
 
 gpp_results %>% ggplot() + aes(Rroot) + 
   # geom_histogram(col = "black", fill = "gray", bins = 30) + 
   geom_density(stat = 'density', col = "gray", fill = rgb(1, 0, 1, alpha = 0.5) ) +
   geom_density(aes(Rroot2), stat = 'density', col = "gray", fill = rgb(0, 0, 1, alpha = 0.5) ) -> Rroot_fig
 
-
 plot_grid(RC_fig, Rroot_fig)
-
 
 # GPP ~ NPP
 ggplot(gpp_results, aes(NPP, GPP2)) +
@@ -569,6 +555,21 @@ Scenario                 | Agreement (quantiles) | p-value (t.test)
 2 (weighting)            | `r p_gpp2 * 100` %     | `r p_gpp2_tt`
 3 (global Rs:GPP)        | `r p_gpp3 * 100` %     | `r p_gpp3_tt`
 
+### Variance decomposition
+```{r gpp-variance-decomp, results='show'}
+variance_decomp(bootstrap_gpp_draws, "GPP", var(gpp_results$GPP), calc_bootstrap_gpp) %>%
+  select(Parameter, GPP_variance = variance, Contribution) %>% 
+  filter(Contribution > 0) %>% 
+  arrange(desc(Contribution)) %>% 
+  knitr::kable(format = "markdown")
+variance_decomp(bootstrap_gpp_draws, "GPP2", var(gpp_results$GPP2), calc_bootstrap_gpp) %>%
+  select(Parameter, GPP2_variance = variance, Contribution) %>% 
+  filter(Contribution > 0) %>% 
+  arrange(desc(Contribution)) %>% 
+  knitr::kable(format = "markdown")
+```
+
+## Bootstrapping RSG
 
 ```{r prepare variables for RSG boostrapping}
 # Froot used the same data as bottom-up approach
@@ -582,29 +583,32 @@ var_RaGpp_mf <- var_RaGpp %>% filter(IGBP2 == "Forest") %>% pull(RaGPP_ratio)
 var_RaGpp_gra <- var_RaGpp %>% filter(IGBP2 == "Grassland") %>% pull(RaGPP_ratio)
 ```
 
-## Bootstrapping RSG
 ```{r rs-bootstrap}
 # topdown approach to estimate Rs
 # Ra = GPP * Ra_GPP_ratio (calculated based on data from a 
 #   summary paper and from srdb; see plot_RaGPP function)
 # Ra = GPP - NPP (two approaches yield very similar results;
 #   we thus used the average of two estimates)
+
+# Step 1. Prepare samples of all variables that go into the Rs calculation
 bootstrap_data %>% 
   mutate(
-    # Step 1. prepare other components, NPP and NPP consumed by fire etc.
+    # NPP and NPP consumed by fire etc.
     NPP = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, NPP$NPP),
-    # Carbon comsumed by herbivor animnals (mean:2.2, SD: 0.2), from
-    # Doughty, C. E. & Field, C. B. Agricultural net primary production in relation to that liberated by the extinction of Pleistocene mega-herbivores: 
-    # an estimate of agricultural carrying capacity? Environ. Res. Lett. 5, 044001 (2010).
+    
+    # Carbon comsumed by herbivores (mean:2.2, SD: 0.2), from
+    # Doughty et al., Agricultural net primary production in relation to that liberated by the extinction of Pleistocene mega-herbivores: 
+    # an estimate of agricultural carrying capacity? ERL 5, 044001 (2010).
+    # https://iopscience.iop.org/article/10.1088/1748-9326/5/4/044001/meta
     HerbComsum = rnorm(n = N_SAMPLES, mean = 2.2, sd = 0.2),
     # Fire = sample(var_Fire$Amount_Pg, N_SAMPLES, replace = TRUE),
     Fire = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, var_Fire$Amount_Pg, var_Fire$SD),
     # Carbon going to terrestrial as carbon sink (mean = 2.1, SD = 0.28), from
     # Le Quéré, C. et al. Global carbon budget 2015. Earth Syst. Sci. Data 7, 349–396 (2015).
     sink = rnorm(n = N_SAMPLES, mean = 2.10, sd = 0.28),
-    # Carbon washes away by freshwater (Table S3)
+    # Dissolved organic carbon exports (Table S3)
     DOC = rnorm(n = N_SAMPLES, mean = 2.3, sd = 0.25),
-    # Carbon of BVOCs (there are no SD information, take SD = Mean*0.1, see Table S3)
+    # Carbon of BVOCs (there is no SD information, take SD = Mean*0.1, see Table S3)
     BVOCs = rnorm(n = N_SAMPLES, mean = 1.007, sd = 0.1),
     
     # Step 2. Ra-to-GPP ratio boosting
@@ -622,36 +626,44 @@ bootstrap_data %>%
     Froot_mf = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_mf_froot),
     Froot_gra = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_gra_froot),
     # for other ecosystems, we use samples from all Froot
-    Froot_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_rest_froot),
-    
-    # Calculation **********
-    # Scenario 1
-    RaGpp = RaGpp_rest,
-    # Scenario 2
-    RaGpp2 = RaGpp_df * df_area + RaGpp_ef * ef_area + RaGpp_mf * mf_area + 
-      RaGpp_gra * gra_area + RaGpp_rest * (1 - df_area - ef_area - mf_area - gra_area),
-    
-    # get Froot (weight by area of ecosystem type)
-    Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area +
-      Froot_rest * (1 - df_area-ef_area-mf_area),
-    
-    Ra1 = GPP_raw * RaGpp, # first way to calculate Ra, Ra = GPP * RaGPP
-    Ra2 = GPP_raw - NPP, # second way to calculate Ra, Ra = GPP - NPP
-    Ra3 = if_else(Ra2 < 0, Ra1, Ra2),
-    Ra_avg1 = (Ra1 + Ra3) / 2,
-    
-    Rroot = Ra_avg1 * Froot2,
-    Rshoot = Ra_avg1 * (1 - Froot2),
-    Rs_topdown = NPP - HerbComsum - Fire - sink - DOC - BVOCs + Rroot,
-    
-    # Scenario 2
-    Ra4 = GPP_raw * RaGpp2, # first way to calculate Ra, Ra = GPP * RaGPP
-    Ra_avg2 = (Ra4 + Ra3) / 2,
-    Rroot2 = Ra_avg2 * Froot2,
-    Rshoot2 = Ra_avg2 * (1 - Froot2),
-    Rs_topdown2 = NPP - HerbComsum - Fire - sink - DOC - BVOCs + Rroot2
+    Froot_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_rest_froot)
   ) ->
-  rs_results
+  bootstrap_rs_draws
+
+# Step 2. Do the static (no random draws) steps that calculate Rs
+# We define a function to re-use later for variance decomposition
+calc_bootstrap_rs <- function(x) {
+  x %>% 
+    mutate(
+      # Scenario 1
+      RaGpp = RaGpp_rest,
+      # Scenario 2
+      RaGpp2 = RaGpp_df * df_area + RaGpp_ef * ef_area + RaGpp_mf * mf_area + 
+        RaGpp_gra * gra_area + RaGpp_rest * (1 - df_area - ef_area - mf_area - gra_area),
+      
+      # get Froot (weight by area of ecosystem type)
+      Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area +
+        Froot_rest * (1 - df_area-ef_area-mf_area),
+      
+      Ra1 = GPP_raw * RaGpp, # first way to calculate Ra, Ra = GPP * RaGPP
+      Ra2 = GPP_raw - NPP, # second way to calculate Ra, Ra = GPP - NPP
+      Ra3 = if_else(Ra2 < 0, Ra1, Ra2),
+      Ra_avg1 = (Ra1 + Ra3) / 2,
+      
+      Rroot = Ra_avg1 * Froot2,
+      Rshoot = Ra_avg1 * (1 - Froot2),
+      Rs_topdown = NPP - HerbComsum - Fire - sink - DOC - BVOCs + Rroot,
+      
+      # Scenario 2
+      Ra4 = GPP_raw * RaGpp2, # first way to calculate Ra, Ra = GPP * RaGPP
+      Ra_avg2 = (Ra4 + Ra3) / 2,
+      Rroot2 = Ra_avg2 * Froot2,
+      Rshoot2 = Ra_avg2 * (1 - Froot2),
+      Rs_topdown2 = NPP - HerbComsum - Fire - sink - DOC - BVOCs + Rroot2
+    )
+}
+
+rs_results <- calc_bootstrap_rs(bootstrap_rs_draws)
 ```
 
 ## RSG results {.tabset .tabset-fade .tabset-pills}
@@ -754,7 +766,7 @@ rs_results %>% select(`RA = GPP * Ra-GPP ratio` = Ra1, `RA = GPP - NPP` = Ra2) %
   scale_fill_discrete("") + ylab("Density") + 
   xlab(expression(R[A]~(Pg~C~yr^{-1}))) +
   theme_cowplot() 
- 
+
 ggsave("outputs/FigureS6_RA_Method.jpg", width = 8, height = 4, dpi = 300, units = "in")
 
 
@@ -820,6 +832,19 @@ Scenario                 | Agreement (quantiles) | p-value (t.test)
 2 (weighting)            | `r p_Rs2 * 100` %     | `r p_Rs2_tt`
 3 (simple global Rs:GPP) | `r p_Rs3 * 100` %     | `r p_Rs3_tt`
 
+### Variance decomposition
+```{r rs-variance-decomp, results='show'}
+variance_decomp(bootstrap_rs_draws, "Rs_topdown", var(rs_results$Rs_topdown), calc_bootstrap_rs) %>%
+  select(Parameter, Rs_topdown_variance = variance, Contribution) %>% 
+  filter(Contribution > 0) %>% 
+  arrange(desc(Contribution)) %>% 
+  knitr::kable(format = "markdown")
+variance_decomp(bootstrap_rs_draws, "Rs_topdown2", var(rs_results$Rs_topdown2), calc_bootstrap_rs) %>%
+  select(Parameter, Rs_topdown2_variance = variance, Contribution) %>% 
+  filter(Contribution > 0) %>% 
+  arrange(desc(Contribution)) %>% 
+  knitr::kable(format = "markdown")
+```
 
 
 ## Combining GPP and Rs
@@ -896,9 +921,9 @@ p_joint <- ggplot(results, aes(w, q500, group = which)) +
   # Other
   xlab("Weight of GPP") +
   ylab(expression(Flux~(Pg~C~yr^-1))) 
-  
-  # change color
-  # scale_color_manual(values=c("#999999", "#E69F00"))
+
+# change color
+# scale_color_manual(values=c("#999999", "#E69F00"))
 
 print(p_joint)
 # ggsave("outputs/Figure3.png")
@@ -1154,12 +1179,8 @@ srdb_v4 %>%
   select(Rs = Rs_annual, GPP, Biome, Latitude, Longitude, Ecosystem_type) %>% 
   mutate(Biome = as.character(Biome), Ecosystem_type = as.character(Ecosystem_type)) -> RsGPP_srdb
 
-
 read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>% 
   select(Biome, Ecosystem_type, FLUXNET_SITE_ID, Latitude, Longitude, GPP = gpp_fluxnet, Rs = Rs_annual) %>% 
   filter(!is.na(GPP), !is.na(Rs)) ->
   RsGPP_fluxnet
-
 ```
-
-

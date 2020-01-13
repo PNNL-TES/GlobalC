@@ -4,11 +4,24 @@
 # data processing function - data calculation, clean, and combine etc
 #******************************************************************************************************************
 
+# Perform (one-by-one, rudimentary; no interactions) variance decomposition on the bootstrap results
+variance_decomp <- function(bootstrap_draws, output_var, var_output, calc_function) {
+  vd <- tibble(Parameter = colnames(bootstrap_draws), variance = NA_real_)
+  # For each parameter in turn, 'freeze' it (replace random draws with median,
+  # removing all variability) and calculate variance in bootstrapped GPP
+  for(i in seq_len(nrow(vd))) {
+    x <- bootstrap_draws
+    x[vd$Parameter[i]] <- median(unlist(x[vd$Parameter[i]]))
+    vd$variance[i] <- var(unlist(calc_function(x)[output_var]))
+  }
+  vd$Contribution <- round((var_output - vd$variance) / var_output, 3)
+  vd
+}
+
 # Function to calculate Rroot/Ra ratio and Rshoot/Ra ratio
 # Ra = Rroot + Rshoot (total autotrophic respiration)
 # Rroot/Ra or Rshoot/Ra ratio were from two resources: 1) collected from published article, stored in FsFlFr.csv; 2) from srdb_v4.csv
 # and results from above two data sources will be combined
-
 cal_Froot <- function (sdata, sdata2) {
   # Froot and Fshoot data from digitized papers
   sdata %>%
@@ -71,10 +84,6 @@ prep_RaGpp <- function(RaGPP, srdb_v4) {
     select(Ecosystem_type, Leaf_habit, RaGPP_ratio, Source) %>% 
     bind_rows(sdata2)
 }
-
-
-
-
 
 
 #******************************************************************************************************************
