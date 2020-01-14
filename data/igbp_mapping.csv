@@ -1,3 +1,5 @@
+# Explaination of columns in the IGBP file,,,
+# IGBP code,Ecosystem corresponding to the IGBP,Ecosystem groups based on IGBP,IGBP numeric code
 IGBP,Ecosystem,IGBP_group,IGBP2001Pr
 WAT,Water,WAT,0
 ENF,Forest,EF,1

@@ -1,3 +1,5 @@
+# Summary of autotrophic respiration fraction from papers ,,,,,,,,,,,,,,,,
+# Leaf respiration percentage %,Wood respiration percentage,shoot respiration percentage,Root respiration percentage,IGBP classfication code,Ecosystem type,Comments about IGBP,Latitude of site,Longitude of site,Annual leaf respiration,Annual wood respiration,Annual root respiration,Annual autotrophic respiration,SRDB study number,Other comments,Reference,URL of the paper
 Fl,Fw,Fshoot,Froot,IGBP,Ecosystem,IGBP_Comments,Latitude,Longitude,Rleaf,Rwood,Rroot,Ra,SRDB_Study,Note,Reference,URL_or_details
 ,,50,,EBF,Forest,Tropical forest,9.75,-83.75,,,,,,Book chapter,"(Allen and Lemon, 1976)","Allen, L. H. & Lemon, E. R. Carbon dioxide exchange and turbulence in a Costa Rican tropical rain forest. in Vegetation and the Atmosphere (ed. Monteith, J. .) 2, 265Ð308 (Academic Press, 1976)."
 53,35,,12,EBF,Forest,Tropical  forest,3.22,101.65,,,,,,Book chapter,"(Yoda, 1983)","Yoda, K. Community respiration in a lowland rain forest in Pasoh, peninsular Malaysia. Ecol 33, 183Ð197 (1983)."

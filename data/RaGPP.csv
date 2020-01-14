@@ -1,4 +1,6 @@
-Ecosystem,Ecosystem_comments,Ecosystem_comments2,Leaf_habit,Ra,GPP,RaGPP_ratio,MAT,Ref,Comments,Comments
+# Ra-to-GPP ratio estimates from published papers,,,,,,,,,,
+# Ecosystem type,Comments about ecosystem,Second comments about ecosystem,Leaf habit of the ecosystem,Autotrophic respiration,Gross primary production,Ra-to-GPP ratio,Mean annual temperature,Reference,Comments about reference,URL for the reference
+Ecosystem,Ecosystem_comments,Ecosystem_comments2,Leaf_habit,Ra,GPP,RaGPP_ratio,MAT,Ref,Comments,URL
 Crop,Aldalfa,,,,,0.42,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
 Crop,"Maize, rice and, wheat",,,,,0.45,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
 Grassland,Shortgrass prairie,,,,,0.34,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
@@ -29,7 +31,7 @@ Forest,Temperate,Pinus ponderosa,Evergreen,,,0.55,,Amothor (2001),,https://natur
 Forest,Temperate,Pinus taeda plantation,Evergreen,,,0.58,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
 Forest,Temperate,Pinus spp.,Evergreen,,,0.55,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
 Forest,Temperate,Pseudotsuga Tsuga,Evergreen,,,0.93,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
-Forest,Temperate,Quercus Acer,Deciduous,,,0.50,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
+Forest,Temperate,Quercus Acer,Deciduous,,,0.5,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
 Forest,Temperate,Quercus Acer,Deciduous,,,0.54,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
 Forest,Temperate,Quercus Pinus,Deciduous,,,0.55,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
 Forest,Temperate,Quercus spp.,Deciduous,,,0.61,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
@@ -45,18 +47,18 @@ Forest,Boreal,Populus tremuloides,Deciduous,,,0.55,,Amothor (2001),,https://natu
 Forest,Boreal,Populus tremuloides,Deciduous,,,0.66,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
 Wetland,Temperate coastal salt marsh,Spartina,,,,0.77,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
 Wetland,Temperate coastal salt marsh,Spartina Distichlis,,,,0.69,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
-Tundra,Arctic tundra,,,,,0.50,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
+Tundra,Arctic tundra,,,,,0.5,,Amothor (2001),,https://nature.berkeley.edu/biometlab/pdf/Amthor%20and%20Baldocchi%202001%20In%20Terr%20Global%20Prod.pdf
 Forest,,,Forest,,,0.76,-1.64,Piao (2010),Direct up-scaled estimation,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.1
 Forest,,,Forest,,,0.66,-1.56,Piao (2010),Direct up-scaled estimation,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.2
-Forest,,,Forest,,,0.70,0.69,Piao (2010),Direct up-scaled estimation,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.3
-Forest,,,Forest,,,0.70,1.08,Piao (2010),Direct up-scaled estimation,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.4
+Forest,,,Forest,,,0.7,0.69,Piao (2010),Direct up-scaled estimation,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.3
+Forest,,,Forest,,,0.7,1.08,Piao (2010),Direct up-scaled estimation,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.4
 Forest,,,Forest,,,0.72,8.89,Piao (2010),Direct up-scaled estimation,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.5
 Forest,,,Forest,,,0.63,8.81,Piao (2010),Direct up-scaled estimation,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.6
 Forest,,,Forest,,,0.45,8.89,Piao (2010),Direct up-scaled estimation,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.7
-Forest,,,Forest,,,0.50,7.49,Piao (2010),Direct up-scaled estimation,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.8
-Forest,,,Forest,,,0.70,26.7,Piao (2010),Direct up-scaled estimation,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.9
+Forest,,,Forest,,,0.5,7.49,Piao (2010),Direct up-scaled estimation,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.8
+Forest,,,Forest,,,0.7,26.7,Piao (2010),Direct up-scaled estimation,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.9
 Forest,,,Forest,,,0.64,-4.94,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.10
-Forest,,,Forest,,,0.70,-0.19,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.11
+Forest,,,Forest,,,0.7,-0.19,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.11
 Forest,,,Forest,,,0.93,0.79,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.12
 Forest,,,Forest,,,0.73,0.79,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.13
 Forest,,,Forest,,,0.72,0.79,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.14
@@ -65,11 +67,11 @@ Forest,,,Forest,,,0.66,1.01,Piao (2010),GPP-NPP,https://esajournals.onlinelibrar
 Forest,,,Forest,,,0.66,0.72,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.17
 Forest,,,Forest,,,0.65,0.8,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.18
 Forest,,,Forest,,,0.53,0.8,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.19
-Forest,,,Forest,,,0.60,2.94,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.20
+Forest,,,Forest,,,0.6,2.94,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.20
 Forest,,,Forest,,,0.56,4.77,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.21
 Forest,,,Forest,,,0.58,6.81,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.22
 Forest,,,Forest,,,0.53,6.78,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.23
-Forest,,,Forest,,,0.50,6.32,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.24
+Forest,,,Forest,,,0.5,6.32,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.24
 Forest,,,Forest,,,0.54,7.45,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.25
 Forest,,,Forest,,,0.56,8.4,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.26
 Forest,,,Forest,,,0.58,8.47,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.27
@@ -77,12 +79,12 @@ Forest,,,Forest,,,0.63,8.05,Piao (2010),GPP-NPP,https://esajournals.onlinelibrar
 Forest,,,Forest,,,0.65,8.12,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.29
 Forest,,,Forest,,,0.68,8.22,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.30
 Forest,,,Forest,,,0.73,10.01,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.31
-Forest,,,Forest,,,0.60,12.58,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.32
-Forest,,,Forest,,,0.60,14.24,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.33
+Forest,,,Forest,,,0.6,12.58,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.32
+Forest,,,Forest,,,0.6,14.24,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.33
 Forest,,,Forest,,,0.43,7.49,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.34
 Forest,,,Forest,,,0.45,8.3,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.35
 Forest,,,Forest,,,0.25,6.47,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.36
-Forest,,,Forest,,,0.30,8.23,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.37
+Forest,,,Forest,,,0.3,8.23,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.37
 Forest,,,Forest,,,0.38,9.32,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.38
 Forest,,,Forest,,,0.35,9.88,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.39
 Forest,,,Forest,,,0.33,11.96,Piao (2010),GPP-NPP,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.40
@@ -92,30 +94,30 @@ Forest,,,Forest,,,0.63,1.01,Piao (2010),TER-Rh,https://esajournals.onlinelibrary
 Forest,,,Forest,,,0.63,2.98,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.44
 Forest,,,Forest,,,0.38,4.78,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.45
 Forest,,,Forest,,,0.34,7.42,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.46
-Forest,,,Forest,,,0.40,9.25,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.47
+Forest,,,Forest,,,0.4,9.25,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.47
 Forest,,,Forest,,,0.44,9.99,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.48
 Forest,,,Forest,,,0.35,11.99,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.49
 Forest,,,Forest,,,0.48,8.23,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.50
-Forest,,,Forest,,,0.50,7.45,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.51
+Forest,,,Forest,,,0.5,7.45,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.51
 Forest,,,Forest,,,0.51,6.78,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.52
 Forest,,,Forest,,,0.58,12.76,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.53
 Forest,,,Forest,,,0.58,8.12,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.54
-Forest,,,Forest,,,0.60,8.05,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.55
+Forest,,,Forest,,,0.6,8.05,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.55
 Forest,,,Forest,,,0.67,10.05,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.56
 Forest,,,Forest,,,0.68,6.71,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.57
 Forest,,,Forest,,,0.75,24.9,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.58
 Forest,,,Forest,,,0.78,25.04,Piao (2010),TER-Rh,https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/08-2176.59
-Forest,,,Forest,117,498,0.23,,Ma (2007),,
-Forest,,,Forest,306,715,0.43,,Ma (2007),,
-Forest,,,Forest,253,638,0.40,,Ma (2007),,
-Forest,,,Forest,466,878,0.53,,Ma (2007),,
-Forest,,,Forest,585,833,0.70,,Ma (2007),,
-Forest,,,Forest,345,712,0.48,,Ma (2007),,
-Forest,Pinus taeda,,Evergreen,2068,4124,0.50,,Kinerson(1997),SRDB 155,https://link.springer.com/article/10.1007/BF00345358
+Forest,,,Forest,117,498,0.23,,Ma (2007),,https://www.sciencedirect.com/science/article/pii/S016819230700189X
+Forest,,,Forest,306,715,0.43,,Ma (2007),,https://www.sciencedirect.com/science/article/pii/S016819230700189X
+Forest,,,Forest,253,638,0.4,,Ma (2007),,https://www.sciencedirect.com/science/article/pii/S016819230700189X
+Forest,,,Forest,466,878,0.53,,Ma (2007),,https://www.sciencedirect.com/science/article/pii/S016819230700189X
+Forest,,,Forest,585,833,0.7,,Ma (2007),,https://www.sciencedirect.com/science/article/pii/S016819230700189X
+Forest,,,Forest,345,712,0.48,,Ma (2007),,https://www.sciencedirect.com/science/article/pii/S016819230700189X
+Forest,Pinus taeda,,Evergreen,2068,4124,0.5,,Kinerson(1997),SRDB 155,https://link.springer.com/article/10.1007/BF00345358
 Forest,Liriodendron,,Deciduous,,,0.66,,Kinerson(1997),SRDB 155,https://link.springer.com/article/10.1007/BF00345359
 Forest,Pinus quercus,,Evergreen,,,0.53,,Kinerson(1997),SRDB 155,https://link.springer.com/article/10.1007/BF00345360
-Forest,Boreal humid,,Evergreen,489,973,0.50,,Luyssaert(2007)GCB,,https://onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2486.2007.01439.x
-Forest,Boreal semiaird,,Evergreen,541,773,0.70,,Luyssaert(2007)GCB,,https://onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2486.2007.01439.x
+Forest,Boreal humid,,Evergreen,489,973,0.5,,Luyssaert(2007)GCB,,https://onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2486.2007.01439.x
+Forest,Boreal semiaird,,Evergreen,541,773,0.7,,Luyssaert(2007)GCB,,https://onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2486.2007.01439.x
 Forest,Boreal semiaird,,Deciduous,755,1201,0.63,,Luyssaert(2007)GCB,,https://onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2486.2007.01439.x
 Forest,Temperate humid,,Evergreen,951,1762,0.54,,Luyssaert(2007)GCB,,https://onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2486.2007.01439.x
 Forest,Temperate humid,,Deciduous,673,1375,0.49,,Luyssaert(2007)GCB,,https://onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2486.2007.01439.x

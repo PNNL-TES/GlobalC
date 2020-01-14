@@ -98,7 +98,7 @@ knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE,
 
 ```{r load data}
 # input data
-read_file <- function(x) read.csv(file.path(DATA_DIR, x), stringsAsFactors = FALSE)
+read_file <- function(x) read.csv(file.path(DATA_DIR, x), comment.char = "#", stringsAsFactors = FALSE)
 
 srdb_v4 <- read_file('srdbv4.csv') # SRDB_V4 data
 FlFsFr <- read_file('FlFsFrSummary.csv') # Froot (Rroot/Rs) and Fshoot (Rshoot/Rs) from 39 papers
