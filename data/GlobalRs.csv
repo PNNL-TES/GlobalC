@@ -1,3 +1,5 @@
+# Global soil respiration (Rs) estimates
+# Columns include ID number (not used), publication year, period (year range of estimate), Rs estimate (PgC/yr), s.d., rate of change, reference
 ID,Pub_year,Period,Rs,SD,IncreaseRate,Rs_Reference,Rh,Ra,URL,
 1,1977,1977,75,,,Schlesinger (1977),,,https://www.annualreviews.org/doi/pdf/10.1146/annurev.es.08.110177.000411,
 2,1992,1962-1992,68,,,Raich (1992),,,https://onlinelibrary.wiley.com/doi/abs/10.1034/j.1600-0889.1992.t01-1-00001.x,
