@@ -87,6 +87,8 @@ library(ggbeeswarm)
 
 # Source all needed functions
 source('functions.R')
+source('functions-stats.R')
+source('functions-resampling.R')
 
 # Set chunks defaults; these options will be applied to all subsequent chunks
 knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE, 

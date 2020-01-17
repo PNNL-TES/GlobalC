@@ -20,6 +20,8 @@ library(tibble)
 
 ```
 
+Our GlobalC analysis calculates overlap between two distributions (in the paper, between e.g. canonical GPP and GPP implied by bottom-up Rs values). This toy example demonstrates this calculation, which is implemented in the main code in `functions-stats.R`.
+
 # Set up the toy problem 
 ## Define parameters
 
