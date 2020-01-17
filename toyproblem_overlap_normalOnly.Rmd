@@ -121,6 +121,7 @@ With the functions, we can calculate the threshold value of interest (their inte
 ## Check an assumption of normality for each sample
 
 We will use Shapiro-Wilkes, noting that the result that both our implied and observed samples are normally distributed is obvious because this is a toy problem and that's how we got the data in the first place. This test is included in the notebook because it's VITAL to do when working with the actual data. 
+**NOTE** that, because the real project data is bootstrapping the distribution for the mean of an underlying population, it will approach normal as the sample size (number of bootstraps) increases by the CLT. It still doesn't hurt to run SW to make sure we've taken enough bootstraps though. 
 
 For anyone who has forgotten details on interpreting results on this test: http://www.sthda.com/english/wiki/normality-test-in-r 
 
