@@ -85,12 +85,11 @@ p
 
 What are we actually trying to get? We don't simply want a lower bound and an upper bound for the range of variable values that define the overlap:
 
-
 ```{r boundary cartoon, echo = FALSE}
 p + geom_vline(xintercept = 0.45) + geom_vline(xintercept = 1.57)
 ```
 
-We specifically do not want the entire portion of the blue distribution (for example) that lies between the two verticle lines. What we care about is the portion of the blue density that lies beyond the threshold defined at the intersection of the two densities (similar for the red distribution):
+We specifically do _not_ want the entire portion of the blue distribution (for example) that lies between the two vertical lines. What we care about is the portion of the blue density that lies beyond the threshold defined at the intersection of the two densities (similar for the red distribution):
 
 ```{r boundary cartoon2, echo = FALSE}
 p + geom_vline(xintercept = 0.933, linetype = 2, color = 'blue') # + geom_vline(xintercept = 1.57, color = 'blue')
@@ -99,6 +98,7 @@ p + geom_vline(xintercept = 0.933, linetype = 2, color = 'blue') # + geom_vline(
 The remainder of this code notebook is broken into two sections.
 
 **First**, we are concerned with getting reliable functional representations of each distribution to work with. The code will check if the sample data is normally distributed. IF the data for each distribution is normally distributed, we can estimate the normal distribution (defined exclusively by a $\mu, \sigma$ pair) for each of the implied and observed distributions. With the final normal distributions, a statistical test that is (semi-) independent of sample size can be performed to judge whether the observed and implied distributions are significantly different. 
+
 We can directly calculate the mean and standard deviation from the sample data for each of observed, implied and that will fully define each distribution. Note that this still depends on the sample size though.
 
 However, even if Shapiro-Wilkes returns that one or both of the distributions is not normally distributed, we can still have some quantification of similarity and overlap. While we won't have the nice normal distribution functions to work with, we can still extract the numerical functions being plotted by `geom_density` and have functional representations of each density to  work with.
@@ -125,7 +125,7 @@ First we check whether the observed distribution is normal:
 shapiro.test(sample.obs)
 ```
 
-The p-value for our observed data is > 0.05, and so we fail to reject the null hypothesis: we fail to reject that the data is normally distributed. So we will make an assumption of normality because the evidence does not suggest otherwise. This is NOT the same as saying 'p>0.05 on SW test therefore normal'.  I know that phrasing is pedantic, but it's necessary. 
+The p-value for our observed data is > 0.05, and so we fail to reject the null hypothesis: we fail to reject that the data is normally distributed. So we will make an assumption of normality because the evidence does not suggest otherwise. This is NOT the same as saying 'p>0.05 on SW test therefore normal'. I know that phrasing is pedantic, but it's necessary. 
 
 And the implied: 
 
@@ -143,7 +143,7 @@ If one sample is normal and the other isn't, you can mix the methods and make $\
 
 Under our assumption of normality, we need only estimate the $mu, sigma$ values from each sample to fully define the distribution.
 
-** NOTE that because the sample estimates of $\mu, \sigma$ depend on the sample size, any test we do with the normal distributions implied by the  sample estimates of $\mu, \sigma$ will still implicitly depend on sample size. ** Therefore, this 'assumption of normality first' approach to the problem doesn't completely remove our dependency on sample size when comparing distributions.
+** NOTE that because the sample estimates of $\mu, \sigma$ depend on the sample size, any test we do with the normal distributions implied by the  sample estimates of $\mu, \sigma$ will still implicitly depend on sample size.** Therefore, this 'assumption of normality first' approach to the problem doesn't completely remove our dependency on sample size when comparing distributions.
 
 And then we estimate the mu and sigma values from each sample to get a normal distribution.
 
@@ -225,7 +225,7 @@ ggplot(dist.compare, aes(x = x, y = density, color = group)) + geom_line()
 
 # Final selection of density function for each distribution
 
-Based on our results of the SW tests on the implied and observed samples, we are assuming each of the observed, implied distributions are indeed normal. This step just lets the subsequent code quantifying overlap be more generic.
+Based on our results of the SW tests on the implied and observed samples, we are assuming both of the observed, implied distributions are indeed normal. This step just lets the subsequent code quantifying overlap be more generic.
 
 ```{r final distributions}
 observed.dist <- assume.normal.obs.fn
@@ -282,7 +282,8 @@ obs.areaundercurve <- traprule(x = obs.xaxis.range, y = obs.yaxis.range)
 
 Because the area under a distribution curve is, by definition 1, the fraction of the observed distribution that lies beyond the threshold is simply `obs.areaundercurve`: `r obs.areaundercurve` or `r 100*obs.areaundercurve`%.
 
-And for the implied distribution, because it is on the right, we care about the area under the implied distribution curve for `-infinity < variablevalue < threshold.value`: 
+And for the implied distribution, because it is on the right, we care about the area under the implied distribution curve for `-infinity < variablevalue < threshold.value`:
+
 ```{r implied percent overlap}
 # define the x-axis (variablevalue) points for integration
 imp.xaxis.range <- seq(min(sample.imp) - sign(min(sample.imp)) * 4 * min(sample.imp),
@@ -299,9 +300,9 @@ The fraction of the implied distribution that lies beyond the threshold is: `r i
 
 ## Quantile that threshold occurs at
 
-If you've found that an assumption of normality is justified for the observed and/or implied data, I would recommend analytically calculating the quantile and/or how many sigmas out the threshold value occurs at for each distribution.  
+If you've found that an assumption of normality is justified for the observed and/or implied data, I would recommend analytically calculating the quantile and/or how many sigmas out the threshold value occurs at for each distribution. 
 
-If you can't justify normality or also want the quantile value of the observed (or implied) distribution that the threshold value corresponds to, that's easy.  By definition, it is just the area under the implied distribution that we already calculated: the threshold occurs at the `r imp.areaundercurve`-th quantile of the implied distribution.
+If you can't justify normality or also want the quantile value of the observed (or implied) distribution that the threshold value corresponds to, that's easy. By definition, it is just the area under the implied distribution that we already calculated: the threshold occurs at the `r imp.areaundercurve`-th quantile of the implied distribution.
 
 And for the observed, it's the upper tail, so just 1-area: the threshold occurs at the `r 1-obs.areaundercurve`-th quantile of the observed distribution. Remember that we used the smooth normal distribution functions to get these areas under the curves. If we had calculated area under curve from our numerically extracted distributions, our results would be slightly different:
 
