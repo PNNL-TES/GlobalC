@@ -299,7 +299,7 @@ var_other_froot <- Froot[Froot$IGBP2 == "Other",]$Froot # samples of Froot for n
 # Bootstrap settings
 RESAMPLE <- method3
 RESAMPLE_noSD <- method1
-N_SAMPLES <- 10000
+N_SAMPLES <- 5000 # this is max shapiro.test() size
 sample_size <- 10
 QUANTILES <- c(0.025, 0.5, 0.975)  # Generate mean and 95% CI
 set.seed(20190827)
@@ -386,7 +386,6 @@ calc_bootstrap_gpp <- function(x) {
 
 gpp_results <- calc_bootstrap_gpp(bootstrap_gpp_draws)
 ```
-
 
 ## GPP results {.tabset .tabset-fade .tabset-pills}
 ### Scenario 1 - ratio __not__ weighted by ecosystem
@@ -541,21 +540,10 @@ ggplot(gpp_results, aes(x = 1-Froot, y = GPP2)) +
   ylab(expression(GPP~(Pg~C~yr^{-1})))
 ```
 
-### Probability of agreement
-```{r gpp-agreement, cache=FALSE}
-p_gpp1 <- prob_agreement(gpp_results$GPP, gpp_qt_raw)
-p_gpp2 <- prob_agreement(gpp_results$GPP2, gpp_qt_raw)
-p_gpp3 <- prob_agreement(ratio_results$GPP, gpp_qt_raw)
-p_gpp1_tt <- t_test(gpp_results$GPP_raw, gpp_results$GPP)
-p_gpp2_tt <- t_test(gpp_results$GPP_raw, gpp_results$GPP2)
-p_gpp3_tt <- t_test(gpp_results$GPP_raw, ratio_results$GPP)
+### Overlap
+```{r gpp-overlap, cache=FALSE, results='show'}
+calc_overlap(gpp_results$GPP_raw, gpp_results$GPP, intersection_interval = c(100, 150))
 ```
-
-Scenario                 | Agreement (quantiles) | p-value (t.test)
------------------------- | --------------------- | -----------------
-1 (no weighting)         | `r p_gpp1 * 100` %     | `r p_gpp1_tt`
-2 (weighting)            | `r p_gpp2 * 100` %     | `r p_gpp2_tt`
-3 (global Rs:GPP)        | `r p_gpp3 * 100` %     | `r p_gpp3_tt`
 
 ### Variance decomposition
 ```{r gpp-variance-decomp, results='show'}
@@ -771,11 +759,6 @@ rs_results %>% select(`RA = GPP * Ra-GPP ratio` = Ra1, `RA = GPP - NPP` = Ra2) %
 
 ggsave("outputs/FigureS6_RA_Method.jpg", width = 8, height = 4, dpi = 300, units = "in")
 
-
-
-
-
-
 # Rs ~ GPP
 ggplot(rs_results, aes(GPP_raw, Rs_topdown)) +
   geom_hex() +
@@ -817,22 +800,10 @@ ggplot(rs_results, aes(Fire, Rs_topdown)) +
   ylab(expression(R[S]~(Pg~C~yr^{-1})))
 ```
 
-### RSG probability of agreement
-
-```{r compute proportion of agreement between top-down RSG and bottom-up RSG, cache=FALSE}
-p_Rs1 <- prob_agreement(rs_results$Rs_topdown, rsg_qt_raw)
-p_Rs2 <- prob_agreement(rs_results$Rs_topdown2, rsg_qt_raw)
-p_Rs3 <- prob_agreement(ratio_results$Rs, rsg_qt_raw)
-p_Rs1_tt <- t_test(rs_results$Rs_raw, rs_results$Rs_topdown)
-p_Rs2_tt <- t_test(rs_results$Rs_raw, rs_results$Rs_topdown2)
-p_Rs3_tt <- t_test(rs_results$Rs_raw, ratio_results$Rs)
+### Overlap
+```{r rs-overlap, cache=FALSE, results='show'}
+calc_overlap(rs_results$Rs_topdown, rs_results$Rs_raw, intersection_interval = c(70, 90))
 ```
-
-Scenario                 | Agreement (quantiles) | p-value (t.test)
------------------------- | --------------------- | -----------------
-1 (no weighting)         | `r p_Rs1 * 100` %     | `r p_Rs1_tt`
-2 (weighting)            | `r p_Rs2 * 100` %     | `r p_Rs2_tt`
-3 (simple global Rs:GPP) | `r p_Rs3 * 100` %     | `r p_Rs3_tt`
 
 ### Variance decomposition
 ```{r rs-variance-decomp, results='show'}
