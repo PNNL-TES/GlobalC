@@ -176,7 +176,7 @@ If we're justified in making normality assumptions for each of implied, observed
 Regardless of whether we sample 100 or 1000 points from each of our two distributions, the `density` function returns x and y values for a default of n = 512 points making up the smooth density curves plotted above. 
 **NOTE that how `density` goes from 100 to 512 or 1000 to 512 points is unclear to me, but does suggest a dependence on sample size.** Therefore we will specify that the number of points should be our actual sample size. 
 
-So, we will take those `nsample`  points and make convenient functions to evaluate to determine whether a given `variablevalue` lies under both curves (ie in the overlap region between the implied and observed densities).
+So, we will take those `nsample` points and make convenient functions to evaluate to determine whether a given `variablevalue` lies under both curves (ie in the overlap region between the implied and observed densities).
 
 ```{r get density}
 # get the x and y values for the density function from 
@@ -263,7 +263,7 @@ dx <- 0.01
 # evaluation points `y`, the area under the curve according to 
 # the trapezoidal rule is:
 traprule <- function(x, y){
-  sum(diff(x) * (head(y,-1)+tail(y,-1)))/2
+  sum(diff(x) * (head(y,-1)+tail(y,-1)), na.rm = TRUE)/2
 }
 ```
 
@@ -313,7 +313,6 @@ And for the observed, it's the upper tail, so just 1-area: the threshold occurs 
 # numerically extracted pdf we already
 # estimated, ie direct.numerical.obs.fn().
 ecdf(sample.obs)(threshold.value)
-
 
 # and the implied
 ecdf(sample.imp)(threshold.value)
