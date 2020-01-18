@@ -1,0 +1,322 @@
+---
+title: "toyproblem_overlap"
+author: "ACS"
+date: "1/9/2020"
+output: 
+  html_document:
+      toc: true
+      toc_float: true
+      toc_depth: 4
+      number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(tibble)
+```
+
+Our GlobalC analysis calculates overlap between two distributions (in the paper, between e.g. canonical GPP and GPP implied by bottom-up Rs values). This toy example demonstrates this calculation, which is implemented in the main code in `functions-stats.R`.
+
+# Set up the toy problem 
+## Define parameters
+
+We will define two normal toy distributions. The distributions should have some unspecified amount of overlap.
+
+```{r normparams}
+mu.obs <- 0
+sig.obs <- 0.5
+
+mu.imp <- 1.5
+sig.imp <- 0.25
+```
+
+## Draw samples
+
+From these distributions, we will draw a number of samples as the toy-data stand in. In practice, this will be the samples of Rs or GPP taken from the observed and implied distribution.
+Some adaptation of the code may be necessary if the number of samples making up observed vs implied differ. 
+
+```{r draw samples}
+# number samples each
+nsample <- 1000
+
+# set seed for reproducibility
+set.seed(11)
+
+# draw samples 
+sample.obs <- rnorm(n = nsample, mean = mu.obs, sd = sig.obs)
+sample.imp <- rnorm(n = nsample, mean = mu.imp, sd = sig.imp)
+```
+
+## Make dummy dataframes to work with
+In the experimental data, there will be information about parameters, etc that correspond to each sample value. We are representing this as a single `id` column.
+
+```{r dummy dataframe}
+tibble(observed = sample.obs) %>%
+  mutate(id = as.numeric(row.names(.))) ->
+  observed
+
+tibble(implied = sample.imp) %>%
+  mutate(id = as.numeric(row.names(.))) ->
+  implied
+
+# Join the tables for convenient plotting
+observed %>%
+  left_join(implied, by = 'id') %>%
+  gather(distributionID, variablevalue, -id) ->
+  plotdata
+
+head(plotdata)
+```
+
+
+# Create the density plots from the sampled data
+```{r density plot}
+p <- ggplot(plotdata, aes(x = variablevalue, color = distributionID)) + 
+  geom_density()
+
+p
+```
+
+# Define the problem/task in more detail
+
+What are we actually trying to get? We don't simply want a lower bound and an upper bound for the range of variable values that define the overlap:
+
+```{r boundary cartoon, echo = FALSE}
+p + geom_vline(xintercept = 0.45) + geom_vline(xintercept = 1.57)
+```
+
+We specifically do _not_ want the entire portion of the blue distribution (for example) that lies between the two vertical lines. What we care about is the portion of the blue density that lies beyond the threshold defined at the intersection of the two densities (similar for the red distribution):
+
+```{r boundary cartoon2, echo = FALSE}
+p + geom_vline(xintercept = 0.933, linetype = 2, color = 'blue') # + geom_vline(xintercept = 1.57, color = 'blue')
+```
+
+The remainder of this code notebook is broken into two sections.
+
+**First**, we are concerned with getting reliable functional representations of each distribution to work with. The code will check if the sample data is normally distributed. IF the data for each distribution is normally distributed, we can estimate the normal distribution (defined exclusively by a $\mu, \sigma$ pair) for each of the implied and observed distributions. With the final normal distributions, a statistical test that is (semi-) independent of sample size can be performed to judge whether the observed and implied distributions are significantly different. 
+
+We can directly calculate the mean and standard deviation from the sample data for each of observed, implied and that will fully define each distribution. Note that this still depends on the sample size though.
+
+However, even if Shapiro-Wilkes returns that one or both of the distributions is not normally distributed, we can still have some quantification of similarity and overlap. While we won't have the nice normal distribution functions to work with, we can still extract the numerical functions being plotted by `geom_density` and have functional representations of each density to  work with.
+
+The **second portion** of this notebook is concerned with quantifications of similarity once we have a confident functional representation of each distribution.
+With the functions, we can calculate the threshold value of interest (their intersection) and use it as follows:
+
+1. We can calculate the area under the obesrved (blue) distribution that lies beyond the threshold as our metric of percentage overlap.(Similar for implied)
+2. We can calculate the quantile at which the threshold occurs for each distribution. If the distributions are normal, we can also calulate the corresponding number of sigmas out the threshold occurs at for each distribution.
+
+# Reliable functional representations of distributions
+
+## Check an assumption of normality for each sample
+
+We will use Shapiro-Wilkes, noting that the result that both our implied and observed samples are normally distributed is obvious because this is a toy problem and that's how we got the data in the first place. This test is included in the notebook because it's VITAL to do when working with the actual data. 
+
+For anyone who has forgotten details on interpreting results on this test: http://www.sthda.com/english/wiki/normality-test-in-r 
+
+TLDR: The null hypothesis of the SW test is that the data is normally distributed.
+
+First we check whether the observed distribution is normal:
+
+```{r ShapiroWilkesObs}
+shapiro.test(sample.obs)
+```
+
+The p-value for our observed data is > 0.05, and so we fail to reject the null hypothesis: we fail to reject that the data is normally distributed. So we will make an assumption of normality because the evidence does not suggest otherwise. This is NOT the same as saying 'p>0.05 on SW test therefore normal'. I know that phrasing is pedantic, but it's necessary. 
+
+And the implied: 
+
+```{r ShapiroWilkesImp}
+shapiro.test(sample.imp)
+```
+
+Again, we do not reject that the implied sample is normally distributed. 
+
+## Extract the density function two ways {.tabset}
+
+If one sample is normal and the other isn't, you can mix the methods and make $\sigma$-framed statements for the normal sample only. 
+
+### With normal data
+
+Under our assumption of normality, we need only estimate the $mu, sigma$ values from each sample to fully define the distribution.
+
+** NOTE that because the sample estimates of $\mu, \sigma$ depend on the sample size, any test we do with the normal distributions implied by the  sample estimates of $\mu, \sigma$ will still implicitly depend on sample size.** Therefore, this 'assumption of normality first' approach to the problem doesn't completely remove our dependency on sample size when comparing distributions.
+
+And then we estimate the mu and sigma values from each sample to get a normal distribution.
+
+```{r get densities}
+mu.sample.obs <- mean(sample.obs)
+sig.sample.obs <- sd(sample.obs)
+
+print(mu.sample.obs)
+print(sig.sample.obs)
+
+assume.normal.obs.fn <- function(x) {
+  dnorm(x, mu.sample.obs, sig.sample.obs)
+}
+
+mu.sample.imp <- mean(sample.imp)
+sig.sample.imp <- sd(sample.imp)
+
+print(mu.sample.imp)
+print(sig.sample.imp)
+
+assume.normal.imp.fn <- function(x) {
+  dnorm(x, mu.sample.imp, sig.sample.imp)
+}
+```
+
+If we're justified in making normality assumptions for each of implied, observed, you now have the needed $\mu^{sample}, \sigma^{sample}$ pairs to run a test for whether those normal distributions are statistically significantly different from each other. 
+
+### Without normal data - Getting density data and directly estimating the density functions 
+
+Regardless of whether we sample 100 or 1000 points from each of our two distributions, the `density` function returns x and y values for a default of n = 512 points making up the smooth density curves plotted above. 
+**NOTE that how `density` goes from 100 to 512 or 1000 to 512 points is unclear to me, but does suggest a dependence on sample size.** Therefore we will specify that the number of points should be our actual sample size. 
+
+So, we will take those `nsample`  points and make convenient functions to evaluate to determine whether a given `variablevalue` lies under both curves (ie in the overlap region between the implied and observed densities).
+
+```{r get density}
+# get the x and y values for the density function from 
+# the sample of observed data
+dens.obs <- density(sample.obs, n = nsample)
+dens.obs
+
+# use the density x and y values to create
+# a density step-function than can be used
+# for evaluations and determining whether
+# a variablevalue lies in the intersection
+# of the implied and observed distributions
+direct.numerical.obs.fn <- approxfun(x = dens.obs$x, y = dens.obs$y)
+
+# repeat for the implied density
+direct.numerical.imp.fn <- approxfun(x = density(sample.imp, n=nsample)$x, y =  density(sample.imp, n=nsample)$y)
+```
+
+**ASIDE** 
+We don't get the direct numerical functions from `geom_density` or `stat_density` because they make labeling much more difficult.
+The `geom_density()` and `stat_density()` functions generate the y-axis density values used for plotting. We must extract these values; we will use them to create convenient functions that can be evaluated for determining if a given `variable value` lies under both density curves. One challenge is that, regardless of the number of samples you give `geom_density` or `stat_density`, the density curves are estimated on 512 points (suggesting that each is just making a call to `density` anyway). Technically, all the data we need is there. However, because it's been extacted from a `ggplot`, the variable names are challenging to work with (`x` instead of `variablevalue`, `group = 1 or 2` instead of `distrubtionID = implied or observed`). 
+
+```{r ggplot extract density}
+# get the ggplot data and reshape to get to the 
+# variablevalue and corresponding density value
+head(ggplot_build(p)$data[[1]] )
+```
+
+# Plotting the two density functions for each distribution
+
+We can compare `assume.normal.obs.fn` with `direct.numerical.obs.fn` to see how good our assumption of normality is. Note that it is obvious in this toy problem that the assumption will be good. But hey, plots to visualize stuff is always nice. And, if it does turn out for the actual data that we are assuming normality for each distribution, I think a plot like this, where we have the `geom_density` produced curve as well as the normal distribution curve for each of implied, observed could be nice to see.
+
+Note that calculating and plotting `direct.numerical.obs.fn` is exactly the same as just calling `geom_density` on the data without calculating the function first. We've only calculated `direct.numerical.obs.fn` here so that, if the actual data is not normally distributed, we have an example of getting a numerical representation of a density curve to use for calculating the intersection/threshold value of interest.
+
+```{r compare densities, echo = FALSE}
+tibble(x = seq( -2, 2.5, by = 0.05)) %>%
+  mutate(assume.normal.obs = assume.normal.obs.fn(x),
+         direct.numerical.obs = direct.numerical.obs.fn(x),
+         assume.normal.imp = assume.normal.imp.fn(x),
+         direct.numerical.imp = direct.numerical.imp.fn(x)) %>%
+  gather(group, density, -x) ->
+  dist.compare
+
+ggplot(dist.compare, aes(x = x, y = density, color = group)) + geom_line()
+```
+
+# Final selection of density function for each distribution
+
+Based on our results of the SW tests on the implied and observed samples, we are assuming both of the observed, implied distributions are indeed normal. This step just lets the subsequent code quantifying overlap be more generic.
+
+```{r final distributions}
+observed.dist <- assume.normal.obs.fn
+
+implied.dist <- assume.normal.imp.fn
+```
+
+# Use the density functions to quantify overlap
+
+## Get the intersection (threshold)
+
+The threshold value of interest lies at the intersection of the two density functions (implied and observed).
+
+We will use `uniroot` but note that we have to define a range in which we expect the intersection to occur. You can just pick reasonable ranges from the Rs, GPP plots. I'd say Rs: `interval = c(70, 90)` and GPP: ` interval = c(110, 140)` based on the plots on the AGU poster.
+
+```{r use density}
+threshold.value <- uniroot(function(x) observed.dist(x) - implied.dist(x), interval = c(0.5, 1.5))$root
+print(paste('The threshold lies at variablevalue =', threshold.value))
+```
+
+## Percentage of each distribution in overlap
+
+Note that this metric does not in any way depend on either the observed or implied distribution being normal.
+
+This is the point where the code isn't as generic as it could be - it specifically is written so 'observed' is on the left and 'implied' is on the right. Sorry. Everything prior to this point is pretty generic I think.
+
+For the observed distribution, we are interested in the area under the curve for  `threshold.value < variablevalue < infinity` because our observed curve is on the left in this example. Obviously we can't have something like `infinity` so I pick an upper x-axis bound of integration of `4*max(sample.obs)`. There's a lot of packages that make for a cleaner function call to get area under a curve, but I'm just going with a plain `R` implementation of the trapezodal rule for integration. 
+
+The trapezoidal rule integration function:
+```{r trapezoidal rule}
+# integration stepsize for points along the x-axis
+dx <- 0.01 
+
+# for vectors of x-axis points `x` and corresponding function
+# evaluation points `y`, the area under the curve according to 
+# the trapezoidal rule is:
+traprule <- function(x, y){
+  sum(diff(x) * (head(y,-1)+tail(y,-1)))/2
+}
+```
+
+Using integration to get the observed percent overlap:
+
+```{r observed percent overlap}
+# define the x-axis (variablevalue) points for integration
+obs.xaxis.range <- seq(threshold.value, 4*max(sample.obs), by = dx )
+
+# the corresponding y-axis values
+obs.yaxis.range <- observed.dist(obs.xaxis.range)
+
+# and get the area under the curve
+obs.areaundercurve <- traprule(x = obs.xaxis.range, y = obs.yaxis.range)
+```
+
+Because the area under a distribution curve is, by definition 1, the fraction of the observed distribution that lies beyond the threshold is simply `obs.areaundercurve`: `r obs.areaundercurve` or `r 100*obs.areaundercurve`%.
+
+And for the implied distribution, because it is on the right, we care about the area under the implied distribution curve for `-infinity < variablevalue < threshold.value`:
+
+```{r implied percent overlap}
+# define the x-axis (variablevalue) points for integration
+imp.xaxis.range <- seq(min(sample.imp) - sign(min(sample.imp)) * 4 * min(sample.imp),
+                       threshold.value, by = dx )
+
+# the corresponding y-axis values
+imp.yaxis.range <- implied.dist(imp.xaxis.range)
+
+# and get the area under the curve
+imp.areaundercurve <- traprule(x = imp.xaxis.range, y = imp.yaxis.range)
+```
+
+The fraction of the implied distribution that lies beyond the threshold is: `r imp.areaundercurve` or `r 100*imp.areaundercurve`%.
+
+## Quantile that threshold occurs at
+
+If you've found that an assumption of normality is justified for the observed and/or implied data, I would recommend analytically calculating the quantile and/or how many sigmas out the threshold value occurs at for each distribution. 
+
+If you can't justify normality or also want the quantile value of the observed (or implied) distribution that the threshold value corresponds to, that's easy. By definition, it is just the area under the implied distribution that we already calculated: the threshold occurs at the `r imp.areaundercurve`-th quantile of the implied distribution.
+
+And for the observed, it's the upper tail, so just 1-area: the threshold occurs at the `r 1-obs.areaundercurve`-th quantile of the observed distribution. Remember that we used the smooth normal distribution functions to get these areas under the curves. If we had calculated area under curve from our numerically extracted distributions, our results would be slightly different:
+
+```{r quantiles with ecdf}
+# quantile in the observed distribution.
+# a call to ecdf just saves us the time of
+# directly calculating the area under the 
+# numerically extracted pdf we already
+# estimated, ie direct.numerical.obs.fn().
+ecdf(sample.obs)(threshold.value)
+
+
+# and the implied
+ecdf(sample.imp)(threshold.value)
+```
+
+Recall that a CDF is just the integral of the PDF aka `ecdf` gives us the integral of the numerically extracted density function we calculate in the case of not-normal data. The reason we go to the trouble of numerically extracting the density/pdf and not just using `ecdf` from the start is that we need the pdf for implied and observed samples so that we can actually find the threshold value. From there, it's equal amounts of work to just calculate the area under the pdf from (threshold to infinity) as it would be to call `ecdf` at the threshold. Finally, the fewer sample points being used to get an `ecdf`, the less confidence you have in the quantile it spits out.
