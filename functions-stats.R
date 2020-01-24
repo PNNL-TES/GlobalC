@@ -65,11 +65,14 @@ calc_overlap <- function(left_sample, right_sample, intersection_interval) {
     stop("It doesn't look like left_sample is actually on the left")  
   }
   
-  density_left <- density(left_sample, n = 1024)
   normal_fn_left <- function(x) dnorm(x, mean = mu_left, sd = sigma_left)
+  
+  density_left <- density(left_sample, n = 1024)
   numerical_fn_left <- approxfun(x = density_left$x, y = density_left$y)
-  density_right <- density(right_sample, n = 1024)
+  
   normal_fn_right <- function(x) dnorm(x, mean = mu_right, sd = sigma_right)
+  
+  density_right <- density(right_sample, n = 1024)
   numerical_fn_right <- approxfun(x = density_right$x, y = density_right$y)
   
   # Decide which density functions we're using
@@ -90,7 +93,7 @@ calc_overlap <- function(left_sample, right_sample, intersection_interval) {
   cat("Intersection =", intersection, "Pg C/yr\n")
   
   # Plot the distributions and intersection
-  tibble(x = seq(min(left_sample) - 50, max(right_sample) + 50, by = 5),
+  tibble(x = seq(min(left_sample) - 50, max(right_sample) + 50, by = 0.5),
          left_normal = normal_fn_left(x),
          right_normal = normal_fn_right(x),
          left_non_normal = numerical_fn_left(x),
