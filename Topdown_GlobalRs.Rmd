@@ -563,7 +563,9 @@ variance_decomp(bootstrap_gpp_draws, "GPP2", var(gpp_results$GPP2), calc_bootstr
 ### Input pairs
 ```{r gpp-input-pairs, results='show'}
 lt_ip <- gpp_results$GPP < gpp_ip  # "<" b/c most bootstrapped GPP values are above
-pairs_colors <- c("black", "red")[as.factor(lt_ip)]
+black <- rgb(0, 0, 0, alpha = 0.25)
+red <- rgb(1, 0, 0, alpha = 1)
+pairs_colors <- c(black, red)[as.factor(lt_ip)]
 pairsdata <- gpp_results[gpp_vd$Parameter[gpp_vd$Contribution > 0.05]]
 pairs(pairsdata, col = pairs_colors, main = "GPP")
 ```
@@ -835,7 +837,7 @@ variance_decomp(bootstrap_rs_draws, "Rs_topdown2",
 ### Input pairs
 ```{r rs-input-pairs, results='show'}
 gt_ip <- rs_results$Rs_topdown > rs_ip  # ">" b/c most bootstrapped Rs values are below
-pairs_colors <- c("black", "red")[as.factor(gt_ip)]
+pairs_colors <- c(black, red)[as.factor(gt_ip)]
 pairsdata <- rs_results[vd_rs$Parameter[vd_rs$Contribution > 0.05]]
 pairs(pairsdata, col = pairs_colors, main = "Rs")
 ```
