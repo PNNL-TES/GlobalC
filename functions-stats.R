@@ -46,6 +46,7 @@ t_test <- function(x, y, alternative = "two.sided", ...) {
 
 # Calculate overlap between two bootstrap samples
 # This implements the method laid out in `toyproblem_overlap.Rmd`
+# Returns the intersection point
 calc_overlap <- function(left_sample, right_sample, intersection_interval) {
   # Test for normality
   left_normal_test <- shapiro.test(left_sample)
@@ -131,5 +132,6 @@ calc_overlap <- function(left_sample, right_sample, intersection_interval) {
   
   cat("Left quantile of threshold:", ecdf(left_sample)(intersection), "\n")
   cat("Right quantile of threshold:", ecdf(right_sample)(intersection), "\n")
+  intersection
 }
 

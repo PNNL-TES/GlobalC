@@ -485,7 +485,6 @@ cat("\n\nTop-down GPP quantiles: ", gpp_qt_raw, "\n")
 ggsave("outputs/Figure1_gpp_simple.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
-
 ### GPP vs components relationships
 ```{r gpp-vs-components}
 gpp_results %>% ggplot() + aes(Rc) + 
@@ -542,7 +541,8 @@ ggplot(gpp_results, aes(x = 1-Froot, y = GPP2)) +
 
 ### Overlap
 ```{r gpp-overlap, cache=FALSE, results='show'}
-calc_overlap(gpp_results$GPP_raw, gpp_results$GPP, intersection_interval = c(100, 150))
+gpp_ip <- calc_overlap(gpp_results$GPP_raw, gpp_results$GPP, 
+                       intersection_interval = c(100, 150))
 ```
 
 ### Variance decomposition
@@ -550,14 +550,26 @@ calc_overlap(gpp_results$GPP_raw, gpp_results$GPP, intersection_interval = c(100
 variance_decomp(bootstrap_gpp_draws, "GPP", var(gpp_results$GPP), calc_bootstrap_gpp) %>%
   select(Parameter, GPP_variance = variance, Contribution) %>% 
   filter(Contribution > 0) %>% 
-  arrange(desc(Contribution)) %>% 
-  knitr::kable(format = "markdown")
+  arrange(desc(Contribution)) -> 
+  gpp_vd
+knitr::kable(gpp_vd, format = "markdown")
 variance_decomp(bootstrap_gpp_draws, "GPP2", var(gpp_results$GPP2), calc_bootstrap_gpp) %>%
   select(Parameter, GPP2_variance = variance, Contribution) %>% 
   filter(Contribution > 0) %>% 
   arrange(desc(Contribution)) %>% 
   knitr::kable(format = "markdown")
 ```
+
+### Input pairs
+```{r gpp-input-pairs, results='show'}
+lt_ip <- gpp_results$GPP < gpp_ip  # "<" b/c most bootstrapped GPP values are above
+black <- rgb(0, 0, 0, alpha = 0.25)
+red <- rgb(1, 0, 0, alpha = 1)
+pairs_colors <- c(black, red)[as.factor(lt_ip)]
+pairsdata <- gpp_results[gpp_vd$Parameter[gpp_vd$Contribution > 0.05]]
+pairs(pairsdata, col = pairs_colors, main = "GPP")
+```
+
 
 ## Bootstrapping RSG
 
@@ -716,7 +728,6 @@ cat("\n\nBottom-up Rs quantiles: ", rsg_qt_raw, "\n")
 ggsave("outputs/Figure1_rs_weighted.jpg", width = 8, height = 4)
 ```
 
-
 ### Scenario 3 - SRDB Rs:GPP ratios
 ```{r SRDB Rs:GPP ratios for RSG, results='asis'}
 # Calculation are the same as above
@@ -802,21 +813,33 @@ ggplot(rs_results, aes(Fire, Rs_topdown)) +
 
 ### Overlap
 ```{r rs-overlap, cache=FALSE, results='show'}
-calc_overlap(rs_results$Rs_topdown, rs_results$Rs_raw, intersection_interval = c(70, 90))
+rs_ip <- calc_overlap(rs_results$Rs_topdown, rs_results$Rs_raw, 
+                      intersection_interval = c(70, 90))
 ```
 
 ### Variance decomposition
 ```{r rs-variance-decomp, results='show'}
-variance_decomp(bootstrap_rs_draws, "Rs_topdown", var(rs_results$Rs_topdown), calc_bootstrap_rs) %>%
+variance_decomp(bootstrap_rs_draws, "Rs_topdown", 
+                var(rs_results$Rs_topdown), calc_bootstrap_rs) %>%
   select(Parameter, Rs_topdown_variance = variance, Contribution) %>% 
   filter(Contribution > 0) %>% 
-  arrange(desc(Contribution)) %>% 
-  knitr::kable(format = "markdown")
-variance_decomp(bootstrap_rs_draws, "Rs_topdown2", var(rs_results$Rs_topdown2), calc_bootstrap_rs) %>%
+  arrange(desc(Contribution)) ->
+  vd_rs 
+knitr::kable(vd_rs, format = "markdown")
+variance_decomp(bootstrap_rs_draws, "Rs_topdown2", 
+                var(rs_results$Rs_topdown2), calc_bootstrap_rs) %>%
   select(Parameter, Rs_topdown2_variance = variance, Contribution) %>% 
   filter(Contribution > 0) %>% 
   arrange(desc(Contribution)) %>% 
   knitr::kable(format = "markdown")
+```
+
+### Input pairs
+```{r rs-input-pairs, results='show'}
+gt_ip <- rs_results$Rs_topdown > rs_ip  # ">" b/c most bootstrapped Rs values are below
+pairs_colors <- c(black, red)[as.factor(gt_ip)]
+pairsdata <- rs_results[vd_rs$Parameter[vd_rs$Contribution > 0.05]]
+pairs(pairsdata, col = pairs_colors, main = "Rs")
 ```
 
 
