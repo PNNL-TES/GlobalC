@@ -124,6 +124,16 @@ srdb_v4 %>%
   filter(RC_annual > 0, RC_annual < 1) -> 
   sub_srdb
 
+sub_srdb %>% 
+    mutate(IGBP2 = case_when(Ecosystem_type == "Agriculture" ~ "Agriculture",
+                             Ecosystem_type == "Grassland" ~ "Grassland",
+                             Ecosystem_type %in% c("Savanna", "Shrubland") ~ "Shrubland",
+                             Ecosystem_type == "Forest" & Leaf_habit == 'Deciduous' ~ "DF",
+                             Ecosystem_type == "Forest" & Leaf_habit == 'Evergreen' ~ "EF",
+                             Ecosystem_type == "Forest" & Leaf_habit == 'Mixed' ~ "Mixed",
+                             TRUE ~ "Other")) -> 
+  sub_srdb
+
 # calculate Froot
 Froot <- cal_Froot(FlFsFr, srdb_v4) 
 # check whether Froot + Fshoot = 1
@@ -151,8 +161,8 @@ Froot %>% mutate(IGBP2 = case_when(
 # panel (a). all 65 GPP estimates
 # panel (b). GPP vs year, the red dots in panel c are calculated trend from panel b (increasing rate = 0.2 if outliers removed, 0.42 if outliers kept)
 # panel (c). 16 GPP estimates reported GPP increase trend
-plot_GPP_RSG (GPP, GlobalRs)
-ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
+# plot_GPP_RSG (GPP, GlobalRs)
+# ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 
 # A couple of simpler figures for Ben's Japan presentation
 p_gpp <- ggplot(GPP, aes(Year, GPP)) + geom_point() + 
@@ -175,21 +185,8 @@ ggsave("outputs/p_rs.png", plot = p_rs_marg, width = 8, height = 5)
 ```{r plot RC, fig.height=6, fig.width=8}
 # Plot global Rs, NPP, Fire-burned Carbon, and RC by ecosystem (root respiration to soil respiration ratio)
 # more details please see function plot_Rroot_Rs_NPP ()
-# prepare data first
-sub_srdb %>% count(Leaf_habit) 
 
-sub_srdb %>% 
-  mutate(IGBP2 = case_when(Ecosystem_type == "Agriculture" ~ "Agriculture",
-                           Ecosystem_type == "Grassland" ~ "Grassland",
-                           Ecosystem_type %in% c("Savanna", "Shrubland") ~ "Shrubland",
-                           Ecosystem_type == "Forest" & Leaf_habit == 'Deciduous' ~ "DF",
-                           Ecosystem_type == "Forest" & Leaf_habit == 'Evergreen' ~ "EF",
-                           Ecosystem_type == "Forest" & Leaf_habit == 'Mixed' ~ "Mixed",
-                           TRUE ~ "Other")) -> sub_srdb
-
-sub_srdb %>% count(IGBP2) 
-
-plot_Rroot_Rs_NPP (GlobalRs, sub_srdb, NPP) 
+plot_Rroot_Rs_NPP (sub_srdb, NPP) 
 ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
@@ -239,7 +236,7 @@ var_RaGpp %>%
 ## Sites' spatial distribution
 ```{r plot spatial distribution, echo=FALSE, warning=FALSE}
 # Figure. Sites distribution -- FlFsFr sites and RC/HC sites
-plot_sites(srdb_v4, Froot, srdb_v4)
+plot_sites(srdb_v4, Froot)
 ggsave("outputs/FigureS6.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
 
@@ -928,7 +925,7 @@ knitr::kable(results_w50, digits = 1, format = "markdown")
 
 
 ## Topdown and bottomup comparison - Figure 1
-```{r combine GPP and RSG comparison into figure 2, fig.height=8, fig.width=6, cache=FALSE}
+```{r combine GPP and RSG comparison into figure 2, fig.height=8, fig.width=8, cache=FALSE}
 # Scenario 2, RC separate into 4 groups, and Froot separate into 2 groups
 plot_grid(p2_rs2, p1_gpp2, ncol = 1, labels = c("(a)", "(b)"), hjust = 0)
 # ggsave("outputs/Figure1.png")
@@ -1132,39 +1129,6 @@ Summarize stats and software used.
 ```{r sample method comparison}
 sample_size_tst(10, 10000)
 ggsave("outputs/FigureS7.jpg", width = 8, height = 6, dpi = 300, units = "in")
-```
-
-
-_**Components important analysis**_
-
-```{r not used}
-
-# DGRsD <- read_file('DGRsD.csv')
-# AGB <- read_file('GLC2000_Point.txt') %>% 
-#   filter(RASTERVALU != -9999)
-
-# SOC <- read_file('SOC_Point.txt')
-
-# Each row gets the closest latitude and longitude values to AGB and SOC data
-# AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
-# Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Longitude*2, 0)/2-0.25) -> Froot
-# there is no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
-# left_join(Froot, AGB) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
-# left_join(Froot, SOC) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
-
-# Each row gets the closest latitude and longitude values to AGB and SOC data
-# AGB$Latitude[which.min(abs(61.85 - AGB$Latitude))]
-# Froot %>% mutate(Latitude = round(Latitude*2, 0)/2 - 0.25, Longitude = round(Longitude*2, 0)/2-0.25) -> Froot
-# there is no clear relationship between Froot and above-ground biomass or soil organic carbon (SOC)
-# left_join(Froot, AGB) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
-# left_join(Froot, SOC) %>% ggplot() + aes(RASTERVALU, Froot) + geom_point()
-
-
-# Rs raw data plot
-# rsg_qt <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
-# plot_rs_raw <- ggplot(rs_results) + aes(Rs_raw) + geom_histogram(col = "black", fill = "gray", bins = 30) + 
-#   geom_vline(xintercept = c(quantile (rs_results$Rs, QUANTILES)),col = "red", linetype = "dotted", size = 1.5) +
-#   annotate("text", x = quantile(rs_results$Rs, 0.98), y = 5000, label = paste0("95%CI (", rsg_qt[1],", ", rsg_qt[2], ", ", rsg_qt[3], ")"), hjust = 0)
 ```
 
 

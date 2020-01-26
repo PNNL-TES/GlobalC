@@ -25,7 +25,7 @@ knitr::opts_chunk$set(results = 'hide', message = TRUE, include = TRUE,
 ## load data
 ```{r load data}
 # input data
-read_file <- function(x) read.csv(file.path(DATA_DIR, x), stringsAsFactors = FALSE)
+read_file <- function(x) read.csv(file.path(DATA_DIR, x), comment.char = "#", stringsAsFactors = FALSE)
 
 GPP <- read_file('GlobalGPP_Sum.csv') # GPP estimates from published paper
 GPP %>% filter(Pub_year > 1980 & Flag != "Model") -> GPP
