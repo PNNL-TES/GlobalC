@@ -392,7 +392,7 @@ gpp_qt <- quantile(gpp_results$GPP, QUANTILES) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, QUANTILES) %>% round(0)
 
 gpp_results %>%
-  select(`GPP[Rs]` = GPP, `GPP` = GPP_raw) %>% 
+  select(`GPP[Rs]` = GPP, `Canonical-GPP` = GPP_raw) %>% 
   gather(GPP_type) ->
   gpp_figure_data
 
@@ -427,7 +427,7 @@ gpp_qt <- quantile(gpp_results$GPP2, QUANTILES) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, QUANTILES) %>% round(0)
 
 gpp_results %>%
-  select(`GPP[Rs]` = GPP2, `GPP` = GPP_raw) %>% 
+  select(`GPP[Rs]` = GPP2, `Canonical-GPP` = GPP_raw) %>% 
   gather(GPP_type) ->
   gpp_figure2_data
 
@@ -468,7 +468,7 @@ gpp_qt <- quantile(ratio_results$GPP, QUANTILES) %>% round(0)
 gpp_qt_raw <- quantile(ratio_results$GPP_raw, QUANTILES) %>% round(0)
 
 ratio_results %>%
-  select(`GPP[Rs]` = GPP, `GPP` = GPP_raw) %>% 
+  select(`GPP[Rs]` = GPP, `Canonical-GPP` = GPP_raw) %>% 
   gather(GPP_type) ->
   gpp_ratio_figure_data
 
@@ -673,7 +673,7 @@ rsg_qt <- quantile(rs_results$Rs_topdown, QUANTILES) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
 
 rs_results %>%
-  select(`Rs[GPP]` = Rs_topdown, `Rs` = Rs_raw) %>% 
+  select(`Rs[GPP]` = Rs_topdown, `Upscaled-Rs` = Rs_raw) %>% 
   gather(Rs_type) ->
   rs_figure_data
 
@@ -711,7 +711,7 @@ rsg_qt <- quantile(rs_results$Rs_topdown2, QUANTILES) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
 
 rs_results %>%
-  select(`Rs[GPP]` = Rs_topdown2, `Rs` = Rs_raw) %>% 
+  select(`Rs[GPP]` = Rs_topdown2, `Upscaled-Rs` = Rs_raw) %>% 
   gather(Rs_type) ->
   rs_figure_data
 
@@ -730,7 +730,7 @@ ggsave("outputs/Figure1_rs_weighted.jpg", width = 8, height = 4)
 # Calculation are the same as above
 
 ratio_results %>%
-  select(`Rs[GPP]` = Rs, `Rs` = Rs_raw) %>% 
+  select(`Rs[GPP]` = Rs, `Upscaled-Rs` = Rs_raw) %>% 
   gather(Rs_type) ->
   rs_ratio_figure_data
 
