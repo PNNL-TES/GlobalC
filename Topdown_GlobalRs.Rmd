@@ -125,13 +125,13 @@ srdb_v4 %>%
   sub_srdb
 
 sub_srdb %>% 
-    mutate(IGBP2 = case_when(Ecosystem_type == "Agriculture" ~ "Agriculture",
-                             Ecosystem_type == "Grassland" ~ "Grassland",
-                             Ecosystem_type %in% c("Savanna", "Shrubland") ~ "Shrubland",
-                             Ecosystem_type == "Forest" & Leaf_habit == 'Deciduous' ~ "DF",
-                             Ecosystem_type == "Forest" & Leaf_habit == 'Evergreen' ~ "EF",
-                             Ecosystem_type == "Forest" & Leaf_habit == 'Mixed' ~ "Mixed",
-                             TRUE ~ "Other")) -> 
+  mutate(IGBP2 = case_when(Ecosystem_type == "Agriculture" ~ "Agriculture",
+                           Ecosystem_type == "Grassland" ~ "Grassland",
+                           Ecosystem_type %in% c("Savanna", "Shrubland") ~ "Shrubland",
+                           Ecosystem_type == "Forest" & Leaf_habit == 'Deciduous' ~ "DF",
+                           Ecosystem_type == "Forest" & Leaf_habit == 'Evergreen' ~ "EF",
+                           Ecosystem_type == "Forest" & Leaf_habit == 'Mixed' ~ "Mixed",
+                           TRUE ~ "Other")) -> 
   sub_srdb
 
 # calculate Froot
@@ -857,10 +857,27 @@ rs_results %>%
   bind_rows(joint1) ->
   joint
 
+myarrow <- arrow(length = unit(0.1, "inches"))
+
+# See https://stackoverflow.com/questions/8197559/emulate-ggplot2-default-color-palette
+# for ggplot color defaults - that's how I got color codes below
+
 p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) + geom_point(alpha = 0.05) + geom_density2d() +
-  scale_color_discrete(labels = c(expression(Rs[GPP]), expression(GPP[Rs]))) +
+  scale_color_discrete("Bootstrap\ndata source", labels = c(expression(GPP), expression(R[S]))) +
   xlab(expression(GPP~(Pg~C~yr^-1))) +
-  ylab(expression(R[S]~(Pg~C~yr^-1)))
+  ylab(expression(R[S]~(Pg~C~yr^-1))) +
+  annotate("segment", x = mean(rs_results$GPP_raw), xend = mean(rs_results$GPP_raw), 
+           y = 50, yend = mean(rs_results$Rs_topdown2), 
+           color = "#F8766D", linetype = 2) +
+  annotate("segment", x = mean(rs_results$GPP_raw), xend = 75, 
+           y = mean(rs_results$Rs_topdown2), yend = mean(rs_results$Rs_topdown2), 
+           arrow = myarrow, color = "#F8766D", linetype = 2) +
+  annotate("segment", x = 75, xend = mean(gpp_results$GPP2), 
+           y = mean(gpp_results$Rs_raw), yend = mean(gpp_results$Rs_raw), 
+           color = "#00BFC4", linetype = 2) +
+  annotate("segment", x = mean(gpp_results$GPP2), xend = mean(gpp_results$GPP2), 
+           y = mean(gpp_results$Rs_raw), yend = 50, 
+           arrow = myarrow, color = "#00BFC4", linetype = 2)
 print(p_joint)
 ggsave("outputs/Figure3_not_sure.png", width = 6, height = 4)
 ```
