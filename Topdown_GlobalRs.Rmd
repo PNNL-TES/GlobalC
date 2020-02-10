@@ -848,16 +848,19 @@ What's the most likely values for GPP and R[S] that are consistent with the unde
 ```{r joint-plot, results='show'}
 gpp_results %>% 
   select(Rs = Rs_raw, GPP = GPP2) %>% 
-  mutate(source = "Rs-driven GPP") ->
+  mutate(Source = "Rs-driven GPP") ->
   joint1
 
 rs_results %>% 
   select(GPP = GPP_raw, Rs = Rs_topdown2) %>% 
-  mutate(source = "GPP-driven Rs") %>% 
+  mutate(Source = "GPP-driven Rs") %>% 
   bind_rows(joint1) ->
   joint
 
-p_joint <- ggplot(joint, aes(GPP, Rs, color = source)) + geom_point(alpha = 0.05) + geom_density2d()
+p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) + geom_point(alpha = 0.05) + geom_density2d() +
+  scale_color_discrete(labels = c(expression(Rs[GPP]), expression(GPP[Rs]))) +
+  xlab(expression(GPP~(Pg~C~yr^-1))) +
+  ylab(expression(R[S]~(Pg~C~yr^-1)))
 print(p_joint)
 ggsave("outputs/Figure3_not_sure.png", width = 6, height = 4)
 ```
