@@ -688,8 +688,9 @@ rs_figure_data %>%
   # reverse the color scale so that teal (color 1) is always observations, 
   # while pink is always implied fluxes
   # scale_fill_discrete("", h.start = 180) + scale_color_discrete(h.start = 180) +
-  scale_fill_discrete("", labels = c(expression(Canonical~Rs), expression("Rs"[GPP]~"          "))) +
+  # scale_fill_discrete("", labels = c(expression(Canonical~Rs), expression("Rs"[GPP]~"          "))) +
   scale_fill_manual(values = c("#00BFC4","#F8766D")) +
+  theme(legend.title = element_blank()) +
   ylab("Density") +
   xlab(expression(R[S]~(Pg~C~yr^{-1}))) ->
   rs_base_figure
