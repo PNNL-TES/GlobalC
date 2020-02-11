@@ -8,7 +8,6 @@ output:
 ---
 
 ## Summary
-
 ## Abbreviations
 * Rroot - root respiration
 * Rshoot - shoot respiration
@@ -185,7 +184,7 @@ ggsave("outputs/p_rs.png", plot = p_rs_marg, width = 8, height = 5)
 ```{r plot RC, fig.height=6, fig.width=8}
 # Plot global Rs, NPP, Fire-burned Carbon, and RC by ecosystem (root respiration to soil respiration ratio)
 # more details please see function plot_Rroot_Rs_NPP ()
-
+sub_srdb %>% count(IGBP2)
 plot_Rroot_Rs_NPP (sub_srdb, NPP) 
 ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
@@ -194,6 +193,7 @@ ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```{r plot Rroot-Ra ratio, fig.height = 4, fig.width = 6}
 # potential issue: only two points from grassland
 # no point from tundra 
+Froot %>% count(IGBP2)
 plot_Rroot_Ra_ratio(Froot)
 ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
@@ -214,17 +214,15 @@ var_RaGpp %>%
     Ecosystem %in% c("Grassland", "Savanna") ~ "Grassland",
     Ecosystem == "Forest" & Leaf_habit == "Deciduous" ~ "Deciduous",
     Ecosystem == "Forest" & Leaf_habit == "Evergreen" ~ "Evergreen",
-    Ecosystem == "Forest" & Leaf_habit == "Forest" ~ "Forest",
-    Ecosystem == "Forest" & Leaf_habit == "Mixed" ~ "Forest",
+    Ecosystem == "Forest" & Leaf_habit == "Forest" ~ "Mixed",
+    Ecosystem == "Forest" & Leaf_habit == "Mixed" ~ "Mixed",
     TRUE ~ "NOTA")
   ) -> var_RaGpp
 
 var_RaGpp %>% count(Ecosystem)
-
+var_RaGpp %>% count(IGBP2)
 plot_RaGPP(var_RaGpp)
 ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
-
-var_RaGpp %>% count(IGBP2)
 
 var_RaGpp %>% 
   group_by(Ecosystem) %>% 
@@ -284,7 +282,7 @@ var_gra_froot <- Froot[Froot$Ecosystem == "Grassland",]$Froot #  grassland
 var_sav_froot <- Froot[Froot$Ecosystem == "Savanna",]$Froot #  savanna
 var_wet_froot <- Froot[Froot$Ecosystem == "Wetland",]$Froot 
 var_rest_froot <- Froot$Froot # for those ecosystems with no data, use all data from Froot
-# only separate into ef and the rest
+# only separate into forest and the rest
 var_ef_froot <- Froot[Froot$IGBP2 == "EF",]$Froot # Froot data for ef
 var_df_froot <- Froot[Froot$IGBP2 == "DF",]$Froot # Froot data for df
 var_mf_froot <- Froot[Froot$IGBP2 == "MF",]$Froot # Froot data for mf
@@ -347,7 +345,7 @@ bootstrap_data %>%
     Rc = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RC$RC_annual),
     
     # Scenario 1: Froot not separated into different ecosystems
-    Froot = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, Froot$Froot),
+    Froot = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, Froot$Froot)
   ) -> bootstrap_gpp_draws
 
 # Step 2. Do the static (no random draws) steps that calculate GPP
@@ -558,14 +556,17 @@ variance_decomp(bootstrap_gpp_draws, "GPP2", var(gpp_results$GPP2), calc_bootstr
   knitr::kable(format = "markdown")
 ```
 
-### Input pairs
-```{r gpp-input-pairs, results='show'}
+### Input pairs: Figure S9
+```{r gpp-input-pairs, results='show', fig.width=8, fig.height=6}
 lt_ip <- gpp_results$GPP < gpp_ip  # "<" b/c most bootstrapped GPP values are above
 black <- rgb(0, 0, 0, alpha = 0.25)
 red <- rgb(1, 0, 0, alpha = 1)
 pairs_colors <- c(black, red)[as.factor(lt_ip)]
 pairsdata <- gpp_results[gpp_vd$Parameter[gpp_vd$Contribution > 0.05]]
+pairsdata <- rename(pairsdata, 'Canonical-Rs' = Rs_raw, 'Rroot-to-Rs ratio' = Rc, 'Rroot-to-Ra ratio' = Froot)
+pdf("outputs/Figure S9 - Boots GPP pairs.pdf", width = 8, height = 6)
 pairs(pairsdata, col = pairs_colors, main = "GPP")
+dev.off()
 ```
 
 
@@ -579,7 +580,7 @@ var_RaGpp %>% count(IGBP2)
 var_RaGpp_df <- var_RaGpp %>% filter(IGBP2 == "Deciduous") %>% pull(RaGPP_ratio)
 var_RaGpp_ef <- var_RaGpp %>% filter(IGBP2 == "Evergreen") %>% pull(RaGPP_ratio)
 # mixed forest are from all forests due to lack of data
-var_RaGpp_mf <- var_RaGpp %>% filter(IGBP2 == "Forest") %>% pull(RaGPP_ratio)
+var_RaGpp_mf <- var_RaGpp %>% filter(IGBP2 == "Mixed") %>% pull(RaGPP_ratio)
 var_RaGpp_gra <- var_RaGpp %>% filter(IGBP2 == "Grassland") %>% pull(RaGPP_ratio)
 ```
 
@@ -837,18 +838,21 @@ variance_decomp(bootstrap_rs_draws, "Rs_topdown2",
 ```
 
 ### Input pairs
-```{r rs-input-pairs, results='show'}
+```{r rs-input-pairs, results='show', fig.height=6, fig.width=8}
 gt_ip <- rs_results$Rs_topdown > rs_ip  # ">" b/c most bootstrapped Rs values are below
 pairs_colors <- c(black, red)[as.factor(gt_ip)]
 pairsdata <- rs_results[vd_rs$Parameter[vd_rs$Contribution > 0.05]]
+pairsdata <- rename(pairsdata, 'Canonical-GPP' = GPP_raw, 'Rroot-to-Ra ratio' = Froot_rest,'Ra-to-GPP ratio' = RaGpp_rest)
+pdf("outputs/Figure S10 - Boots Rs pairs.pdf", width = 8, height = 6)
 pairs(pairsdata, col = pairs_colors, main = "Rs")
+dev.off()
 ```
 
 
 ## Topdown and bottomup comparison - Figure 1
 ```{r combine GPP and RSG comparison into figure 2, fig.height=8, fig.width=8, cache=FALSE}
 # Scenario 2, RC separate into 4 groups, and Froot separate into 2 groups
-plot_grid(p2_rs2, p1_gpp2, ncol = 1, labels = c("(a)", "(b)"), hjust = 0)
+plot_grid(p1_gpp2, p2_rs2, ncol = 1, labels = c("(a)", "(b)"), hjust = 0)
 ggsave("outputs/Figure1.png")
 ```
 
