@@ -689,6 +689,7 @@ rs_figure_data %>%
   # while pink is always implied fluxes
   # scale_fill_discrete("", h.start = 180) + scale_color_discrete(h.start = 180) +
   scale_fill_discrete("", labels = c(expression(Canonical~Rs), expression("Rs"[GPP]~"          "))) +
+  scale_fill_manual(values = c("#00BFC4","#F8766D")) +
   ylab("Density") +
   xlab(expression(R[S]~(Pg~C~yr^{-1}))) ->
   rs_base_figure
@@ -854,7 +855,7 @@ ggsave("outputs/Figure1.png")
 
 What's the most likely values for GPP and R[S] that are consistent with the underlying distributions?
 
-```{r joint-plot, results='show'}
+```{r joint-plot, results='show', fig.width=5, fig.height=4}
 gpp_results %>% 
   select(Rs = Rs_raw, GPP = GPP2) %>% 
   mutate(Source = "Rs-driven GPP") ->
