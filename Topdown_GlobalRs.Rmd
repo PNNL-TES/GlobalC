@@ -402,7 +402,8 @@ gpp_figure_data %>%
   geom_density(stat = 'density', alpha = 0.5) +
   theme(legend.position = c(0.75, 0.35)) +
   coord_cartesian(xlim = c(70, 250)) +
-  scale_fill_discrete("") + ylab("Density") +
+  scale_fill_discrete("", labels = c(expression(Canonical~GPP),expression(GPP[Rs]~"            "))) + 
+  ylab("Density") +
   xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
   gpp_base_figure
 
@@ -674,7 +675,7 @@ rsg_qt <- quantile(rs_results$Rs_topdown, QUANTILES) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
 
 rs_results %>%
-  select(`Rs[GPP]` = Rs_topdown, `Upscaled-Rs` = Rs_raw) %>% 
+  select(`Rs[GPP]` = Rs_topdown, `Canonical-Rs` = Rs_raw) %>% 
   gather(Rs_type) ->
   rs_figure_data
 
@@ -686,7 +687,8 @@ rs_figure_data %>%
   coord_cartesian(xlim = c(50, 120)) +
   # reverse the color scale so that teal (color 1) is always observations, 
   # while pink is always implied fluxes
-  scale_fill_discrete("", h.start = 180) + scale_color_discrete(h.start = 180) +
+  # scale_fill_discrete("", h.start = 180) + scale_color_discrete(h.start = 180) +
+  scale_fill_discrete("", labels = c(expression(Canonical~Rs), expression("Rs"[GPP]~"          "))) +
   ylab("Density") +
   xlab(expression(R[S]~(Pg~C~yr^{-1}))) ->
   rs_base_figure
@@ -712,7 +714,7 @@ rsg_qt <- quantile(rs_results$Rs_topdown2, QUANTILES) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
 
 rs_results %>%
-  select(`Rs[GPP]` = Rs_topdown2, `Upscaled-Rs` = Rs_raw) %>% 
+  select(`Rs[GPP]` = Rs_topdown2, `Canonical-Rs` = Rs_raw) %>% 
   gather(Rs_type) ->
   rs_figure_data
 
@@ -731,7 +733,7 @@ ggsave("outputs/Figure1_rs_weighted.jpg", width = 8, height = 4)
 # Calculation are the same as above
 
 ratio_results %>%
-  select(`Rs[GPP]` = Rs, `Upscaled-Rs` = Rs_raw) %>% 
+  select(`Rs[GPP]` = Rs, `Canonical-Rs` = Rs_raw) %>% 
   gather(Rs_type) ->
   rs_ratio_figure_data
 
@@ -841,7 +843,14 @@ pairs(pairsdata, col = pairs_colors, main = "Rs")
 ```
 
 
-## Combining GPP and Rs
+## Topdown and bottomup comparison - Figure 1
+```{r combine GPP and RSG comparison into figure 2, fig.height=8, fig.width=8, cache=FALSE}
+# Scenario 2, RC separate into 4 groups, and Froot separate into 2 groups
+plot_grid(p2_rs2, p1_gpp2, ncol = 1, labels = c("(a)", "(b)"), hjust = 0)
+ggsave("outputs/Figure1.png")
+```
+
+## Combining GPP and Rs - figure 2
 
 What's the most likely values for GPP and R[S] that are consistent with the underlying distributions?
 
@@ -863,23 +872,25 @@ myarrow <- arrow(length = unit(0.1, "inches"))
 # for ggplot color defaults - that's how I got color codes below
 
 p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) + geom_point(alpha = 0.05) + geom_density2d() +
-  scale_color_discrete("Bootstrap\ndata source", labels = c(expression(GPP), expression(R[S]))) +
+  scale_color_discrete("", labels = c(expression(Canonical~GPP~vs~Rs[GPP]), 
+                                                            expression(Canonical~R[S]~vs~GPP[Rs]))) +
+  theme(legend.position = "top") +
   xlab(expression(GPP~(Pg~C~yr^-1))) +
   ylab(expression(R[S]~(Pg~C~yr^-1))) +
   annotate("segment", x = mean(rs_results$GPP_raw), xend = mean(rs_results$GPP_raw), 
            y = 50, yend = mean(rs_results$Rs_topdown2), 
-           color = "#F8766D", linetype = 2) +
+           color = "#F8766D", linetype = 1) +
   annotate("segment", x = mean(rs_results$GPP_raw), xend = 75, 
            y = mean(rs_results$Rs_topdown2), yend = mean(rs_results$Rs_topdown2), 
-           arrow = myarrow, color = "#F8766D", linetype = 2) +
+           arrow = myarrow, color = "#F8766D", linetype = 1) +
   annotate("segment", x = 75, xend = mean(gpp_results$GPP2), 
            y = mean(gpp_results$Rs_raw), yend = mean(gpp_results$Rs_raw), 
-           color = "#00BFC4", linetype = 2) +
+           color = "#00BFC4", linetype = 1) +
   annotate("segment", x = mean(gpp_results$GPP2), xend = mean(gpp_results$GPP2), 
            y = mean(gpp_results$Rs_raw), yend = 50, 
-           arrow = myarrow, color = "#00BFC4", linetype = 2)
+           arrow = myarrow, color = "#00BFC4", linetype = 1)
 print(p_joint)
-ggsave("outputs/Figure3_not_sure.png", width = 6, height = 4)
+ggsave("outputs/Figure3_not_sure.png", width = 5, height = 4)
 ```
 
 ```{r old-joint, results='show'}
@@ -962,12 +973,6 @@ knitr::kable(results_w50, digits = 1, format = "markdown")
 ```
 
 
-## Topdown and bottomup comparison - Figure 1
-```{r combine GPP and RSG comparison into figure 2, fig.height=8, fig.width=8, cache=FALSE}
-# Scenario 2, RC separate into 4 groups, and Froot separate into 2 groups
-plot_grid(p2_rs2, p1_gpp2, ncol = 1, labels = c("(a)", "(b)"), hjust = 0)
-# ggsave("outputs/Figure1.png")
-```
 
 ## Site-specific ratios of GPP to Rs
 
