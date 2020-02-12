@@ -294,7 +294,7 @@ var_other_froot <- Froot[Froot$IGBP2 == "Other",]$Froot # samples of Froot for n
 # Bootstrap settings
 RESAMPLE <- method3
 RESAMPLE_noSD <- method1
-N_SAMPLES <- 5000 # this is max shapiro.test() size
+N_SAMPLES <- 10000
 sample_size <- 10
 QUANTILES <- c(0.025, 0.5, 0.975)  # Generate mean and 95% CI
 set.seed(20190827)

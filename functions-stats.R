@@ -48,6 +48,14 @@ t_test <- function(x, y, alternative = "two.sided", ...) {
 # This implements the method laid out in `toyproblem_overlap.Rmd`
 # Returns the intersection point
 calc_overlap <- function(left_sample, right_sample, intersection_interval) {
+  # The shapiro.test() used below has a max sample size of 5000
+  if(length(left_sample) > 5000) {
+    left_sample <- sample(left_sample, 5000, replace = FALSE)
+  }
+  if(length(right_sample) > 5000) {
+    right_sample <- sample(right_sample, 5000, replace = FALSE)
+  }
+  
   # Test for normality
   left_normal_test <- shapiro.test(left_sample)
   left_normal <- left_normal_test$p.value >= 0.05
