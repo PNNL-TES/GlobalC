@@ -876,9 +876,11 @@ myarrow <- arrow(length = unit(0.1, "inches"))
 # See https://stackoverflow.com/questions/8197559/emulate-ggplot2-default-color-palette
 # for ggplot color defaults - that's how I got color codes below
 
-p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) + geom_point(alpha = 0.05) + geom_density2d() +
-  scale_color_discrete("", labels = c(expression(Canonical~GPP~vs~Rs[GPP]), 
-                                      expression(Canonical~R[S]~vs~GPP[Rs]))) +
+p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) + 
+  geom_point(pch = 20, size = 1, alpha = 0.05) + 
+  geom_density2d(bins = 8) +
+  scale_color_discrete("", labels = c(expression(Canonical~GPP~vs~R[S]~implied~by~GPP), 
+                                      expression(Canonical~R[S]~vs~GPP~implied~by~R[S]))) +
   theme(legend.position = "top") +
   xlab(expression(GPP~(Pg~C~yr^-1))) +
   ylab(expression(R[S]~(Pg~C~yr^-1))) +
@@ -895,7 +897,7 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) + geom_point(alpha = 0.05
            y = mean(gpp_results$Rs_raw), yend = 50, 
            arrow = myarrow, color = "#00BFC4", linetype = 1)
 print(p_joint)
-ggsave("outputs/Figure3_not_sure.png", width = 5, height = 4)
+ggsave("outputs/Figure3_not_sure.png", width = 8, height = 6)
 ```
 
 ```{r old-joint, results='show'}
