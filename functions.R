@@ -171,9 +171,9 @@ plot_sites <- function (srdb_v4, Froot_data) {
     # legend
     geom_point(data = cc_legend, aes(x, y, size = size), shape = c(1, 2, 3), 
                color = c("black", "red", "blue"), alpha = c(1, 1, 1)) +
-    annotate("text", x = -150, y = -25, label = expression("Rroot-"~R[S]~ratio), size = 4, hjust = 0) +
-    annotate("text", x = -150, y = -40, label = "Rroot-Ra ratio", size = 4, hjust = 0) +
-    annotate("text", x = -150, y = -55, label = "Ra-GPP ratio", size = 4, hjust = 0) +
+    annotate("text", x = -155, y = -25, label = expression(R[root]~"-to-"~R[S]~ratio), size = 3.5, hjust = 0) +
+    annotate("text", x = -155, y = -40, label = expression(R[root]~"-to-"~R[A]~ratio), size = 3.5, hjust = 0) +
+    annotate("text", x = -155, y = -55, label = expression(R[A]~"-to-"~GPP~ratio), size = 3.5, hjust = 0) +
     guides(fill = FALSE)  # do this to leave off the color legend
   print(sitemap)
 }
@@ -182,6 +182,10 @@ plot_sites <- function (srdb_v4, Froot_data) {
 # Plot Rroot-Ra ratio and group by ecosystem
 plot_Rroot_Ra_ratio <- function (Froot_data) {
   # plot Froot (root respiration/autotrophic respiration ratio) by ecosystem type
+  obs_DF <- Froot_data %>% filter(IGBP2 == "DF") %>% nrow()
+  obs_EF <- Froot_data %>% filter(IGBP2 == "EF") %>% nrow()
+  obs_MF <- Froot_data %>% filter(IGBP2 == "MF") %>% nrow()
+  obs_Other <- Froot_data %>% filter(IGBP2 == "Other") %>% nrow()
   Fl_plot <- ggplot(Froot_data, aes(x = IGBP2, y=Froot)) + geom_violin() +
     # geom_jitter(shape = 16, position = position_jitter(0.2), col = "gray") +
     geom_quasirandom(col = 'gray') +
@@ -189,9 +193,10 @@ plot_Rroot_Ra_ratio <- function (Froot_data) {
     ylab("Froot") +
     # stat_summary(fun.y=median, geom="point", size=2, color="red") +
     scale_x_discrete(limits = c("DF", "EF", "MF", "Other"),
-                     labels = c("DF (n=13)","EF (n=91)", "MF (n=7)", "Other (n=11)") ) +
+                     labels = c(paste0("DF (n=", obs_DF, ")"), paste0("EF (n=", obs_EF, ")"),
+                                paste0("MF (n=", obs_MF, ")"), paste0("Other (n=", obs_Other, ")")) ) +
     theme(axis.title.x=element_blank()) +
-    ylab("Rroot-Ra ratio")
+    ylab(expression(R[root]~"-to-"~R[A]~ratio))
   
   print(Fl_plot)
 }
@@ -200,6 +205,11 @@ plot_Rroot_Ra_ratio <- function (Froot_data) {
 plot_RaGPP <- function (RaGPP_data) {
   
   var_obs <- nrow(RaGPP_data)
+  obs_DF <- RaGPP_data %>% filter(IGBP2 == "Deciduous") %>% nrow()
+  obs_EF <- RaGPP_data %>% filter(IGBP2 == "Evergreen") %>% nrow()
+  obs_MF <- RaGPP_data %>% filter(IGBP2 == "Mixed") %>% nrow()
+  obs_GRA <- RaGPP_data %>% filter(IGBP2 == "Grassland") %>% nrow()
+  obs_Other <- RaGPP_data %>% filter(IGBP2 == "Other") %>% nrow()
   
   RaGPP_data$Global <- paste0("n = ", var_obs)
   
@@ -208,9 +218,11 @@ plot_RaGPP <- function (RaGPP_data) {
     geom_quasirandom(col = 'gray') +
     geom_boxplot(width = 0.1) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
-    ylab("Ra-GPP ratio") +
-    scale_x_discrete(limits = c("Deciduous", "Evergreen", "Forest", "Grassland", "Other"),
-                     labels = c("Deciduous (n = 20)", "Evergreen (n = 127)", "Forest (n = 68)", "Grassland (n = 11)", "Other (n = 14)") ) +
+    ylab(expression(R[A]~"-to-"~GPP~ratio)) +
+    scale_x_discrete(limits = c("Deciduous", "Evergreen", "Mixed", "Grassland", "Other"),
+                     labels = c(paste0("DF (n = ", obs_DF, ")"), paste0("EF (n = ", obs_EF, ")"),
+                                paste0("MF (n = ", obs_MF, ")"), paste0("Grassland (n = ",obs_GRA, ")"),
+                                paste0("Other (n = ", obs_Other, ")")) ) +
     theme(axis.title.x = element_blank())
   
   print(mean(RaGPP_data$RaGPP_ratio))
@@ -230,6 +242,14 @@ plot_Rroot_Rs_NPP <- function (sub_srdb, NPP_data) {
 
   # plot NPP panel
   NPP_data$Global <- "n = 251"
+  obs_AG <- sub_srdb %>% filter(IGBP2 == "Agriculture") %>% nrow()
+  obs_DF <- sub_srdb %>% filter(IGBP2 == "DF") %>% nrow()
+  obs_EF <- sub_srdb %>% filter(IGBP2 == "EF") %>% nrow()
+  obs_MF <- sub_srdb %>% filter(IGBP2 == "Mixed") %>% nrow()
+  obs_GRA <- sub_srdb %>% filter(IGBP2 == "Grassland") %>% nrow()
+  obs_SHR <- sub_srdb %>% filter(IGBP2 == "Shrubland") %>% nrow()
+  obs_Other <- sub_srdb %>% filter(IGBP2 == "Other") %>% nrow()
+  
   p_NPP <- ggplot(NPP_data, aes(Global, NPP)) + geom_violin() +
     # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_quasirandom(col = 'gray', varwidth = TRUE) +
@@ -245,11 +265,11 @@ plot_Rroot_Rs_NPP <- function (sub_srdb, NPP_data) {
   
   # plot Fire panel
   p_fire <- tibble(Fire = c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)) %>% 
-    ggplot(aes(x = "Fire", y = Fire)) + geom_violin() +
+    ggplot(aes(x = "n = 9", y = Fire)) + geom_violin() +
     # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_quasirandom(col = 'gray', varwidth = TRUE) +
     geom_boxplot(width = 0.1) +
-    ylab(expression(Fire~burned~(Pg~yr^{-1}))) +
+    ylab(expression(C[fire]~(Pg~yr^{-1}))) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     theme(axis.title.x = element_blank())
   
@@ -265,9 +285,12 @@ plot_Rroot_Rs_NPP <- function (sub_srdb, NPP_data) {
     geom_quasirandom(col = 'gray', varwidth = TRUE) +
     geom_boxplot(width = 0.1) +
     scale_x_discrete(limits = c("Agriculture", "DF", "EF", "Mixed", "Grassland", "Shrubland", "Other"),
-                     labels = c("Agriculture (n = 40)", "DF (n = 189)", "EF (n = 256)", "Mixed (n = 28)", "Grassland (n = 74)", "Shrubland (n = 14)", "Other (n = 16)")) +
+                     labels = c(paste0("Agriculture (n = ", obs_AG,")"), paste0("DF (n = ", obs_DF, ")"),
+                                paste0("EF (n = ", obs_EF, ")"), paste0("MF (n = ", obs_MF, ")"),
+                                paste0("GRA (n = ", obs_GRA, ")"), paste0("SHR (n = ", obs_SHR, ")"),
+                                paste0("Other (n = ", obs_Other, ")"))) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
-    ylab("Rroot-R"[S]~"ratio") +
+    ylab(expression(R[root]~"-to-"~R[S]~ratio)) +
     theme(axis.title.x = element_blank())
   
   print(mean(sub_srdb$RC_annual))
