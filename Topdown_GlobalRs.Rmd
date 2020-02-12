@@ -400,7 +400,10 @@ gpp_figure_data %>%
   geom_density(stat = 'density', alpha = 0.5) +
   theme(legend.position = c(0.75, 0.35)) +
   coord_cartesian(xlim = c(70, 250)) +
-  scale_fill_discrete("", labels = c(expression(Canonical~GPP),expression(GPP[Rs]~"            "))) + 
+  scale_fill_discrete("",
+                    labels = c(expression(Canonical~GPP),expression(GPP[Rs]))) + 
+  theme(legend.title = element_blank(),
+        legend.text.align = 0) +
   ylab("Density") +
   xlab(expression(GPP~(Pg~C~yr^{-1}))) ->
   gpp_base_figure
@@ -565,7 +568,7 @@ pairs_colors <- c(black, red)[as.factor(lt_ip)]
 pairsdata <- gpp_results[gpp_vd$Parameter[gpp_vd$Contribution > 0.05]]
 pairsdata <- rename(pairsdata, 'Canonical-Rs' = Rs_raw, 'Rroot-to-Rs ratio' = Rc, 'Rroot-to-Ra ratio' = Froot)
 pdf("outputs/Figure S9 - Boots GPP pairs.pdf", width = 8, height = 6)
-pairs(pairsdata, col = pairs_colors, main = "GPP")
+pairs(pairsdata, col = pairs_colors, main = expression(GPP[Rs]))
 dev.off()
 ```
 
@@ -843,7 +846,7 @@ pairs_colors <- c(black, red)[as.factor(gt_ip)]
 pairsdata <- rs_results[vd_rs$Parameter[vd_rs$Contribution > 0.05]]
 pairsdata <- rename(pairsdata, 'Canonical-GPP' = GPP_raw, 'Rroot-to-Ra ratio' = Froot_rest,'Ra-to-GPP ratio' = RaGpp_rest)
 pdf("outputs/Figure S10 - Boots Rs pairs.pdf", width = 8, height = 6)
-pairs(pairsdata, col = pairs_colors, main = "Rs")
+pairs(pairsdata, col = pairs_colors, main = expression(Rs[GPP]))
 dev.off()
 ```
 
@@ -859,7 +862,7 @@ ggsave("outputs/Figure1.png")
 
 What's the most likely values for GPP and R[S] that are consistent with the underlying distributions?
 
-```{r joint-plot, results='show', fig.width=5, fig.height=4}
+```{r joint-plot, results='show', fig.width=6, fig.height=6}
 gpp_results %>% 
   select(Rs = Rs_raw, GPP = GPP2) %>% 
   mutate(Source = "Rs-driven GPP") ->
@@ -877,11 +880,12 @@ myarrow <- arrow(length = unit(0.1, "inches"))
 # for ggplot color defaults - that's how I got color codes below
 
 p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) + 
-  geom_point(pch = 20, size = 1, alpha = 0.05) + 
+  geom_point(pch = 20, size = 2, alpha = 0.05) + 
   geom_density2d(bins = 8) +
   scale_color_discrete("", labels = c(expression(Canonical~GPP~vs~R[S]~implied~by~GPP), 
                                       expression(Canonical~R[S]~vs~GPP~implied~by~R[S]))) +
-  theme(legend.position = "top") +
+  theme(legend.position = "top", legend.text.align = 0) +
+  guides(col = guide_legend(nrow = 2, byrow = TRUE)) +
   xlab(expression(GPP~(Pg~C~yr^-1))) +
   ylab(expression(R[S]~(Pg~C~yr^-1))) +
   annotate("segment", x = mean(rs_results$GPP_raw), xend = mean(rs_results$GPP_raw), 
@@ -897,7 +901,7 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
            y = mean(gpp_results$Rs_raw), yend = 50, 
            arrow = myarrow, color = "#00BFC4", linetype = 1)
 print(p_joint)
-ggsave("outputs/Figure3_not_sure.png", width = 8, height = 6)
+ggsave("outputs/Figure3_not_sure.png", width = 6, height = 6)
 ```
 
 ```{r old-joint, results='show'}
