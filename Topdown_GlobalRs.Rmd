@@ -686,12 +686,11 @@ rs_figure_data %>%
   geom_density(stat = 'density', alpha = 0.5) +
   theme(legend.position = c(0.75, 0.35)) +
   coord_cartesian(xlim = c(50, 120)) +
-  # reverse the color scale so that teal (color 1) is always observations, 
-  # while pink is always implied fluxes
-  # scale_fill_discrete("", h.start = 180) + scale_color_discrete(h.start = 180) +
-  # scale_fill_discrete("", labels = c(expression(Canonical~Rs), expression("Rs"[GPP]~"          "))) +
-  scale_fill_manual(values = c("#00BFC4","#F8766D")) +
-  theme(legend.title = element_blank()) +
+  scale_fill_manual("", 
+                    labels = c(expression(Canonical~Rs), expression(Rs[GPP])),
+                    values = c("#00BFC4", "#F8766D")) +
+  theme(legend.title = element_blank(),
+        legend.text.align = 0) +
   ylab("Density") +
   xlab(expression(R[S]~(Pg~C~yr^{-1}))) ->
   rs_base_figure
@@ -879,7 +878,7 @@ myarrow <- arrow(length = unit(0.1, "inches"))
 
 p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) + geom_point(alpha = 0.05) + geom_density2d() +
   scale_color_discrete("", labels = c(expression(Canonical~GPP~vs~Rs[GPP]), 
-                                                            expression(Canonical~R[S]~vs~GPP[Rs]))) +
+                                      expression(Canonical~R[S]~vs~GPP[Rs]))) +
   theme(legend.position = "top") +
   xlab(expression(GPP~(Pg~C~yr^-1))) +
   ylab(expression(R[S]~(Pg~C~yr^-1))) +
