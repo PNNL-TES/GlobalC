@@ -137,3 +137,12 @@ sample_size_tst(10, 10000)
 sample_size_tst(10, 50000)
 ```
 
+
+## test bottom-up and top-down GPP
+```{r}
+GPP %>% ggplot(aes(x = TDBU, y = GPP)) +
+  geom_boxplot()
+```
+
+
+

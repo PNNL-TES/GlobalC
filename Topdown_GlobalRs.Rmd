@@ -882,8 +882,8 @@ myarrow <- arrow(length = unit(0.1, "inches"))
 p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) + 
   geom_point(pch = 20, size = 2, alpha = 0.05) + 
   geom_density2d(bins = 8) +
-  scale_color_discrete("", labels = c(expression(Canonical~GPP~vs~R[S]~implied~by~GPP), 
-                                      expression(Canonical~R[S]~vs~GPP~implied~by~R[S]))) +
+  scale_color_discrete("", labels = c(expression(Canonical~GPP~and~R[S]~implied~by~GPP), 
+                                      expression(Canonical~R[S]~and~GPP~implied~by~R[S]))) +
   theme(legend.position = "top", legend.text.align = 0) +
   guides(col = guide_legend(nrow = 2, byrow = TRUE)) +
   xlab(expression(GPP~(Pg~C~yr^-1))) +
