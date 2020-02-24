@@ -985,7 +985,7 @@ knitr::kable(results_w50, digits = 1, format = "markdown")
 
 
 
-## Site-specific ratios of GPP to Rs
+## Site-specific ratios of GPP to Rs - figure 3
 
 Presumably, as a matter of mathematics, the ratio of global Rs to global GPP should be the linear combination (sum) of all terrestrial points Neither SRDB nor FLUXNET is an unbiased sample of the land surface, but it may be instructive to look at the Rs:GPP for three data sources:
 
@@ -994,10 +994,10 @@ Presumably, as a matter of mathematics, the ratio of global Rs to global GPP sho
 * and FLUXNET2015 Tier 1, using Rs data measured very close to the towers.
 
 ```{r, site-ratios, results='show'}
-topdown <- data.frame(GPP = GPP$GPP, Rs = mean(GlobalRs$Rs))
-topdown$Source <- paste0("Global GPP\n(N = ", nrow(topdown), ")")
+topdown <- expand.grid(GPP = GPP$GPP, Rs = GlobalRs$Rs)
+topdown$Source <- paste0("Global Rs\nand GPP\n(N = ", nrow(topdown), ")")
 topdown$Type <- "Global"
-topdown$Scale <- "Global"
+topdown$Scale <- "Global scale"
 topdown_mean <- mean(topdown$Rs / topdown$GPP)
 
 srdb_v4 %>% 
@@ -1006,7 +1006,7 @@ srdb_v4 %>%
   srdb
 srdb$Source <- paste0("SRDB\n(N = ", nrow(srdb), ")")
 srdb$Type <- "Observations"
-srdb$Scale <- "Local"
+srdb$Scale <- "Ecosystem scale"
 
 read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>% 
   select(Biome, Ecosystem_type, FLUXNET_SITE_ID, GPP = gpp_fluxnet, Rs = Rs_annual) %>% 
@@ -1014,7 +1014,7 @@ read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>%
   fluxnet
 fluxnet$Source <- paste0("FLUXNET\n(N = ", nrow(fluxnet), ")")
 fluxnet$Type <- "Observations"
-fluxnet$Scale <- "Local"
+fluxnet$Scale <- "Ecosystem scale"
 
 cmip6_global_data_file <- "data/CMIP/1.cmip6_global_monthly_means.csv"
 if(file.exists(cmip6_global_data_file)) {
@@ -1042,12 +1042,12 @@ if(file.exists(cmip6_global_data_file)) {
   
   model_global_ratios %>% 
     mutate(GPP = gpp, 
-           Scale = "Global",
-           Source = paste0("Global CMIP6\n(N = ", nrow(model_global_ratios), ")"),
+           Scale = "Global scale",
+           Source = paste0("CMIP6\n(N = ", nrow(model_global_ratios), ")"),
            Type = "Models") ->
     cmip_global
 } else {
-  cmip_global <- data.frame(Source = "Global CMIP6\n(N = 0)", Scale = "Global",
+  cmip_global <- data.frame(Source = "CMIP6\n(N = 0)", Scale = "Global",
                             Type = "Models", stringsAsFactors = FALSE)
 }
 
@@ -1056,7 +1056,7 @@ if(file.exists(cmip6_local_data_file)) {
   # ... process it
 } else {
   cmip_local <- data.frame(Source = "CMIP6\n(N = 0)", 
-                           Scale = "Local",
+                           Scale = "Ecosystem scale",
                            Type = "Models", 
                            stringsAsFactors = FALSE)
 }
@@ -1073,14 +1073,17 @@ ratios %>%
   knitr::kable(type = "markdown")
 
 p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) + 
-  geom_boxplot() +
+  geom_boxplot(show.legend = FALSE) +
   geom_quasirandom(alpha = I(0.25)) +
   geom_hline(yintercept = topdown_mean, linetype = 2, color = "red", alpha = 0.33) +
   ylab(expression(Ratio~of~R[S]~to~GPP)) + xlab("") +
-  coord_cartesian(ylim = c(0, 2))
+  coord_cartesian(ylim = c(0, 2)) +
+  facet_grid(~Scale, scales = "free_x") +
+  theme(strip.background = element_rect(fill = "white", linetype = "blank")) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
 print(p_ratios)
 
-ggsave("outputs/Figure2.png")
+ggsave("outputs/Figure3.png")
 
 # Test whether global group is significantly higher than others
 ratios %>% 
