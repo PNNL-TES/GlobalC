@@ -171,9 +171,9 @@ plot_sites <- function (srdb_v4, Froot_data) {
     # legend
     geom_point(data = cc_legend, aes(x, y, size = size), shape = c(1, 2, 3), 
                color = c("black", "red", "blue"), alpha = c(1, 1, 1)) +
-    annotate("text", x = -155, y = -25, label = expression(R[root]~"-to-"~R[S]~ratio), size = 3.5, hjust = 0) +
-    annotate("text", x = -155, y = -40, label = expression(R[root]~"-to-"~R[A]~ratio), size = 3.5, hjust = 0) +
-    annotate("text", x = -155, y = -55, label = expression(R[A]~"-to-"~GPP~ratio), size = 3.5, hjust = 0) +
+    annotate("text", x = -155, y = -25, label = expression(R[root]~":"~R[S]~ratio), size = 3.5, hjust = 0) +
+    annotate("text", x = -155, y = -40, label = expression(R[root]~":"~R[A]~ratio), size = 3.5, hjust = 0) +
+    annotate("text", x = -155, y = -55, label = expression(R[A]~":"~GPP~ratio), size = 3.5, hjust = 0) +
     guides(fill = FALSE)  # do this to leave off the color legend
   print(sitemap)
 }
@@ -196,7 +196,7 @@ plot_Rroot_Ra_ratio <- function (Froot_data) {
                      labels = c(paste0("DF (n=", obs_DF, ")"), paste0("EF (n=", obs_EF, ")"),
                                 paste0("MF (n=", obs_MF, ")"), paste0("Other (n=", obs_Other, ")")) ) +
     theme(axis.title.x=element_blank()) +
-    ylab(expression(R[root]~"-to-"~R[A]~ratio))
+    ylab(expression(R[root]~":"~R[A]~ratio))
   
   print(Fl_plot)
 }
@@ -218,7 +218,7 @@ plot_RaGPP <- function (RaGPP_data) {
     geom_quasirandom(col = 'gray') +
     geom_boxplot(width = 0.1) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
-    ylab(expression(R[A]~"-to-"~GPP~ratio)) +
+    ylab(expression(R[A]~":"~GPP~ratio)) +
     scale_x_discrete(limits = c("Deciduous", "Evergreen", "Mixed", "Grassland", "Other"),
                      labels = c(paste0("DF (n = ", obs_DF, ")"), paste0("EF (n = ", obs_EF, ")"),
                                 paste0("MF (n = ", obs_MF, ")"), paste0("Grassland (n = ",obs_GRA, ")"),
@@ -290,7 +290,7 @@ plot_Rroot_Rs_NPP <- function (sub_srdb, NPP_data) {
                                 paste0("GRA (n = ", obs_GRA, ")"), paste0("SHR (n = ", obs_SHR, ")"),
                                 paste0("Other (n = ", obs_Other, ")"))) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
-    ylab(expression(R[root]~"-to-"~R[S]~ratio)) +
+    ylab(expression(R[root]~":"~R[S]~ratio)) +
     theme(axis.title.x = element_blank())
   
   print(mean(sub_srdb$RC_annual))

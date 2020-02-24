@@ -118,23 +118,23 @@ resample_GPP %>%
 
 ## test effect of sample size
 ```{r, fig.height=6, fig.width=8}
-set.seed(20191114)
-
-sample_size_tst(3, 50000)
-sample_size_tst(5, 50000)
-sample_size_tst(10, 50000)
-sample_size_tst(20, 50000)
+# set.seed(20191114)
+# 
+# sample_size_tst(3, 50000)
+# sample_size_tst(5, 50000)
+# sample_size_tst(10, 50000)
+# sample_size_tst(20, 50000)
 ```
 
 
 ## test effect of resample time
 ```{r, fig.height=6, fig.width=8}
-set.seed(20191114)
-
-sample_size_tst(10, 1000)
-sample_size_tst(10, 5000)
-sample_size_tst(10, 10000)
-sample_size_tst(10, 50000)
+# set.seed(20191114)
+# 
+# sample_size_tst(10, 1000)
+# sample_size_tst(10, 5000)
+# sample_size_tst(10, 10000)
+# sample_size_tst(10, 50000)
 ```
 
 

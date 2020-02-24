@@ -30,10 +30,10 @@ method4 <- function(n, x, s) {    # replace NA errors with zero
 sample_size_tst <- function(test_size, N_SAMPLES) {
   
   # resample global soil respiration (RSG)
-  resample_RSG <- tibble(RSG1_no_SD = sapply(rep(test_size, N_SAMPLES), method1, GlobalRs$Rs),
-                         RSG2_miss_SD_median = sapply(rep(test_size, N_SAMPLES), method2, GlobalRs$Rs, GlobalRs$SD),
-                         RSG3_miss_SD_max = sapply(rep(test_size, N_SAMPLES), method3, GlobalRs$Rs, GlobalRs$SD),
-                         RSG4_miss_SD_zero = sapply(rep(test_size, N_SAMPLES), method4, GlobalRs$Rs, GlobalRs$SD)
+  resample_RSG <- tibble(Rs1_no_SD = sapply(rep(test_size, N_SAMPLES), method1, GlobalRs$Rs),
+                         Rs2_miss_SD_median = sapply(rep(test_size, N_SAMPLES), method2, GlobalRs$Rs, GlobalRs$SD),
+                         Rs3_miss_SD_max = sapply(rep(test_size, N_SAMPLES), method3, GlobalRs$Rs, GlobalRs$SD),
+                         Rs4_miss_SD_zero = sapply(rep(test_size, N_SAMPLES), method4, GlobalRs$Rs, GlobalRs$SD)
   )
   
   # comparing RSG resample results

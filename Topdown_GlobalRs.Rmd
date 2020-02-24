@@ -559,15 +559,15 @@ variance_decomp(bootstrap_gpp_draws, "GPP2", var(gpp_results$GPP2), calc_bootstr
   knitr::kable(format = "markdown")
 ```
 
-### Input pairs: Figure S9
+### Input pairs: Figure S8
 ```{r gpp-input-pairs, results='show', fig.width=8, fig.height=6}
 lt_ip <- gpp_results$GPP < gpp_ip  # "<" b/c most bootstrapped GPP values are above
 black <- rgb(0, 0, 0, alpha = 0.25)
 red <- rgb(1, 0, 0, alpha = 1)
 pairs_colors <- c(black, red)[as.factor(lt_ip)]
 pairsdata <- gpp_results[gpp_vd$Parameter[gpp_vd$Contribution > 0.05]]
-pairsdata <- rename(pairsdata, 'Canonical-Rs' = Rs_raw, 'Rroot-to-Rs ratio' = Rc, 'Rroot-to-Ra ratio' = Froot)
-pdf("outputs/Figure S9 - Boots GPP pairs.pdf", width = 8, height = 6)
+pairsdata <- rename(pairsdata, 'Canonical Rs' = Rs_raw, 'Rroot : Rs ratio' = Rc, 'Rroot : RA ratio' = Froot)
+pdf("outputs/Figure S8 - Boots GPP pairs.pdf", width = 8, height = 6)
 pairs(pairsdata, col = pairs_colors, main = expression(GPP[Rs]))
 dev.off()
 ```
@@ -763,17 +763,23 @@ ggplot(rs_results, aes(x = Ra1)) +
 
 # Ra1 = GPP * Ra-GPP ratio
 # Ra2 = GPP - NPP
-rs_results %>% select(`RA = GPP * Ra-GPP ratio` = Ra1, `RA = GPP - NPP` = Ra2) %>% 
+rs_results %>% select(`RA = GPP * RA:GPP ratio` = Ra1, `RA = GPP - NPP` = Ra2) %>% 
   gather(RA_calculation) %>% 
   ggplot(aes(value, fill = RA_calculation)) +
   geom_density(stat = 'density', alpha = 0.5) +
   # theme(legend.position = c(0.15, 0.35)) +
   coord_cartesian(xlim = c(10, 100)) +
-  scale_fill_discrete("") + ylab("Density") + 
-  xlab(expression(R[A]~(Pg~C~yr^{-1}))) +
-  theme_cowplot() 
+  ylab("Density") + xlab(expression(R[A]~(Pg~C~yr^{-1}))) +
+  scale_fill_discrete("", labels = c(expression(R[A]~"="~GPP~"× R"[A]~":"~"GPP ratio"), 
+                                      expression(R[A]~"="~"GPP - NPP"))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        legend.text.align = 0,
+        text = element_text(size=15),
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_line(colour = "black"))
 
-ggsave("outputs/FigureS6_RA_Method.jpg", width = 8, height = 4, dpi = 300, units = "in")
+ggsave("outputs/FigureS5_RA_Method.jpg", width = 8, height = 4, dpi = 300, units = "in")
 
 # Rs ~ GPP
 ggplot(rs_results, aes(GPP_raw, Rs_topdown)) +
@@ -844,8 +850,8 @@ variance_decomp(bootstrap_rs_draws, "Rs_topdown2",
 gt_ip <- rs_results$Rs_topdown > rs_ip  # ">" b/c most bootstrapped Rs values are below
 pairs_colors <- c(black, red)[as.factor(gt_ip)]
 pairsdata <- rs_results[vd_rs$Parameter[vd_rs$Contribution > 0.05]]
-pairsdata <- rename(pairsdata, 'Canonical-GPP' = GPP_raw, 'Rroot-to-Ra ratio' = Froot_rest,'Ra-to-GPP ratio' = RaGpp_rest)
-pdf("outputs/Figure S10 - Boots Rs pairs.pdf", width = 8, height = 6)
+pairsdata <- rename(pairsdata, 'Canonical GPP' = GPP_raw, 'Rroot : RA ratio' = Froot_rest,'RA : GPP ratio' = RaGpp_rest)
+pdf("outputs/Figure S9 - Boots Rs pairs.pdf", width = 8, height = 6)
 pairs(pairsdata, col = pairs_colors, main = expression(Rs[GPP]))
 dev.off()
 ```
@@ -882,12 +888,12 @@ myarrow <- arrow(length = unit(0.1, "inches"))
 p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) + 
   geom_point(pch = 20, size = 2, alpha = 0.05) + 
   geom_density2d(bins = 8) +
-  scale_color_discrete("", labels = c(expression(Canonical~GPP~and~R[S]~implied~by~GPP), 
-                                      expression(Canonical~R[S]~and~GPP~implied~by~R[S]))) +
-  theme(legend.position = "top", legend.text.align = 0) +
+  scale_color_discrete("", labels = c(expression(Canonical~GPP~and~R[S]~implied~by~GPP~"("~Rs[GPP]~")"), 
+                                      expression(Canonical~R[S]~and~GPP~implied~by~R[S]~"("~GPP[Rs]~")"))) +
+  theme(legend.position = "none", legend.text.align = 0) +
   guides(col = guide_legend(nrow = 2, byrow = TRUE)) +
-  xlab(expression(GPP~(Pg~C~yr^-1))) +
-  ylab(expression(R[S]~(Pg~C~yr^-1))) +
+  xlab(expression(Pg~C~yr^-1)) +
+  ylab(expression(Pg~C~yr^-1)) +  
   annotate("segment", x = mean(rs_results$GPP_raw), xend = mean(rs_results$GPP_raw), 
            y = 50, yend = mean(rs_results$Rs_topdown2), 
            color = "#F8766D", linetype = 1) +
@@ -899,7 +905,12 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
            color = "#00BFC4", linetype = 1) +
   annotate("segment", x = mean(gpp_results$GPP2), xend = mean(gpp_results$GPP2), 
            y = mean(gpp_results$Rs_raw), yend = 50, 
-           arrow = myarrow, color = "#00BFC4", linetype = 1)
+           arrow = myarrow, color = "#00BFC4", linetype = 1) +
+  annotate("text", x = c(100,151), y = 47.5, size = 4, hjust = "inward", fontface = "bold",
+           label = c(expression(Canonical~GPP), expression(GPP[Rs]))) +
+  annotate("text", x = 70, y = c(65, 81), size = 4, hjust = "inward", fontface = "bold", 
+           label = c(expression(Rs[GPP]), expression(Canonical~R[S])),
+           angle = 90)
 print(p_joint)
 ggsave("outputs/Figure3_not_sure.png", width = 6, height = 6)
 ```
