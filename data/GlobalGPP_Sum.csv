@@ -2,11 +2,11 @@
 Pub_year,Year,Period,GPP,SD,Trend,Reference,Note1,Note2,Flag,TDBU,Flag_comment,URL
 1978,1975,1975,71.73,,,"Box, 1978",Table 7 (calculate from GPP mean and earth area),,Model,Model,MIAMI,https://link.springer.com/article/10.1007/BF01323458
 1997,1994,1990-1999,120,,,"Ciais et al., 1997",,,O18,Bottom-up,Isotope,https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/96JD02360
-1996,1991,1991,133.1,,,"Ruimy et al., 1996",Temperature data was 1991,,Satellite-Model,Top-down,TURC_Model together with remotely sensed vegetation index,https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/96GB00349
+1996,1991,1991,133.1,,,"Ruimy et al., 1996",Temperature data was 1991,,Satellite-Model,Mixed,TURC_Model together with remotely sensed vegetation index,https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/96GB00349
 1999,1995,1995,113,,,"Thompson and Randerson, 1999",,,Model,Model,CASA etc,https://onlinelibrary.wiley.com/doi/abs/10.1046/j.1365-2486.1999.00235.x
 2000,1979,1965-1994,114.7,,,"Kucharik et al., 2000",,,Model,Model,DGEMS,https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/1999GB001138
 2001,2000,,183.39,,,"Knorr and Heimann, 2001",Year set to 2000,,Model,Model,BETHY,https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/1998GB001059
-2003,1976,1953-1999,121.5,,,"ITO, 2003",,,C13-Model,Bottom-up,Sim-CYCLE model with C13,https://www.tandfonline.com/doi/abs/10.3402/tellusb.v55i2.16757
+2003,1976,1953-1999,121.5,,,"ITO, 2003",,,C13-Model,Mixed,Sim-CYCLE model with C13,https://www.tandfonline.com/doi/abs/10.3402/tellusb.v55i2.16757
 2003,2000,,153.48,,,"Still et al., 2003",Year set to 2000,,Model,Model,SiB2,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2001GB001807
 2004,2000,,124.7,,,"ITO and OIKAWA, 2004",Year set to 2000,,Model,Model,Sim-CYCLE model,http://faculty.petra.ac.id/dwikris/docs/cvitae/docroot/html/www.terrapub.co.jp/e-library/kawahata/pdf/343.pdf
 2004,1994,1990-1999,118,,,"Woodward and Lomas, 2004",Ciais rt al (120),,Model,Model,SDGVM model,https://doi.org/10.1017/S1464793103006419
@@ -41,7 +41,7 @@ Pub_year,Year,Period,GPP,SD,Trend,Reference,Note1,Note2,Flag,TDBU,Flag_comment,U
 2009,1990,1980-2000,139.7,,0.27,"Arora et al., 2009",Table 4,,Model,Model,CCCma,https://journals.ametsoc.org/doi/full/10.1175/2009JCLI3037.1
 2009,1990,1980-2000,131,,,"Arora et al., 2009",Table 4,,Model,Model,CCCma,https://journals.ametsoc.org/doi/full/10.1175/2009JCLI3037.1
 2011,1994,1986-2002,129,,,"Alton, 2011",P-fixed,,Model,Model,JULES-SF,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2010JG001430
-2007,2001,2001,120,,,"Prentice et al., 2007",Book chapter,,Summary,Top-down,,"Prentice, I. C. et al. (2007). The Carbon Cycle and Atmospheric Carbon Dioxide. In S. Solomon et al. (Eds.), Contribution of Working Group I to the Fourth Assessment Report of the Intergovernmental Panel on Climate Change, 2007 (pp. 183–287). Cambridge, United Kingdom and New York, NY, USA: Cambridge University Press."
+2007,2001,2001,120,,,"Prentice et al., 2007",Book chapter,,Summary,Mixed,,"Prentice, I. C. et al. (2007). The Carbon Cycle and Atmospheric Carbon Dioxide. In S. Solomon et al. (Eds.), Contribution of Working Group I to the Fourth Assessment Report of the Intergovernmental Panel on Climate Change, 2007 (pp. 183–287). Cambridge, United Kingdom and New York, NY, USA: Cambridge University Press."
 2015,2006,2000-2011,107,,,"Yebra et al., 2015b",,,Satellite,Top-down,LUE function,https://www.sciencedirect.com/science/article/pii/S0034425715001121
 2011,2002,2001-2003,118,26,,"Ryu et al., 2011",,,Satellite,Top-down,MODIS,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2011GB004053
 2011,1993,1982-2004,117,,,"Bonan et al., 2011",Only fluxnet data based results (Table 3) used,,FLUXNET_MTE,Bottom-up,,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2010JG001593
@@ -62,10 +62,10 @@ Pub_year,Year,Period,GPP,SD,Trend,Reference,Note1,Note2,Flag,TDBU,Flag_comment,U
 2015,2004,1997-2010,169,,0.454,"Anav et al., 2015",Table 3,,Model,Model,IPSL-CM5A-MR,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2015RG000492
 2017,2005,2000-2010,117,13,0.41,"Chen et al., 2017",,,Model,Model,Multiple,https://iopscience.iop.org/article/10.1088/1748-9326/aa8978/meta
 2017,2005,2000-2010,112,,0.28,"Chen et al., 2017",,,Satellite,Top-down,MODIS,https://iopscience.iop.org/article/10.1088/1748-9326/aa8978/meta
-2017,2005,2000-2010,120,,,"Chen et al., 2017",,,Satellite,Top-down,MTE,https://iopscience.iop.org/article/10.1088/1748-9326/aa8978/meta
+2017,2005,2000-2010,120,,,"Chen et al., 2017",,,Satellite-MTE,Mixed,Fluxcom-MTE,https://iopscience.iop.org/article/10.1088/1748-9326/aa8978/meta
 2011,1995,1980-2009,162.5,,,"Welp et al., 2011",The global damping time constant method,,O18,Bottom-up,Isotope,https://www.nature.com/articles/nature10421
-2019,2009,2003-2015,147,16,,"Badgley et al., 2019",,,Satellite,Top-down,NIRv (remote sensing) and FLUXNET,https://drive.google.com/drive/u/2/folders/0B-d-e6WMvTaEWkFURGllbWNqU0E
-2018,2007,,140,,,"Joiner et al., 2018",,,Satellite,Top-down,SIF (remote sensing) and FLUXNET,https://drive.google.com/drive/u/2/folders/0B-d-e6WMvTaEWkFURGllbWNqU0E
+2019,2009,2003-2015,147,16,,"Badgley et al., 2019",,,Satellite-Fluxnet,Mixed,NIRv (remote sensing) and FLUXNET,https://drive.google.com/drive/u/2/folders/0B-d-e6WMvTaEWkFURGllbWNqU0E
+2018,2007,,140,,,"Joiner et al., 2018",,,Satellite-Fluxnet,Mixed,SIF (remote sensing) and FLUXNET,https://drive.google.com/drive/u/2/folders/0B-d-e6WMvTaEWkFURGllbWNqU0E
 2019,2007,2000-2014,144,,0.069,Ryu2019,Figure 3,"(Kondo et al., 2015)",FLUXNET,Bottom-up,SVR (Regression),https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1002/2014JG002866
 2019,1997,1982-2013,109,,0.01,Ryu2019,Figure 3,"(Jung et al., 2017)",FLUXNET,Bottom-up,FLUXCOM ANN,https://www.sciencedirect.com/science/article/pii/S0034425719300161
 2019,1997,1982-2013,120,,-0.01,Ryu2019,Figure 3,"(Jung et al., 2017)",FLUXNET,Bottom-up,FLUXCOM MARS,https://www.sciencedirect.com/science/article/pii/S0034425719300161
@@ -73,12 +73,12 @@ Pub_year,Year,Period,GPP,SD,Trend,Reference,Note1,Note2,Flag,TDBU,Flag_comment,U
 2019,2008,2001-2016,100.21,,0.36,Ryu2019,Figure 3,(Running 2004),Satellite,Top-down,MODIS C6,https://www.sciencedirect.com/science/article/pii/S0034425719300161
 2019,1996,1982-2011,133.87,,0.295,Ryu2019,Figure 3,"(Keenan et al., 2016)",Global C data,Bottom-up,PR,https://www.sciencedirect.com/science/article/pii/S0034425719300161
 2017,2008,2000-2016,125.2,,0.39,Ryu2019,VPM,Zhang et al. 2017,Satellite,Top-down,MODIS,https://www.nature.com/articles/sdata2017165
-2019,1996,1982-2011,102,,0.141,Ryu2019,GIMMS,"(Smith et al., 2016)",Satellite,Top-down,MODIS and GIMMS FPAR and LAI data,https://www.nature.com/articles/nclimate2879
+2019,1996,1982-2011,102,,0.141,Ryu2019,GIMMS,"(Smith et al., 2016)",Satellite-LAI,Mixed,MODIS and GIMMS FPAR and LAI data,https://www.nature.com/articles/nclimate2879
 2016,2006,2001-2011,122,25,0.27,"Jiang et al., 2016",,,Satellite,Top-down,BESS,https://drive.google.com/drive/u/2/folders/0B-d-e6WMvTaEWkFURGllbWNqU0E
 2019,2000,1985-2015,124.72,5,0.45,"Stoker et al., 2019",s1b,,Satellite,Top-down,MODIS MOD17A2H,https://www.nature.com/articles/s41561-019-0318-6
 2019,2000,1985-2015,106,5,0.45,"Stoker et al., 2019",s0,,Satellite,Top-down,MODIS MOD17A2H,https://www.nature.com/articles/s41561-019-0318-6
 2019,2009,2008-2010,111,,,"Jung et al., 2019",RS,,FLUXNET,Bottom-up,FLUXCOM,https://doi.org/10.5194/bg-2019-368
 2019,2009,2008-2010,122,,,"Jung et al., 2019",RS-METEO,,FLUXNET,Bottom-up,FLUXCOM,https://doi.org/10.5194/bg-2019-368
 2019,2009,2008-2010,136,,,"Jung et al., 2019",TRENDYv7,,FLUXNET,Bottom-up,FLUXCOM,https://doi.org/10.5194/bg-2019-368
-2019,2015,,167,5,,"Norton et al., 2019",BETHY-SCOPE,,Satellite,Top-down,SIF,https://www.biogeosciences.net/16/3069/2019/bg-16-3069-2019.pdf
-2019,2009,2000-2017,135.5,8.8,,Xing Li and Jingfeng Xiao,,,Satellite,Top-down,SIF,https://www.mdpi.com/2072-4292/11/21/2563
+2019,2015,,167,5,,"Norton et al., 2019",BETHY-SCOPE,,Satellite-SIF,Bottom-up,SIF,https://www.biogeosciences.net/16/3069/2019/bg-16-3069-2019.pdf
+2019,2009,2000-2017,135.5,8.8,,Xing Li and Jingfeng Xiao,,,Satellite-SIF,Bottom-up,SIF,https://www.mdpi.com/2072-4292/11/21/2563
