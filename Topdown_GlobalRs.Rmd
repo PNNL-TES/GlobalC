@@ -912,7 +912,7 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
            label = c(expression(Rs[GPP]), expression(Canonical~R[S])),
            angle = 90)
 print(p_joint)
-ggsave("outputs/Figure3_not_sure.png", width = 6, height = 6)
+ggsave("outputs/Figure3_not_sure.png", width = 8, height = 6)
 ```
 
 ```{r old-joint, results='show'}
