@@ -962,34 +962,19 @@ fluxnet$Source <- paste0("FLUXNET\n(N = ", nrow(fluxnet), ")")
 fluxnet$Type <- "Observations"
 fluxnet$Scale <- "Local"
 
-cmip6_global_data_file <- "data/CMIP/1.cmip6_global_monthly_means.csv"
+cmip6_global_data_file <- "cmip/CMIP6_annual_RstoGPP.csv"
 if(file.exists(cmip6_global_data_file)) {
   read.csv(cmip6_global_data_file, stringsAsFactors = FALSE) %>% 
     as_tibble() %>% 
-    filter(model != "IPSL-CM6A-LR") %>% 
-    select(era, model, experiment, ensemble, variable, time, value, LandArea) %>% 
-    mutate(year = floor(time / 10000)) %>% 
-    group_by(era, variable, model, experiment, ensemble, year) %>% 
-    # units are kgC/m2/s, one month per row; need to go to PgC/yr
-    summarise(value = sum(value * LandArea * 1000 * 60 * 60 * 24 * 365 / 1e15 / 12)) -> 
-    model_global_data
-  
-  model_global_data %>% 
-    filter(variable != "gpp") %>% 
-    group_by(era, model, experiment, ensemble, year) %>% 
-    summarise(variable = "Rs", 
-              value = sum(value)) %>% 
-    bind_rows(filter(model_global_data, variable == "gpp")) %>% 
-    spread(variable, value) %>% 
     filter(year >= 2005) %>% 
-    group_by(era, model, experiment, ensemble) %>% 
-    summarise(gpp = mean(gpp), Rs = mean(Rs)) ->
+    group_by(model, experiment, ensemble) %>% 
+    summarise(GPP = mean(GPP), Rs = mean(Rs)) %>%  
+    ungroup -> 
     model_global_ratios
   
   model_global_ratios %>% 
-    mutate(GPP = gpp, 
-           Scale = "Global",
-           Source = paste0("Global CMIP6\n(N = ", nrow(model_global_ratios), ")"),
+    mutate(Scale = "Global",
+           Source = paste0("Global CMIP6\n(N = ", length(unique(model_global_ratios$model)), ")"),
            Type = "Models") ->
     cmip_global
 } else {
