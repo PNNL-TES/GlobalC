@@ -29,7 +29,6 @@ read_file <- function(x) read.csv(file.path(DATA_DIR, x), comment.char = "#", st
 
 GPP <- read_file('GlobalGPP_Sum.csv') # GPP estimates from published paper
 GPP %>% filter(Pub_year > 1980 & Flag != "Model") -> GPP
-
 GlobalRs <- read_file('GlobalRs.csv') # estimates of global Rs
 GlobalRs %>% filter(Pub_year > 1980) -> GlobalRs
 # (Ra/GPP) Piao, Shilong, et al. "Forest annual carbon cost: A global‐scale analysis of autotrophic respiration." Ecology 91.3 (2010): 652-661.
@@ -138,16 +137,7 @@ resample_GPP %>%
 ```
 
 
-## test bottom-up and top-down GPP
-```{r}
-GPP %>% ggplot(aes(x = TDBU, y = GPP, fill = as.factor(TDBU))) +
-  geom_boxplot() +
-  theme(legend.title = element_blank()) +
-  xlab("GPP by different groups") +
-  ylab(expression(GPP~"(Pg C"~yr^{-1}~")"))
 
-
-```
 
 
 
