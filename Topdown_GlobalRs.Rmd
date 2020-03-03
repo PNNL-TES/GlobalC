@@ -971,7 +971,7 @@ if(file.exists(cmip6_global_data_file)) {
     summarise(GPP = mean(GPP), Rs = mean(Rs)) %>%  
     ungroup -> 
     model_global_ratios
-  
+
   model_global_ratios %>% 
     mutate(Scale = "Global",
            Source = paste0("Global CMIP6\n(N = ", length(unique(model_global_ratios$model)), ")"),
@@ -982,9 +982,24 @@ if(file.exists(cmip6_global_data_file)) {
                             Type = "Models", stringsAsFactors = FALSE)
 }
 
-cmip6_local_data_file <- "data/CMIP/1.cmip6_local_annual_means.csv"
+cmip6_local_data_file <- "cmip/CMIP6_LatLon.csv"
 if(file.exists(cmip6_local_data_file)) {
-  # ... process it
+  read.csv(cmip6_local_data_file, stringsAsFactors = FALSE) %>% 
+    as_tibble() -> 
+    cmip6_local_data
+  
+  cmip6_local_data %>% 
+    select(experiment, model, Longitude, Latitude) %>% 
+    distinct() %>% 
+    nrow() -> 
+    samples
+    
+  cmip6_local_data %>% 
+    mutate(Scale = "Local",
+           Source = paste0("Local CMIP6\n(N = ", samples, ")"),
+           Type = "Models") ->
+    cmip_local
+  
 } else {
   cmip_local <- data.frame(Source = "CMIP6\n(N = 0)", 
                            Scale = "Local",
