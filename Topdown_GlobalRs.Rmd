@@ -1079,18 +1079,8 @@ if(file.exists(cmip6_global_data_file)) {
     model_global_ratios
 
   model_global_ratios %>% 
-<<<<<<< HEAD
-    mutate(Scale = "Global",
-           Source = paste0("Global CMIP6\n(N = ", length(unique(model_global_ratios$model)), ")"),
-||||||| 7900fca
-    mutate(GPP = gpp, 
-           Scale = "Global",
-           Source = paste0("Global CMIP6\n(N = ", nrow(model_global_ratios), ")"),
-=======
-    mutate(GPP = gpp, 
-           Scale = "Global scale",
-           Source = paste0("CMIP6\n(N = ", nrow(model_global_ratios), ")"),
->>>>>>> master
+    mutate(Scale = "Global scale",
+           Source = paste0("CMIP6\n(N = ", length(unique(model_global_ratios$model)), ")"),
            Type = "Models") ->
     cmip_global
 } else {
