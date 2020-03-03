@@ -129,7 +129,7 @@ ggplot(data = Comparison_DF) +
 
 
 ```{r}
-ggplot(Comparison_DF, aes(source, CMIP6_Ratio, color = ensemble)) + 
+ggplot(Comparison_DF, aes(source, CMIP6_Ratio, color = model)) + 
   geom_boxplot() +
   geom_quasirandom(alpha = I(0.25)) +
   ylab(expression(Ratio~of~R[S]~to~GPP)) + xlab("") +
