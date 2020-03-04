@@ -4,25 +4,25 @@ output: html_notebook
 ---
 ## Objective 
 
-The purpose of this script is to compare the Rs to GPP ratio from the CMIP6 models and the srbd and fulxnet observations. In both cases the ratio is calcualted at the points (lat/lon) where the fluxnet and srbd observations were sampled. 
+The purpose of this script is to compare the Rs to GPP ratio from the CMIP6 models and the srbd and fulxnet observations. In both cases the ratio is calculated at the points (lat/lon) where the fluxnet and srbd observations were sampled. 
 
 
 
 ## Set Up 
 
-Set up the environement. 
+Set up the environment. 
 ```{r, warning=FALSE, message=FALSE}
-# Load the required libs. 
+# Load the required packages 
 library(dplyr)
 library(tidyr)
 library(ggplot2) # For some sanity plots
 
-# The directory of where the results will be save at. 
+# The directory of where the results will be saved at. 
 CMIP_DIR <- here::here('cmip')
 ```
 
 
-Import processed CMIP data, because of the size of this data set it is not committed to the GitHub Repo, it will have to mannually be moved from pic to the project directory. 
+Import processed CMIP data. Because of the size of this data set it is not committed to the GitHub Repo, it will have to mannually be moved from pic to the project directory. 
 ```{r}
 raw_data <- read.csv(file.path(CMIP_DIR, "annual_values_LatLon.csvNEW.csv"), stringsAsFactors = FALSE) %>%  
   filter(year %in% 2005:2014)
@@ -115,7 +115,7 @@ ggplot(data = Comparison_DF) +
   geom_abline(color = 'red', slope = 1, intercept = 0)
 ```
 
-Hm well if if the models were more accurate we would have expected the points to be ditributed around the 1:1 line. But the point of this is not a model vs an observation model. 
+Hm well if if the models were more accurate we would have expected the points to be distributed around the 1:1 line. But the point of this is not a model vs observation comparison. 
 
 ```{r}
 ggplot(data = Comparison_DF) +
@@ -148,4 +148,3 @@ CMIP6_LatLon_ratios %>%
   write.csv(file = out_file, row.names = FALSE)
 cat('Saving', out_file)
 ```
-
