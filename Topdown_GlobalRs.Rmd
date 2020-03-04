@@ -1,7 +1,7 @@
 ---
 title: "GlobalC"
-author: "Jinshi"
-date: "May 19, 2019"
+author: "Jinshi Jian and co-authors"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   html_document: default
   word_document: default
@@ -25,14 +25,14 @@ output:
 * RaGPP - (Ra/GPP) ratio
 
 ## Assumptions
-* __Bottom-up approach:__ 
+__Bottom-up approach:__ 
 1. We collected published global soil respiration estimates (mostly is based on bottom up field Rs measurements)
 2. We then partition Rs into root respiration and belowground heterotrophic resipiration
 3. We also collected published NPP estimates from ITO et al. (2011)
 4. From published Rroot/Ra ratios, GPP can be calculated as (NPP + Rroot + Rshoot)
 5. We then compare this bottom-up GPP with published GPP in the past decades
 
-* __Top-down approach:__
+__Top-down approach:__
 6. We first collect global GPP estimates (most are top-down from remote sensing)
 7. We then estimate Ra according to published Ra/GPP ratios and GPP-NPP
 8. Heterotrophic respiration was estimated as Rh = NPP - HerbComsum - Fire - Csink (NEP)
@@ -111,7 +111,6 @@ GlobalRs %>% filter(Pub_year > 1980) -> GlobalRs
 # (Ra/GPP) Piao, Shilong, et al. "Forest annual carbon cost: A global‐scale analysis of autotrophic respiration." Ecology 91.3 (2010): 652-661.
 RaGPP <- read_file('RaGPP.csv') 
 var_Fire <- read_file('Fire_burn_C.csv')
-
 
 # IGBP data, and information to map it with other data
 IGBP <- read_file('IGBP.txt') %>% 
@@ -206,7 +205,7 @@ GPP %>% select(Group, Flag) %>% count(Group, Flag)
 
 ```{r plot RC, fig.height=6, fig.width=8}
 # Plot global Rs, NPP, Fire-burned Carbon, and RC by ecosystem (root respiration to soil respiration ratio)
-# more details please see function plot_Rroot_Rs_NPP ()
+# For more details please see function plot_Rroot_Rs_NPP()
 sub_srdb %>% count(IGBP2)
 plot_Rroot_Rs_NPP (sub_srdb, NPP) 
 ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
@@ -215,7 +214,7 @@ ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ### Plot Rroot-Ra ratio
 ```{r plot Rroot-Ra ratio, fig.height = 4, fig.width = 6}
 # potential issue: only two points from grassland
-# no point from tundra 
+# no points from tundra 
 Froot %>% count(IGBP2)
 plot_Rroot_Ra_ratio(Froot)
 ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
@@ -326,8 +325,8 @@ set.seed(20190827)
 bootstrap_data <- tibble(Rs_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GlobalRs$Rs, GlobalRs$SD),
                          GPP_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GPP$GPP, GPP$SD))
 
-sd(bootstrap_data$Rs_raw) # why sd so small, not as expected
-sd(bootstrap_data$GPP_raw) # why sd so small, not as expected
+sd(bootstrap_data$Rs_raw) # why is sd so small? not as expected
+sd(bootstrap_data$GPP_raw) # why is sd so small? not as expected
 ```
 
 ## Bootstrapping GPP
@@ -402,6 +401,7 @@ calc_bootstrap_gpp <- function(x) {
     )
 }
 
+# Now we can run the initial GPP bootstrapping
 gpp_results <- calc_bootstrap_gpp(bootstrap_gpp_draws)
 ```
 
@@ -1068,34 +1068,19 @@ fluxnet$Source <- paste0("FLUXNET\n(N = ", nrow(fluxnet), ")")
 fluxnet$Type <- "Observations"
 fluxnet$Scale <- "Ecosystem scale"
 
-cmip6_global_data_file <- "data/CMIP/1.cmip6_global_monthly_means.csv"
+cmip6_global_data_file <- "cmip/CMIP6_annual_RstoGPP.csv"
 if(file.exists(cmip6_global_data_file)) {
   read.csv(cmip6_global_data_file, stringsAsFactors = FALSE) %>% 
     as_tibble() %>% 
-    filter(model != "IPSL-CM6A-LR") %>% 
-    select(era, model, experiment, ensemble, variable, time, value, LandArea) %>% 
-    mutate(year = floor(time / 10000)) %>% 
-    group_by(era, variable, model, experiment, ensemble, year) %>% 
-    # units are kgC/m2/s, one month per row; need to go to PgC/yr
-    summarise(value = sum(value * LandArea * 1000 * 60 * 60 * 24 * 365 / 1e15 / 12)) -> 
-    model_global_data
-  
-  model_global_data %>% 
-    filter(variable != "gpp") %>% 
-    group_by(era, model, experiment, ensemble, year) %>% 
-    summarise(variable = "Rs", 
-              value = sum(value)) %>% 
-    bind_rows(filter(model_global_data, variable == "gpp")) %>% 
-    spread(variable, value) %>% 
     filter(year >= 2005) %>% 
-    group_by(era, model, experiment, ensemble) %>% 
-    summarise(gpp = mean(gpp), Rs = mean(Rs)) ->
+    group_by(model, experiment, ensemble) %>% 
+    summarise(GPP = mean(GPP), Rs = mean(Rs)) %>%  
+    ungroup -> 
     model_global_ratios
-  
+
   model_global_ratios %>% 
-    mutate(GPP = gpp, 
-           Scale = "Global scale",
-           Source = paste0("CMIP6\n(N = ", nrow(model_global_ratios), ")"),
+    mutate(Scale = "Global scale",
+           Source = paste0("CMIP6\n(N = ", length(unique(model_global_ratios$model)), ")"),
            Type = "Models") ->
     cmip_global
 } else {
@@ -1103,9 +1088,24 @@ if(file.exists(cmip6_global_data_file)) {
                             Type = "Models", stringsAsFactors = FALSE)
 }
 
-cmip6_local_data_file <- "data/CMIP/1.cmip6_local_annual_means.csv"
+cmip6_local_data_file <- "cmip/CMIP6_LatLon.csv"
 if(file.exists(cmip6_local_data_file)) {
-  # ... process it
+  read.csv(cmip6_local_data_file, stringsAsFactors = FALSE) %>% 
+    as_tibble() -> 
+    cmip6_local_data
+  
+  cmip6_local_data %>% 
+    select(experiment, model, Longitude, Latitude) %>% 
+    distinct() %>% 
+    nrow() -> 
+    samples
+    
+  cmip6_local_data %>% 
+    mutate(Scale = "Local",
+           Source = paste0("Local CMIP6\n(N = ", samples, ")"),
+           Type = "Models") ->
+    cmip_local
+  
 } else {
   cmip_local <- data.frame(Source = "CMIP6\n(N = 0)", 
                            Scale = "Ecosystem scale",

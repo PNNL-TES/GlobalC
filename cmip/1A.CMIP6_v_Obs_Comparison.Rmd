@@ -1,0 +1,150 @@
+---
+title: "1A.CMIP6_v_Obs_Comparison"
+output: html_notebook
+---
+## Objective 
+
+The purpose of this script is to compare the Rs to GPP ratio from the CMIP6 models and the srbd and fulxnet observations. In both cases the ratio is calculated at the points (lat/lon) where the fluxnet and srbd observations were sampled. 
+
+
+
+## Set Up 
+
+Set up the environment. 
+```{r, warning=FALSE, message=FALSE}
+# Load the required packages 
+library(dplyr)
+library(tidyr)
+library(ggplot2) # For some sanity plots
+
+# The directory of where the results will be saved at. 
+CMIP_DIR <- here::here('cmip')
+```
+
+
+Import processed CMIP data. Because of the size of this data set it is not committed to the GitHub Repo, it will have to mannually be moved from pic to the project directory. 
+```{r}
+raw_data <- read.csv(file.path(CMIP_DIR, "annual_values_LatLon.csvNEW.csv"), stringsAsFactors = FALSE) %>%  
+  filter(year %in% 2005:2014)
+```
+
+
+
+## Convert Data 
+
+The units for the cmip output data are kg m-2 s-1 but the units for the observation data are gC m-2 yr-1 
+
+```{r}
+# Mak sure that we are only looking at the columns of relevant data. 
+raw_data <- raw_data[ , names(raw_data) %in% c('value', 'units', 'variable', 'year', 'Longitude', 
+                                               'Latitude', 'source', 'model','experiment', 'ensemble')]
+raw_data %>%  
+  filter(variable != 'areacella') %>%  
+  ungroup %>% 
+  # Convert from s-1 to yr -1
+  mutate(value = value * 60*60*24*365, 
+         units = gsub(pattern = ' ', replacement = '', x = units),
+         units = gsub(pattern = 's-1', replacement = 'yr-1', x = units)) %>% 
+  # Mulitply by the m2 of land 
+  mutate(value = value * 1000, 
+         units = gsub(pattern = 'kg', replacement = 'gC', x = units)) %>% 
+  tidyr::spread(variable, value) %>% 
+  na.omit ->
+  wide_LatLon_fluxes
+```
+
+
+### Check the Quality of Data 
+
+```{r}
+summary(wide_LatLon_fluxes$gpp)
+```
+
+```{r}
+summary(wide_LatLon_fluxes$raRoot)
+```
+
+```{r}
+summary(wide_LatLon_fluxes$rhSoil)
+```
+
+Now calculate the period average so that it is comparable with the other observations. 
+```{r}
+wide_LatLon_fluxes %>% 
+  group_by(units, year, Longitude, Latitude, source, model, experiment, ensemble) %>%  
+  summarise(CMIP6_GPP = mean(gpp),
+            CMIP6_raRoot = mean(raRoot), 
+            CMIP6_rhSoil = mean(rhSoil)) %>%  
+  mutate(CMIP6_Rs = CMIP6_raRoot + CMIP6_rhSoil, 
+         CMIP6_Ratio = CMIP6_Rs/CMIP6_GPP) %>% 
+  ungroup %>% 
+  na.omit -> 
+  CMIP6_LatLon_ratios
+```
+
+## Compare With Obs
+
+```{r}
+# Import the Lat and Lon information 
+LatLon_Obs <- bind_rows(readRDS(file.path(CMIP_DIR, 'input', 'RsGPP_srdb_LatLon.rds')) %>% 
+                           mutate(source = 'srdb'), 
+                         readRDS(file.path(CMIP_DIR, 'input', 'RsGPP_fluxnet_LatLon.rds')) %>% 
+                           mutate(source = 'fluxnet'))
+```
+
+```{r}
+CMIP6_LatLon_ratios$Longitude <- signif(CMIP6_LatLon_ratios$Longitude, 4)
+CMIP6_LatLon_ratios$Latitude  <- signif(CMIP6_LatLon_ratios$Latitude, 4)
+LatLon_Obs$Longitude <- signif(LatLon_Obs$Longitude, 4)
+LatLon_Obs$Latitude  <- signif(LatLon_Obs$Latitude, 4)
+
+CMIP6_LatLon_ratios %>% 
+  select(-source) %>% 
+  left_join(LatLon_Obs, by = c("Longitude", "Latitude")) %>% 
+  mutate(Ratio = Rs / GPP) ->
+  Comparison_DF
+```
+
+
+```{r}
+ggplot(data = Comparison_DF) + 
+  geom_point(aes(Ratio, CMIP6_Ratio)) +
+  labs(x = 'Observation Ratio', 
+       y = 'CMIP6 Ratio', 
+       title = 'A Comparison of Obs and CMIP6 Rs tp GPP Ratios by Lat/Lon') +
+  geom_abline(color = 'red', slope = 1, intercept = 0)
+```
+
+Hm well if if the models were more accurate we would have expected the points to be distributed around the 1:1 line. But the point of this is not a model vs observation comparison. 
+
+```{r}
+ggplot(data = Comparison_DF) +
+  geom_point(aes(Ratio, CMIP6_Ratio)) + 
+  facet_wrap('source', scales = 'free') + 
+    labs(x = 'Observation Ratio', 
+       y = 'CMIP6 Ratio', 
+       title = 'A Comparison of Obs and CMIP6 Rs tp GPP Ratios by Lat/Lon') +
+  geom_abline(color = 'red', slope = 1, intercept = 0)
+```
+
+
+```{r}
+ggplot(Comparison_DF, aes(source, CMIP6_Ratio, color = model)) + 
+  geom_boxplot() +
+  geom_quasirandom(alpha = I(0.25)) +
+  ylab(expression(Ratio~of~R[S]~to~GPP)) + xlab("") +
+  facet_wrap('ensemble', scales = 'free') + 
+  theme(legend.position = 'none') + 
+  coord_cartesian(ylim = c(0, 1))
+```
+
+
+
+```{r}
+out_file <- file.path(CMIP_DIR, 'CMIP6_LatLon.csv')
+
+CMIP6_LatLon_ratios %>%  
+  select(year, model, experiment, ensemble, year, GPP = CMIP6_GPP, Rs = CMIP6_Rs, Longitude, Latitude) %>% 
+  write.csv(file = out_file, row.names = FALSE)
+cat('Saving', out_file)
+```
