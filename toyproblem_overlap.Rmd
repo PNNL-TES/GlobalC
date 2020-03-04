@@ -46,7 +46,7 @@ nsample <- 1000
 # set seed for reproducibility
 set.seed(11)
 
-# draw samples 
+# draw samples
 sample.obs <- rnorm(n = nsample, mean = mu.obs, sd = sig.obs)
 sample.imp <- rnorm(n = nsample, mean = mu.imp, sd = sig.imp)
 ```
@@ -57,17 +57,17 @@ In the experimental data, there will be information about parameters, etc that c
 ```{r dummy dataframe}
 tibble(observed = sample.obs) %>%
   mutate(id = as.numeric(row.names(.))) ->
-  observed
+observed
 
 tibble(implied = sample.imp) %>%
   mutate(id = as.numeric(row.names(.))) ->
-  implied
+implied
 
 # Join the tables for convenient plotting
 observed %>%
-  left_join(implied, by = 'id') %>%
+  left_join(implied, by = "id") %>%
   gather(distributionID, variablevalue, -id) ->
-  plotdata
+plotdata
 
 head(plotdata)
 ```
@@ -75,7 +75,7 @@ head(plotdata)
 
 # Create the density plots from the sampled data
 ```{r density plot}
-p <- ggplot(plotdata, aes(x = variablevalue, color = distributionID)) + 
+p <- ggplot(plotdata, aes(x = variablevalue, color = distributionID)) +
   geom_density()
 
 p
@@ -92,7 +92,7 @@ p + geom_vline(xintercept = 0.45) + geom_vline(xintercept = 1.57)
 We specifically do _not_ want the entire portion of the blue distribution (for example) that lies between the two vertical lines. What we care about is the portion of the blue density that lies beyond the threshold defined at the intersection of the two densities (similar for the red distribution):
 
 ```{r boundary cartoon2, echo = FALSE}
-p + geom_vline(xintercept = 0.933, linetype = 2, color = 'blue') # + geom_vline(xintercept = 1.57, color = 'blue')
+p + geom_vline(xintercept = 0.933, linetype = 2, color = "blue") # + geom_vline(xintercept = 1.57, color = 'blue')
 ```
 
 The remainder of this code notebook is broken into two sections.
@@ -179,7 +179,7 @@ Regardless of whether we sample 100 or 1000 points from each of our two distribu
 So, we will take those `nsample` points and make convenient functions to evaluate to determine whether a given `variablevalue` lies under both curves (ie in the overlap region between the implied and observed densities).
 
 ```{r get density}
-# get the x and y values for the density function from 
+# get the x and y values for the density function from
 # the sample of observed data
 dens.obs <- density(sample.obs, n = nsample)
 dens.obs
@@ -192,7 +192,7 @@ dens.obs
 direct.numerical.obs.fn <- approxfun(x = dens.obs$x, y = dens.obs$y)
 
 # repeat for the implied density
-direct.numerical.imp.fn <- approxfun(x = density(sample.imp, n=nsample)$x, y =  density(sample.imp, n=nsample)$y)
+direct.numerical.imp.fn <- approxfun(x = density(sample.imp, n = nsample)$x, y = density(sample.imp, n = nsample)$y)
 ```
 
 **ASIDE** 
@@ -200,9 +200,9 @@ We don't get the direct numerical functions from `geom_density` or `stat_density
 The `geom_density()` and `stat_density()` functions generate the y-axis density values used for plotting. We must extract these values; we will use them to create convenient functions that can be evaluated for determining if a given `variable value` lies under both density curves. One challenge is that, regardless of the number of samples you give `geom_density` or `stat_density`, the density curves are estimated on 512 points (suggesting that each is just making a call to `density` anyway). Technically, all the data we need is there. However, because it's been extacted from a `ggplot`, the variable names are challenging to work with (`x` instead of `variablevalue`, `group = 1 or 2` instead of `distrubtionID = implied or observed`). 
 
 ```{r ggplot extract density}
-# get the ggplot data and reshape to get to the 
+# get the ggplot data and reshape to get to the
 # variablevalue and corresponding density value
-head(ggplot_build(p)$data[[1]] )
+head(ggplot_build(p)$data[[1]])
 ```
 
 # Plotting the two density functions for each distribution
@@ -212,15 +212,18 @@ We can compare `assume.normal.obs.fn` with `direct.numerical.obs.fn` to see how 
 Note that calculating and plotting `direct.numerical.obs.fn` is exactly the same as just calling `geom_density` on the data without calculating the function first. We've only calculated `direct.numerical.obs.fn` here so that, if the actual data is not normally distributed, we have an example of getting a numerical representation of a density curve to use for calculating the intersection/threshold value of interest.
 
 ```{r compare densities, echo = FALSE}
-tibble(x = seq( -2, 2.5, by = 0.05)) %>%
-  mutate(assume.normal.obs = assume.normal.obs.fn(x),
-         direct.numerical.obs = direct.numerical.obs.fn(x),
-         assume.normal.imp = assume.normal.imp.fn(x),
-         direct.numerical.imp = direct.numerical.imp.fn(x)) %>%
+tibble(x = seq(-2, 2.5, by = 0.05)) %>%
+  mutate(
+    assume.normal.obs = assume.normal.obs.fn(x),
+    direct.numerical.obs = direct.numerical.obs.fn(x),
+    assume.normal.imp = assume.normal.imp.fn(x),
+    direct.numerical.imp = direct.numerical.imp.fn(x)
+  ) %>%
   gather(group, density, -x) ->
-  dist.compare
+dist.compare
 
-ggplot(dist.compare, aes(x = x, y = density, color = group)) + geom_line()
+ggplot(dist.compare, aes(x = x, y = density, color = group)) +
+  geom_line()
 ```
 
 # Final selection of density function for each distribution
@@ -243,7 +246,7 @@ We will use `uniroot` but note that we have to define a range in which we expect
 
 ```{r use density}
 threshold.value <- uniroot(function(x) observed.dist(x) - implied.dist(x), interval = c(0.5, 1.5))$root
-print(paste('The threshold lies at variablevalue =', threshold.value))
+print(paste("The threshold lies at variablevalue =", threshold.value))
 ```
 
 ## Percentage of each distribution in overlap
@@ -257,13 +260,13 @@ For the observed distribution, we are interested in the area under the curve for
 The trapezoidal rule integration function:
 ```{r trapezoidal rule}
 # integration stepsize for points along the x-axis
-dx <- 0.01 
+dx <- 0.01
 
 # for vectors of x-axis points `x` and corresponding function
-# evaluation points `y`, the area under the curve according to 
+# evaluation points `y`, the area under the curve according to
 # the trapezoidal rule is:
-traprule <- function(x, y){
-  sum(diff(x) * (head(y,-1)+tail(y,-1)), na.rm = TRUE)/2
+traprule <- function(x, y) {
+  sum(diff(x) * (head(y, -1) + tail(y, -1)), na.rm = TRUE) / 2
 }
 ```
 
@@ -271,7 +274,7 @@ Using integration to get the observed percent overlap:
 
 ```{r observed percent overlap}
 # define the x-axis (variablevalue) points for integration
-obs.xaxis.range <- seq(threshold.value, 4*max(sample.obs), by = dx )
+obs.xaxis.range <- seq(threshold.value, 4 * max(sample.obs), by = dx)
 
 # the corresponding y-axis values
 obs.yaxis.range <- observed.dist(obs.xaxis.range)
@@ -287,7 +290,9 @@ And for the implied distribution, because it is on the right, we care about the 
 ```{r implied percent overlap}
 # define the x-axis (variablevalue) points for integration
 imp.xaxis.range <- seq(min(sample.imp) - sign(min(sample.imp)) * 4 * min(sample.imp),
-                       threshold.value, by = dx )
+  threshold.value,
+  by = dx
+)
 
 # the corresponding y-axis values
 imp.yaxis.range <- implied.dist(imp.xaxis.range)
@@ -309,7 +314,7 @@ And for the observed, it's the upper tail, so just 1-area: the threshold occurs 
 ```{r quantiles with ecdf}
 # quantile in the observed distribution.
 # a call to ecdf just saves us the time of
-# directly calculating the area under the 
+# directly calculating the area under the
 # numerically extracted pdf we already
 # estimated, ie direct.numerical.obs.fn().
 ecdf(sample.obs)(threshold.value)

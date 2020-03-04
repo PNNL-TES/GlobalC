@@ -17,7 +17,6 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(tibble)
-
 ```
 
 # Set up the toy problem 
@@ -32,7 +31,6 @@ sig.obs <- 0.5
 
 mu.imp <- 1.5
 sig.imp <- 0.25
-
 ```
 
 ## Draw samples
@@ -47,10 +45,9 @@ nsample <- 1000
 # set seed for reproducibility
 set.seed(11)
 
-# draw samples 
+# draw samples
 sample.obs <- rnorm(n = nsample, mean = mu.obs, sd = sig.obs)
 sample.imp <- rnorm(n = nsample, mean = mu.imp, sd = sig.imp)
-
 ```
 
 ## Make dummy dataframes to work with
@@ -60,18 +57,18 @@ In the experimental data, there will be information about parameters, etc that c
 
 tibble(observed = sample.obs) %>%
   mutate(id = as.numeric(row.names(.))) ->
-  observed
+observed
 
 tibble(implied = sample.imp) %>%
   mutate(id = as.numeric(row.names(.))) ->
-  implied
-  
+implied
+
 
 # Join the tables for convenient plotting
 observed %>%
-  left_join(implied, by = 'id') %>%
+  left_join(implied, by = "id") %>%
   gather(distributionID, variablevalue, -id) ->
-  plotdata
+plotdata
 
 head(plotdata)
 ```
@@ -79,7 +76,7 @@ head(plotdata)
 
 # Create the density plots from the sampled data
 ```{r density plot}
-p <- ggplot(plotdata, aes(x = variablevalue, color = distributionID)) + 
+p <- ggplot(plotdata, aes(x = variablevalue, color = distributionID)) +
   geom_density()
 
 p
@@ -98,7 +95,7 @@ p + geom_vline(xintercept = 0.45) + geom_vline(xintercept = 1.57)
 We specifically do not want the entire portion of the blue distribution (for example) that lies between the two verticle lines. What we care about is the portion of the blue density that lies beyond the threshold defined at the intersection of the two densities (similar for the red distribution):
 
 ```{r boundary cartoon2, echo = FALSE}
-p + geom_vline(xintercept = 0.933, linetype = 2, color = 'blue') # + geom_vline(xintercept = 1.57, color = 'blue')
+p + geom_vline(xintercept = 0.933, linetype = 2, color = "blue") # + geom_vline(xintercept = 1.57, color = 'blue')
 ```
 
 The remainder of this code notebook is broken into two sections.
@@ -163,7 +160,7 @@ sig.sample.obs <- sd(sample.obs)
 print(mu.sample.obs)
 print(sig.sample.obs)
 
-assume.normal.obs.fn <- function(x){
+assume.normal.obs.fn <- function(x) {
   dnorm(x, mean = mu.sample.obs, sd = sig.sample.obs)
 }
 
@@ -177,7 +174,6 @@ print(sig.sample.imp)
 assume.normal.imp.fn <- function(x) {
   dnorm(x, mean = mu.sample.imp, sd = sig.sample.imp)
 }
-
 ```
 
 
@@ -192,14 +188,15 @@ We can compare `assume.normal.obs.fn` with the direct plotting results from `geo
 
 ```{r compare densities, echo = FALSE}
 
-tibble(x = seq( -2, 2.5, by = 0.05)) %>%
-  mutate(assume.normal.obs = assume.normal.obs.fn(x),
-         assume.normal.imp = assume.normal.imp.fn(x)) %>%
+tibble(x = seq(-2, 2.5, by = 0.05)) %>%
+  mutate(
+    assume.normal.obs = assume.normal.obs.fn(x),
+    assume.normal.imp = assume.normal.imp.fn(x)
+  ) %>%
   gather(group, density, -x) ->
-  dist.compare
+dist.compare
 
-p + geom_line(data = dist.compare, aes(x = x, y = density, color = group)) 
-
+p + geom_line(data = dist.compare, aes(x = x, y = density, color = group))
 ```
 
 
@@ -215,8 +212,7 @@ We will use `uniroot` but note that we have to define a range in which we expect
 ```{r use density}
 
 threshold.value <- uniroot(function(x) assume.normal.obs.fn(x) - assume.normal.imp.fn(x), interval = c(0.5, 1.5))$root
-print(paste('The threshold lies at variablevalue =', threshold.value))
-
+print(paste("The threshold lies at variablevalue =", threshold.value))
 ```
 
 
@@ -230,9 +226,10 @@ For the observed distribution, we are interested in the area under the curve for
 ```{r observed percent overlap}
 
 # and get the area under the curve
-obs.areaundercurve <- pnorm(threshold.value, mean = mu.sample.obs, sd = sig.sample.obs,
-                            lower.tail = F) # because we've arranged observed dist on the left and so we want the upper tail
-
+obs.areaundercurve <- pnorm(threshold.value,
+  mean = mu.sample.obs, sd = sig.sample.obs,
+  lower.tail = F
+) # because we've arranged observed dist on the left and so we want the upper tail
 ```
 
 Because the area under a distribution curve is, by definition 1, the fraction of the observed distribution that lies beyond the threshold is simply `obs.areaundercurve`: `r obs.areaundercurve` or `r 100*obs.areaundercurve`%.
@@ -243,7 +240,6 @@ And for the implied distribution, because it is on the right, we care about the 
 
 # get the area under the curve
 imp.areaundercurve <- pnorm(threshold.value, mean = mu.sample.imp, sd = sig.sample.imp)
-
 ```
 
 The fraction of the implied distribution that lies beyond the threshold is: `r imp.areaundercurve` or `r 100*imp.areaundercurve`%.
