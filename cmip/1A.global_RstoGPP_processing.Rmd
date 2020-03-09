@@ -9,30 +9,30 @@ The https://github.com/kdorheim/CMIPcarbon repo was set up to process CMIP carbo
 
 Set up the environement. 
 ```{r, warning=FALSE, message=FALSE}
-# Load the required libs. 
+# Load the required libs.
 library(dplyr)
 library(tidyr)
-library(ggplot2) # For some sanity plots
+# For some sanity plots
 
-# The directory of where the results will be save at. 
-CMIP_DIR <- here::here('cmip')
+# The directory of where the results will be save at.
+CMIP_DIR <- here::here("cmip")
 ```
 
 
 Import processed CMIP data directly from the github repo. 
 ```{r}
-# This data may contain results that will be used in other carbon projects. Make sure that we are only processing the variables and experiment 
-# results that we are intrested in. 
-raw_data <- read.csv(url('https://raw.githubusercontent.com/kdorheim/CMIPcarbon/master/pic_data/mon_global_fldmean.csv'),
-         stringsAsFactors = FALSE)
-
+# This data may contain results that will be used in other carbon projects. Make sure that we are only processing the variables and experiment
+# results that we are intrested in.
+raw_data <- read.csv(url("https://raw.githubusercontent.com/kdorheim/CMIPcarbon/master/pic_data/mon_global_fldmean.csv"),
+  stringsAsFactors = FALSE
+)
 ```
 
 ```{r}
-raw_data %>% 
-  filter(variable %in% c('gpp', 'raRoot', 'rhSoil')) %>% 
-  filter(experiment == 'historical') ->
-  global_mean
+raw_data %>%
+  filter(variable %in% c("gpp", "raRoot", "rhSoil")) %>%
+  filter(experiment == "historical") ->
+global_mean
 ```
 
 
@@ -40,47 +40,53 @@ raw_data %>%
 
 Make sure there are 12 months per year. 
 ```{r}
-global_mean %>% 
-  group_by(year, ensemble, experiment, model, variable, units, area, domain, area_units) %>% 
-  summarise(count = n()) %>% 
-  ungroup() %>% 
-  filter(count == 12) %>% 
-  select(ensemble, experiment, model, variable, year) -> 
-  good_months 
+global_mean %>%
+  group_by(year, ensemble, experiment, model, variable, units, area, domain, area_units) %>%
+  summarise(count = n()) %>%
+  ungroup() %>%
+  filter(count == 12) %>%
+  select(ensemble, experiment, model, variable, year) ->
+good_months
 
-global_mean %>% 
-  inner_join(good_months, by = c("model", "variable", "experiment", "ensemble", "year"))  -> 
-  global_mean_to_process
+global_mean %>%
+  inner_join(good_months, by = c("model", "variable", "experiment", "ensemble", "year")) ->
+global_mean_to_process
 ```
 
 Aggregate to annual rate and then calculate total flux. 
 ```{r}
 global_mean_to_process %>%
   # Calculate the annual average weighted by the number of days in a month.
-  mutate(days_per_month = lubridate::days_in_month(month)) %>% 
-  group_by(units, domain, variable, model, experiment, ensemble, year, area) %>%  
-  summarise(value = weighted.mean(x = value, w = days_per_month, na.rm = TRUE)) %>% 
-  ungroup ->
-  global_yearmonmean
+  mutate(days_per_month = lubridate::days_in_month(month)) %>%
+  group_by(units, domain, variable, model, experiment, ensemble, year, area) %>%
+  summarise(value = weighted.mean(x = value, w = days_per_month, na.rm = TRUE)) %>%
+  ungroup() ->
+global_yearmonmean
 
-global_yearmonmean %>% 
+global_yearmonmean %>%
   # Convert from s-1 to yr -1
-  mutate(value = value * 60*60*24*365, 
-         units = gsub(pattern = ' ', replacement = '', x = units),
-         units = gsub(pattern = 's-1', replacement = 'yr-1', x = units)) %>% 
-  # Mulitply by the m2 of land 
-  mutate(value = value * area, 
-         units = gsub(pattern = 'm-2', replacement = '', x = units)) %>% 
-  select(-area) %>% 
-  # Convert to PgC 
-  mutate(value = value * 1000/1e15, 
-         units = gsub(pattern = 'kg', replacement = 'PgC', x = units)) %>%  
-  # Make sure that year information is numeric not just a 
-  mutate(year = as.integer(year)) %>% 
-  select(units, model, experiment, ensemble, year, variable, value) %>% 
-  tidyr::spread(variable, value) %>% 
-  na.omit() -> 
-  wide_global_fluxes
+  mutate(
+    value = value * 60 * 60 * 24 * 365,
+    units = gsub(pattern = " ", replacement = "", x = units),
+    units = gsub(pattern = "s-1", replacement = "yr-1", x = units)
+  ) %>%
+  # Mulitply by the m2 of land
+  mutate(
+    value = value * area,
+    units = gsub(pattern = "m-2", replacement = "", x = units)
+  ) %>%
+  select(-area) %>%
+  # Convert to PgC
+  mutate(
+    value = value * 1000 / 1e15,
+    units = gsub(pattern = "kg", replacement = "PgC", x = units)
+  ) %>%
+  # Make sure that year information is numeric not just a
+  mutate(year = as.integer(year)) %>%
+  select(units, model, experiment, ensemble, year, variable, value) %>%
+  tidyr::spread(variable, value) %>%
+  na.omit() ->
+wide_global_fluxes
 ```
 
 
@@ -90,23 +96,23 @@ For quality contorl puprposes let's take a look at the GPP, raRoot, and rhSoil r
 
 What does gpp look like? 
 ```{r}
-ggplot(data = wide_global_fluxes) + 
-  geom_line(aes(year, gpp, color = model, group = interaction(model, ensemble)))  + 
-  labs(title = 'GPP', y = 'PgCyr-1')
+ggplot(data = wide_global_fluxes) +
+  geom_line(aes(year, gpp, color = model, group = interaction(model, ensemble))) +
+  labs(title = "GPP", y = "PgCyr-1")
 ```
 
 What does raRoot look like? 
 ```{r}
-ggplot(data = wide_global_fluxes) + 
-  geom_line(aes(year, raRoot, color = model, group = interaction(model, ensemble)))  + 
-  labs(title = 'raRoot', y = 'PgCyr-1')
+ggplot(data = wide_global_fluxes) +
+  geom_line(aes(year, raRoot, color = model, group = interaction(model, ensemble))) +
+  labs(title = "raRoot", y = "PgCyr-1")
 ```
 
 What does rhSoil look like? 
 ```{r}
-ggplot(data = wide_global_fluxes) + 
-  geom_line(aes(year, rhSoil, color = model, group = interaction(model, ensemble)))  + 
-  labs(title = 'rhSoil', y = 'PgCyr-1')
+ggplot(data = wide_global_fluxes) +
+  geom_line(aes(year, rhSoil, color = model, group = interaction(model, ensemble))) +
+  labs(title = "rhSoil", y = "PgCyr-1")
 ```
 
 If the time series look reasonable then let's continue on and calcualte the Rs:GPP ratio! 
@@ -115,30 +121,36 @@ If the time series look reasonable then let's continue on and calcualte the Rs:G
 ## Calculate Ratio
 
 ```{r}
-wide_global_fluxes %>% 
-  mutate(Rs = raRoot + rhSoil, 
-         Rs_GPP_Ratio = Rs / gpp) -> 
-  global_ratio
+wide_global_fluxes %>%
+  mutate(
+    Rs = raRoot + rhSoil,
+    Rs_GPP_Ratio = Rs / gpp
+  ) ->
+global_ratio
 ```
 
 
 Let's take a look at some more plots because sanity checks are important! 
 ```{r}
-ggplot(data = global_ratio) + 
-  geom_point(aes(Rs, gpp, color = year, shape = model, group = interaction(model, ensemble))) + 
-  facet_wrap('model') + 
-  labs(title = 'Rs vs. GPP', 
-       y = 'GPP PgCyr-1', 
-       x = 'Rs PgCyr-1')
+ggplot(data = global_ratio) +
+  geom_point(aes(Rs, gpp, color = year, shape = model, group = interaction(model, ensemble))) +
+  facet_wrap("model") +
+  labs(
+    title = "Rs vs. GPP",
+    y = "GPP PgCyr-1",
+    x = "Rs PgCyr-1"
+  )
 ```
 
 
 ```{r}
-ggplot(data = global_ratio) + 
-  geom_line(aes(year, Rs_GPP_Ratio, color = model, group = interaction(model, ensemble))) + 
-  labs(title = 'Rs:GPP', 
-       y = 'Ratio of Rs to GPP (unitless)', 
-       x = 'Year')
+ggplot(data = global_ratio) +
+  geom_line(aes(year, Rs_GPP_Ratio, color = model, group = interaction(model, ensemble))) +
+  labs(
+    title = "Rs:GPP",
+    y = "Ratio of Rs to GPP (unitless)",
+    x = "Year"
+  )
 ```
 
 ## Save Data 
@@ -150,11 +162,11 @@ Well the data looks pretty good! So let's save it in the format that the rest of
 
 
 ```{r}
-out_file <- file.path(CMIP_DIR, 'CMIP6_annual_RStoGPP.csv')
+out_file <- file.path(CMIP_DIR, "CMIP6_annual_RStoGPP.csv")
 
-global_ratio %>%  
-  select(year, model, experiment, ensemble, year, GPP = gpp, Rs) %>% 
+global_ratio %>%
+  select(year, model, experiment, ensemble, year, GPP = gpp, Rs) %>%
   write.csv(file = out_file, row.names = FALSE)
-cat('Saving', out_file)
+cat("Saving", out_file)
 ```
 
