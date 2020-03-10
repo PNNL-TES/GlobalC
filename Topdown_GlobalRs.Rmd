@@ -176,7 +176,6 @@ p_gpp <- ggplot(GPP, aes(Year, GPP)) +
   theme_cowplot() +
   ylab(expression(GPP ~ (Pg ~ C ~ yr^-1)))
 p_gpp_marg <- ggMarginal(p_gpp, type = "densigram", margins = "y", fill = "red")
-ggsave("outputs/p_gpp.png", plot = p_gpp_marg, width = 8, height = 5)
 
 p_rs <- ggplot(GlobalRs, aes(Pub_year, Rs)) +
   geom_point() +
@@ -186,7 +185,6 @@ p_rs <- ggplot(GlobalRs, aes(Pub_year, Rs)) +
   xlab("Year") +
   ylab(expression(R[S] ~ (Pg ~ C ~ yr^-1)))
 p_rs_marg <- ggMarginal(p_rs, type = "densigram", margins = "y", fill = "red")
-ggsave("outputs/p_rs.png", plot = p_rs_marg, width = 8, height = 5)
 ```
 
 
@@ -462,7 +460,6 @@ print(p1_gpp)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
 cat("\n\nTop-down GPP quantiles: ", gpp_qt_raw, "\n")
-ggsave("outputs/Figure1_gpp.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
 ### Scenario 2 - ratio __weighted__ by ecosystem
@@ -483,7 +480,6 @@ print(p1_gpp2)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
 cat("\n\nTop-down GPP quantiles: ", gpp_qt_raw, "\n")
-ggsave("outputs/Figure1_gpp_weighted.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
 ### Scenario 3 - SRDB Rs:GPP ratios
@@ -527,7 +523,6 @@ print(p1_gpp3)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
 cat("\n\nTop-down GPP quantiles: ", gpp_qt_raw, "\n")
-ggsave("outputs/Figure1_gpp_simple.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
 ### GPP vs components relationships
@@ -784,7 +779,6 @@ print(p2_rs)
 
 cat("\n\nRs implied by GPP quantiles: ", rsg_qt, "\n")
 cat("\n\nBottom-up Rs quantiles: ", rsg_qt_raw, "\n")
-ggsave("outputs/Figure1_rs.jpg", width = 8, height = 4)
 ```
 
 ### Scenario 2 - ratio __weighted__ by ecosystem
@@ -805,7 +799,6 @@ print(p2_rs2)
 
 cat("\n\nRs implied by GPP quantiles: ", rsg_qt, "\n")
 cat("\n\nBottom-up Rs quantiles: ", rsg_qt_raw, "\n")
-ggsave("outputs/Figure1_rs_weighted.jpg", width = 8, height = 4)
 ```
 
 ### Scenario 3 - SRDB Rs:GPP ratios
@@ -824,7 +817,6 @@ print(p1_rsg3)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
 cat("\n\nTop-down GPP quantiles: ", gpp_qt_raw, "\n")
-ggsave("outputs/Figure1_gpp_simple.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
 ### RSG and components relationship
@@ -954,10 +946,10 @@ rs_results %>%
 ```{r combine GPP and RSG comparison into figure 2, fig.height=8, fig.width=8, cache=FALSE}
 # Scenario 2, RC separate into 4 groups, and Froot separate into 2 groups
 plot_grid(p1_gpp2, p2_rs2, ncol = 1, labels = c("(a)", "(b)"), hjust = 0)
-ggsave("outputs/Figure1.png")
+ggsave("outputs/Figure1.png", width = 10, height = 8)
 ```
 
-## Combining GPP and Rs - figure 2
+## Combining GPP and Rs - Figure 2
 
 What's the most likely values for GPP and R[S] that are consistent with the underlying distributions?
 
@@ -1019,7 +1011,7 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
     angle = 90
   )
 print(p_joint)
-ggsave("outputs/Figure3_not_sure.png", width = 8, height = 6)
+ggsave("outputs/Figure2.png", width = 8, height = 6)
 ```
 
 ```{r old-joint, results='show'}
@@ -1118,13 +1110,11 @@ p_joint <- ggplot(results, aes(w, q500, group = which)) +
 # scale_color_manual(values=c("#999999", "#E69F00"))
 
 print(p_joint)
-# ggsave("outputs/Figure3.png")
 knitr::kable(results_w50, digits = 1, format = "markdown")
 ```
 
 
-
-## Site-specific ratios of GPP to Rs - figure 3
+## Site-specific ratios of GPP to Rs - Figure 3
 
 Presumably, as a matter of mathematics, the ratio of global Rs to global GPP should be the linear combination (sum) of all terrestrial points Neither SRDB nor FLUXNET is an unbiased sample of the land surface, but it may be instructive to look at the Rs:GPP for three data sources:
 
