@@ -198,18 +198,14 @@ GPP %>% ggplot(aes(x = Group, y = GPP, fill = as.factor(Group))) +
   # geom_boxplot(width = 0.1) +
   theme(legend.title = element_blank()) +
   xlab("GPP by different groups") +
-  ylab(expression(GPP ~ "(Pg C" ~ yr^{
-    -1
-  } ~ ")"))
+  ylab(expression(GPP ~ "(Pg C" ~ yr^{-1} ~ ")"))
 
 ggsave("outputs/FigureSX.jpg", width = 8, height = 5, dpi = 300, units = "in")
 
 GPP %>% ggplot(aes(x = Group, y = GPP)) +
   geom_point() +
   xlab("GPP by different groups") +
-  ylab(expression(GPP ~ "(Pg C" ~ yr^{
-    -1
-  } ~ ")"))
+  ylab(expression(GPP ~ "(Pg C" ~ yr^{-1} ~ ")"))
 
 GPP %>%
   select(Group, Flag) %>%
@@ -450,9 +446,7 @@ gpp_figure_data %>%
     legend.text.align = 0
   ) +
   ylab("Density") +
-  xlab(expression(GPP ~ (Pg ~ C ~ yr^{
-    -1
-  }))) ->
+  xlab(expression(GPP ~ (Pg ~ C ~ yr^{-1}))) ->
 gpp_base_figure
 
 p_gpp <- p_gpp + theme(
@@ -557,24 +551,16 @@ ggplot(gpp_results, aes(NPP, GPP2)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
-  xlab(expression(NPP ~ (Pg ~ C ~ yr^{
-    -1
-  }))) +
-  ylab(expression(GPP ~ (Pg ~ C ~ yr^{
-    -1
-  })))
+  xlab(expression(NPP ~ (Pg ~ C ~ yr^{-1}))) +
+  ylab(expression(GPP ~ (Pg ~ C ~ yr^{-1})))
 
 # GPP ~ Rs
 ggplot(gpp_results, aes(Rs_raw, GPP2)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
-  xlab(expression(R[S] ~ (Pg ~ C ~ yr^{
-    -1
-  }))) +
-  ylab(expression(GPP ~ (Pg ~ C ~ yr^{
-    -1
-  })))
+  xlab(expression(R[S] ~ (Pg ~ C ~ yr^{-1}))) +
+  ylab(expression(GPP ~ (Pg ~ C ~ yr^{-1})))
 
 # GPP ~ Rc
 ggplot(gpp_results, aes(Rc, GPP2)) +
@@ -582,18 +568,14 @@ ggplot(gpp_results, aes(Rc, GPP2)) +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
   xlab("RC") +
-  ylab(expression(GPP ~ (Pg ~ C ~ yr^{
-    -1
-  })))
+  ylab(expression(GPP ~ (Pg ~ C ~ yr^{-1})))
 
 # GPP ~ Froot
 ggplot(gpp_results, aes(Froot, GPP2)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
-  ylab(expression(GPP ~ (Pg ~ C ~ yr^{
-    -1
-  })))
+  ylab(expression(GPP ~ (Pg ~ C ~ yr^{-1})))
 
 # GPP ~ Fshoot
 ggplot(gpp_results, aes(x = 1 - Froot, y = GPP2)) +
@@ -601,9 +583,7 @@ ggplot(gpp_results, aes(x = 1 - Froot, y = GPP2)) +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
   xlab("Fshoot") +
-  ylab(expression(GPP ~ (Pg ~ C ~ yr^{
-    -1
-  })))
+  ylab(expression(GPP ~ (Pg ~ C ~ yr^{-1})))
 ```
 
 ### Overlap
@@ -788,9 +768,7 @@ rs_figure_data %>%
     legend.text.align = 0
   ) +
   ylab("Density") +
-  xlab(expression(R[S] ~ (Pg ~ C ~ yr^{
-    -1
-  }))) ->
+  xlab(expression(R[S] ~ (Pg ~ C ~ yr^{-1}))) ->
 rs_base_figure
 
 p_rs <- p_rs + theme(
@@ -855,9 +833,7 @@ ggsave("outputs/Figure1_gpp_simple.jpg", width = 8, height = 4, dpi = 300, units
 ggplot(rs_results, aes(x = Ra1)) +
   geom_histogram(col = "black", fill = "gray", bins = 30) +
   geom_histogram(aes(Ra3), col = "blue", fill = "skyblue", bins = 30, alpha = 0.5) +
-  xlab(expression(Ra1 ~ or ~ Ra3 ~ "(" ~ Pg ~ C ~ yr^{
-    -1
-  } ~ ")")) +
+  xlab(expression(Ra1 ~ or ~ Ra3 ~ "(" ~ Pg ~ C ~ yr^{-1} ~ ")")) +
   ylab(expression(count))
 
 # Ra1 = GPP * Ra-GPP ratio
@@ -870,9 +846,7 @@ rs_results %>%
   # theme(legend.position = c(0.15, 0.35)) +
   coord_cartesian(xlim = c(10, 100)) +
   ylab("Density") +
-  xlab(expression(R[A] ~ (Pg ~ C ~ yr^{
-    -1
-  }))) +
+  xlab(expression(R[A] ~ (Pg ~ C ~ yr^{-1}))) +
   scale_fill_discrete("", labels = c(
     expression(R[A] ~ "=" ~ GPP ~ "× R"[A] ~ ":" ~ "GPP ratio"),
     expression(R[A] ~ "=" ~ "GPP - NPP")
@@ -893,36 +867,24 @@ ggplot(rs_results, aes(GPP_raw, Rs_topdown)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
-  xlab(expression(GPP ~ (Pg ~ C ~ yr^{
-    -1
-  }))) +
-  ylab(expression(R[S] ~ (Pg ~ C ~ yr^{
-    -1
-  })))
+  xlab(expression(GPP ~ (Pg ~ C ~ yr^{-1}))) +
+  ylab(expression(R[S] ~ (Pg ~ C ~ yr^{-1})))
 
 # Rs ~ NPP
 ggplot(rs_results, aes(NPP, Rs_topdown)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
-  xlab(expression(NPP ~ (Pg ~ C ~ yr^{
-    -1
-  }))) +
-  ylab(expression(R[S] ~ (Pg ~ C ~ yr^{
-    -1
-  })))
+  xlab(expression(NPP ~ (Pg ~ C ~ yr^{-1}))) +
+  ylab(expression(R[S] ~ (Pg ~ C ~ yr^{-1})))
 
 # Rs ~ RaGpp
 ggplot(rs_results, aes(RaGpp, Rs_topdown)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
-  xlab(expression(R %/% GPP ~ (Pg ~ C ~ yr^{
-    -1
-  }))) +
-  ylab(expression(R[S] ~ (Pg ~ C ~ yr^{
-    -1
-  })))
+  xlab(expression(R %/% GPP ~ (Pg ~ C ~ yr^{-1}))) +
+  ylab(expression(R[S] ~ (Pg ~ C ~ yr^{-1})))
 
 # Rs ~ Froot
 ggplot(rs_results, aes(Froot2, Rs_topdown)) +
@@ -930,21 +892,15 @@ ggplot(rs_results, aes(Froot2, Rs_topdown)) +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
   xlab(expression(Froot)) +
-  ylab(expression(R[S] ~ (Pg ~ C ~ yr^{
-    -1
-  })))
+  ylab(expression(R[S] ~ (Pg ~ C ~ yr^{-1})))
 
 # Rs ~ Fire
 ggplot(rs_results, aes(Fire, Rs_topdown)) +
   geom_hex() +
   scale_fill_gradient(low = "gray", high = "blue") +
   geom_smooth(method = "lm") +
-  xlab(expression(Fire ~ burned ~ (Pg ~ C ~ yr^{
-    -1
-  }))) +
-  ylab(expression(R[S] ~ (Pg ~ C ~ yr^{
-    -1
-  })))
+  xlab(expression(Fire ~ burned ~ (Pg ~ C ~ yr^{-1}))) +
+  ylab(expression(R[S] ~ (Pg ~ C ~ yr^{-1})))
 ```
 
 ### Overlap
