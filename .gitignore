@@ -54,6 +54,7 @@ Papers/
 *_cache/
 *_files/
 *.html
+*.docx
 
 # Exclude folders 
 old/
