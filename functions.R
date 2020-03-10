@@ -538,3 +538,104 @@ plot_Rroot_Rs_NPP <- function(sub_srdb, NPP_data) {
 #             vjust = c(3),
 #             hjust = c(-2.35, -1.5, -2.25, -2.25, -1.5, -2.65))
 # }
+
+
+# This is the old joint figure, with sloping lines that everyone found unclear
+# ```{r old-joint, results='show'}
+# n_points <- 20
+# # w is the weight of top-down GPP dominance, 0 to 1
+# w <- seq(0, 1, length.out = 20)
+# w <- c(0.25, 0.5, 0.75, w) %>%
+#   unique() %>%
+#   sort() # ensure 0.25, 0.5, and 0.75 are included
+# 
+# gpp_wm <- tibble(
+#   q025 = rep(NA_real_, n_points),
+#   q500 = rep(NA_real_, n_points),
+#   q975 = rep(NA_real_, n_points)
+# )
+# rs_wm <- gpp_wm
+# 
+# for (i in seq_along(w)) {
+#   weighted_gpp <- gpp_results$GPP_raw * w[i] + gpp_results$GPP2 * (1 - w[i])
+#   gpp_wm[i, ] <- quantile(weighted_gpp, probs = QUANTILES)
+#   weighted_rs <- rs_results$Rs_raw * (1 - w[i]) + rs_results$Rs_topdown2 * w[i]
+#   rs_wm[i, ] <- quantile(weighted_rs, probs = QUANTILES)
+# }
+# 
+# gpp_wm$w <- w
+# rs_wm$w <- w
+# results <- bind_rows("GPP" = gpp_wm, "Rs" = rs_wm, .id = "which")
+# 
+# # add col_scale column, which enable color gradual change in Figure 1 panel 3
+# results %>% mutate(col_scale = 1:46) -> results
+# 
+# results_w75 <- filter(results, w == 0.75)
+# results_w50 <- filter(results, w == 0.5)
+# results_w25 <- filter(results, w == 0.25)
+# myarrow <- arrow(length = unit(0.05, "inches"))
+# 
+# p_joint <- ggplot(results, aes(w, q500, group = which)) +
+#   geom_vline(xintercept = 0.5, size = 0.25, linetype = 2) +
+#   # scale_fill_manual(values=c("#999999", "#E69F00")) +
+#   
+#   geom_line(size = 1.5) +
+#   geom_ribbon(aes(fill = which, ymin = q025, ymax = q975),
+#               col = NA, alpha = 0.25, show.legend = FALSE
+#   ) +
+#   coord_cartesian(ylim = c(50, 170), expand = FALSE) +
+#   scale_color_discrete("", labels = c("GPP", expression(R[S]))) +
+#   theme(legend.text.align = 0) +
+#   # scale_fill_manual(values=c("brown", "blueviolet")) +
+#   
+#   # 75%
+#   geom_segment(
+#     data = results_w75, aes(x = 0, xend = w, yend = q500),
+#     linetype = 2, size = 0.5
+#   ) +
+#   geom_label(
+#     data = results_w75, aes(x = 0.125, y = q500, label = round(q500, 0)),
+#     size = 2, show.legend = FALSE
+#   ) +
+#   # 50%
+#   geom_segment(
+#     data = results_w50, aes(x = 0, xend = w, yend = q500),
+#     linetype = 2, size = 1
+#   ) +
+#   geom_label(
+#     data = results_w50, aes(x = 0.075, y = q500, label = round(q500, 0)),
+#     size = 3.5, fontface = "bold", show.legend = FALSE
+#   ) +
+#   
+#   # 25%
+#   geom_segment(
+#     data = results_w25, aes(x = 0, xend = w, yend = q500),
+#     linetype = 2, size = 0.5
+#   ) +
+#   geom_label(
+#     data = results_w25, aes(x = 0.025, y = q500, label = round(q500, 0)),
+#     size = 2, show.legend = FALSE
+#   ) +
+#   
+#   # Arrows and labels
+#   annotate("segment", x = 0.1, xend = 0.025, y = 60, yend = 60, arrow = myarrow) +
+#   annotate("text",
+#            x = 0.11, y = 60, size = 3, hjust = "inward",
+#            label = expression(bold(Determined ~ more ~ by ~ R[S]))
+#   ) +
+#   annotate("segment", x = 0.9, xend = 0.975, y = 60, yend = 60, arrow = myarrow) +
+#   annotate("text",
+#            x = 0.89, y = 60, size = 3, hjust = "inward", fontface = "bold",
+#            label = "Determined more by GPP"
+#   ) +
+#   
+#   # Other
+#   xlab("Weight of GPP") +
+#   ylab(expression(Flux ~ (Pg ~ C ~ yr^-1)))
+# 
+# # change color
+# # scale_color_manual(values=c("#999999", "#E69F00"))
+# 
+# print(p_joint)
+# knitr::kable(results_w50, digits = 1, format = "markdown")
+# ```
