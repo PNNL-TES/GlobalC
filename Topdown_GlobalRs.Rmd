@@ -1193,7 +1193,7 @@ if (file.exists(cmip6_local_data_file)) {
 
   cmip6_local_data %>%
     mutate(
-      Scale = "Local",
+      Scale = "Ecosystem scale",
       Source = paste0("Local CMIP6\n(N = ", samples, ")"),
       Type = "Models"
     ) ->
