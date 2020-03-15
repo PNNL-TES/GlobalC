@@ -212,12 +212,7 @@ GPP %>% ggplot(aes(x = Group, y = GPP, fill = as.factor(Group))) +
   xlab("GPP by different groups") +
   ylab(expression(GPP ~ "(Pg C" ~ yr^{-1} ~ ")"))
 
-ggsave("outputs/FigureSX.jpg", width = 8, height = 5, dpi = 300, units = "in")
-
-GPP %>% ggplot(aes(x = Group, y = GPP)) +
-  geom_point() +
-  xlab("GPP by different groups") +
-  ylab(expression(GPP ~ "(Pg C" ~ yr^{-1} ~ ")"))
+ggsave("outputs/FigureS5.jpg", width = 8, height = 5, dpi = 300, units = "in")
 
 GPP %>%
   select(Group, Flag) %>%
@@ -592,7 +587,7 @@ red <- rgb(1, 0, 0, alpha = 1)
 pairs_colors <- c(black, red)[as.factor(lt_ip)]
 pairsdata <- gpp_results[gpp_vd$Parameter[gpp_vd$Contribution > 0.05]]
 pairsdata <- rename(pairsdata, "Canonical Rs" = Rs_raw, "Rroot : Rs ratio" = Rc, "Rroot : RA ratio" = Froot)
-# pdf("outputs/Figure S8 - Boots GPP pairs.pdf", width = 8, height = 6)
+# pdf("outputs/FigureS8 - Boots GPP pairs.pdf", width = 8, height = 6)
 pairs(pairsdata, col = pairs_colors, main = expression(GPP[Rs]))
 # dev.off()
 # get mean Rroot:Rs of below of above the intercetion (126.7 Pg)
@@ -800,7 +795,7 @@ rs_results %>%
     axis.line = element_line(colour = "black")
   )
 
-ggsave("outputs/FigureS5_RA_Method.jpg", width = 8, height = 4, dpi = 300, units = "in")
+ggsave("outputs/FigureSX_RA_Method.jpg", width = 8, height = 4, dpi = 300, units = "in")
 
 # Rs ~ GPP
 ggplot(rs_results, aes(GPP_raw, Rs_topdown)) +
@@ -878,7 +873,7 @@ gt_ip <- rs_results$Rs_topdown > rs_ip # ">" b/c most bootstrapped Rs values are
 pairs_colors <- c(black, red)[as.factor(gt_ip)]
 pairsdata <- rs_results[vd_rs$Parameter[vd_rs$Contribution > 0.05]]
 pairsdata <- rename(pairsdata, "Canonical GPP" = GPP_raw, "Rroot : RA ratio" = Froot_rest, "RA : GPP ratio" = RaGpp_rest)
-# pdf("outputs/Figure S9 - Boots Rs pairs.pdf", width = 8, height = 6)
+# pdf("outputs/FigureS9 - Boots Rs pairs.pdf", width = 8, height = 6)
 pairs(pairsdata, col = pairs_colors, main = expression(Rs[GPP]))
 # dev.off()
 
