@@ -1360,13 +1360,14 @@ We evaluated X different resampling methods, which differed in how they treated 
 
 _**Statistical analysis**_  
 
-Summarize stats and software used.
-
-
 ## Compare the results of different re-sampling methods (N = `r N_SAMPLES`)
 ```{r sample method comparison}
 sample_size_tst(10, 10000)
 ggsave("outputs/FigureS7.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
+## Summarize stats and software used.
 
+```{r sessionInfo, results='show'}
+sessionInfo()
+```
