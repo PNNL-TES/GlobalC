@@ -88,6 +88,7 @@ library(ggbeeswarm)
 source("functions.R")
 source("functions-stats.R")
 source("functions-resampling.R")
+source("functions-calc_bootstrap.R")
 
 # Set chunks defaults; these options will be applied to all subsequent chunks
 knitr::opts_chunk$set(
@@ -150,7 +151,6 @@ Froot %>% mutate(IGBP2 = case_when(
 )) -> Froot
 ```
 
-
 ## Sites with Rs-GPP ratio from SRDB and Fluxnet
 ```{r}
 srdb_v4 %>%
@@ -190,7 +190,6 @@ p_gpp <- ggplot(GPP, aes(Year, GPP)) +
   theme_cowplot() +
   ylab(expression(GPP ~ (Pg ~ C ~ yr^-1)))
 p_gpp_marg <- ggMarginal(p_gpp, type = "densigram", margins = "y", fill = "red")
-ggsave("outputs/p_gpp.png", plot = p_gpp_marg, width = 8, height = 5)
 
 p_rs <- ggplot(GlobalRs, aes(Pub_year, Rs)) +
   geom_point() +
@@ -200,7 +199,6 @@ p_rs <- ggplot(GlobalRs, aes(Pub_year, Rs)) +
   xlab("Year") +
   ylab(expression(R[S] ~ (Pg ~ C ~ yr^-1)))
 p_rs_marg <- ggMarginal(p_rs, type = "densigram", margins = "y", fill = "red")
-ggsave("outputs/p_rs.png", plot = p_rs_marg, width = 8, height = 5)
 ```
 
 
@@ -212,24 +210,19 @@ GPP %>% ggplot(aes(x = Group, y = GPP, fill = as.factor(Group))) +
   # geom_boxplot(width = 0.1) +
   theme(legend.title = element_blank()) +
   xlab("GPP by different groups") +
-  ylab(expression(GPP ~ "(Pg C" ~ yr^{
-    -1
-  } ~ ")"))
+  ylab(expression(GPP ~ "(Pg C" ~ yr^{-1} ~ ")"))
 
 ggsave("outputs/FigureSX.jpg", width = 8, height = 5, dpi = 300, units = "in")
 
 GPP %>% ggplot(aes(x = Group, y = GPP)) +
   geom_point() +
   xlab("GPP by different groups") +
-  ylab(expression(GPP ~ "(Pg C" ~ yr^{
-    -1
-  } ~ ")"))
+  ylab(expression(GPP ~ "(Pg C" ~ yr^{-1} ~ ")"))
 
 GPP %>%
   select(Group, Flag) %>%
   count(Group, Flag)
 ```
-
 
 
 ### Plot Rroot-Rs ratio
@@ -403,37 +396,6 @@ bootstrap_data %>%
     Froot = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, Froot$Froot)
   ) -> bootstrap_gpp_draws
 
-# Step 2. Do the static (no random draws) steps that calculate GPP
-# We define a function to re-use later for variance decomposition
-calc_bootstrap_gpp <- function(x) {
-  x %>%
-    mutate(
-      # Scenario 2: Rc separate into groups: agriculture, deciduous forest, grassland, etc
-      # all other ecosystems with obs<40, take samples from all RC records
-      # area of rest ecosystem = 1-sum(agriculture, forest, grassland, etc)
-      Rc2 = (Rc_agr * ag_area + Rc_df * df_area + Rc_ef * ef_area + Rc_mf * mf_area +
-        Rc_gra * gra_area + Rc_shr * shr_area + Rc_rest *
-          (1 - ag_area - df_area - ef_area - mf_area - gra_area - shr_area)),
-
-      FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of scenario 1
-      # Bottom up estimate of GPP, scenario 1
-      Rroot = Rs_raw * Rc, # root respiration
-      Rshoot = Rroot * FsFr, # shoot respiration
-
-      # Scenario 2: separate into different ecosystems and weighted by area
-      # Froot %>% count(Ecosystem)
-      Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area +
-        Froot_rest * (1 - df_area - ef_area - mf_area),
-      FsFr2 = (1 - Froot2) / Froot2, # Froot to Fshoot ratio of scenario 2
-      # Bottom up estimate of GPP, scenario 2
-      Rroot2 = Rs_raw * Rc2,
-      Rshoot2 = Rroot2 * FsFr2,
-
-      GPP = NPP + Rroot + Rshoot, # scenario 1: GPP
-      GPP2 = NPP + Rroot2 + Rshoot2 # scenario 2: GPP2
-    )
-}
-
 # Now we can run the initial GPP bootstrapping
 gpp_results <- calc_bootstrap_gpp(bootstrap_gpp_draws)
 ```
@@ -464,9 +426,7 @@ gpp_figure_data %>%
     legend.text.align = 0
   ) +
   ylab("Density") +
-  xlab(expression(GPP ~ (Pg ~ C ~ yr^{
-    -1
-  }))) ->
+  xlab(expression(GPP ~ (Pg ~ C ~ yr^{-1}))) ->
 gpp_base_figure
 
 p_gpp <- p_gpp + theme(
@@ -482,7 +442,6 @@ print(p1_gpp)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
 cat("\n\nTop-down GPP quantiles: ", gpp_qt_raw, "\n")
-ggsave("outputs/Figure1_gpp.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
 ### Scenario 2 - ratio __weighted__ by ecosystem
@@ -503,7 +462,6 @@ print(p1_gpp2)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
 cat("\n\nTop-down GPP quantiles: ", gpp_qt_raw, "\n")
-ggsave("outputs/Figure1_gpp_weighted.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
 ### Scenario 3 - SRDB Rs:GPP ratios
@@ -545,7 +503,6 @@ print(p1_gpp3)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
 cat("\n\nTop-down GPP quantiles: ", gpp_qt_raw, "\n")
-ggsave("outputs/Figure1_gpp_simple.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
 ### GPP vs components relationships
@@ -723,39 +680,6 @@ bootstrap_data %>%
   ) ->
 bootstrap_rs_draws
 
-# Step 2. Do the static (no random draws) steps that calculate Rs
-# We define a function to re-use later for variance decomposition
-calc_bootstrap_rs <- function(x) {
-  x %>%
-    mutate(
-      # Scenario 1
-      RaGpp = RaGpp_rest,
-      # Scenario 2
-      RaGpp2 = RaGpp_df * df_area + RaGpp_ef * ef_area + RaGpp_mf * mf_area +
-        RaGpp_gra * gra_area + RaGpp_rest * (1 - df_area - ef_area - mf_area - gra_area),
-
-      # get Froot (weight by area of ecosystem type)
-      Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area +
-        Froot_rest * (1 - df_area - ef_area - mf_area),
-
-      Ra1 = GPP_raw * RaGpp, # first way to calculate Ra, Ra = GPP * RaGPP
-      Ra2 = GPP_raw - NPP, # second way to calculate Ra, Ra = GPP - NPP
-      Ra3 = if_else(Ra2 < 0, Ra1, Ra2),
-      Ra_avg1 = (Ra1 + Ra3) / 2,
-
-      Rroot = Ra_avg1 * Froot2,
-      Rshoot = Ra_avg1 * (1 - Froot2),
-      Rs_topdown = NPP - HerbComsum - Fire - sink - DOC - BVOCs + Rroot,
-
-      # Scenario 2
-      Ra4 = GPP_raw * RaGpp2, # first way to calculate Ra, Ra = GPP * RaGPP
-      Ra_avg2 = (Ra4 + Ra3) / 2,
-      Rroot2 = Ra_avg2 * Froot2,
-      Rshoot2 = Ra_avg2 * (1 - Froot2),
-      Rs_topdown2 = NPP - HerbComsum - Fire - sink - DOC - BVOCs + Rroot2
-    )
-}
-
 rs_results <- calc_bootstrap_rs(bootstrap_rs_draws)
 ```
 
@@ -787,9 +711,7 @@ rs_figure_data %>%
     legend.text.align = 0
   ) +
   ylab("Density") +
-  xlab(expression(R[S] ~ (Pg ~ C ~ yr^{
-    -1
-  }))) ->
+  xlab(expression(R[S] ~ (Pg ~ C ~ yr^{-1}))) ->
 rs_base_figure
 
 p_rs <- p_rs + theme(
@@ -805,7 +727,6 @@ print(p2_rs)
 
 cat("\n\nRs implied by GPP quantiles: ", rsg_qt, "\n")
 cat("\n\nBottom-up Rs quantiles: ", rsg_qt_raw, "\n")
-ggsave("outputs/Figure1_rs.jpg", width = 8, height = 4)
 ```
 
 ### Scenario 2 - ratio __weighted__ by ecosystem
@@ -826,7 +747,6 @@ print(p2_rs2)
 
 cat("\n\nRs implied by GPP quantiles: ", rsg_qt, "\n")
 cat("\n\nBottom-up Rs quantiles: ", rsg_qt_raw, "\n")
-ggsave("outputs/Figure1_rs_weighted.jpg", width = 8, height = 4)
 ```
 
 ### Scenario 3 - SRDB Rs:GPP ratios
@@ -845,7 +765,6 @@ print(p1_rsg3)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
 cat("\n\nTop-down GPP quantiles: ", gpp_qt_raw, "\n")
-ggsave("outputs/Figure1_gpp_simple.jpg", width = 8, height = 4, dpi = 300, units = "in")
 ```
 
 ### RSG and components relationship
@@ -854,9 +773,7 @@ ggsave("outputs/Figure1_gpp_simple.jpg", width = 8, height = 4, dpi = 300, units
 ggplot(rs_results, aes(x = Ra1)) +
   geom_histogram(col = "black", fill = "gray", bins = 30) +
   geom_histogram(aes(Ra3), col = "blue", fill = "skyblue", bins = 30, alpha = 0.5) +
-  xlab(expression(Ra1 ~ or ~ Ra3 ~ "(" ~ Pg ~ C ~ yr^{
-    -1
-  } ~ ")")) +
+  xlab(expression(Ra1 ~ or ~ Ra3 ~ "(" ~ Pg ~ C ~ yr^{-1} ~ ")")) +
   ylab(expression(count))
 
 # Ra1 = GPP * Ra-GPP ratio
@@ -978,10 +895,10 @@ rs_results %>%
 ```{r combine GPP and RSG comparison into figure 2, fig.height=8, fig.width=8, cache=FALSE}
 # Scenario 2, RC separate into 4 groups, and Froot separate into 2 groups
 plot_grid(p1_gpp2, p2_rs2, ncol = 1, labels = c("(a)", "(b)"), hjust = 0)
-ggsave("outputs/Figure1.png")
+ggsave("outputs/Figure1.png", width = 10, height = 8)
 ```
 
-## Combining GPP and Rs - figure 2
+## Combining GPP and Rs - Figure 2
 
 What's the most likely values for GPP and R[S] that are consistent with the underlying distributions?
 
@@ -1043,112 +960,11 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
     angle = 90
   )
 print(p_joint)
-ggsave("outputs/Figure3_not_sure.png", width = 8, height = 6)
-```
-
-```{r old-joint, results='show'}
-n_points <- 20
-# w is the weight of top-down GPP dominance, 0 to 1
-w <- seq(0, 1, length.out = 20)
-w <- c(0.25, 0.5, 0.75, w) %>%
-  unique() %>%
-  sort() # ensure 0.25, 0.5, and 0.75 are included
-
-gpp_wm <- tibble(
-  q025 = rep(NA_real_, n_points),
-  q500 = rep(NA_real_, n_points),
-  q975 = rep(NA_real_, n_points)
-)
-rs_wm <- gpp_wm
-
-for (i in seq_along(w)) {
-  weighted_gpp <- gpp_results$GPP_raw * w[i] + gpp_results$GPP2 * (1 - w[i])
-  gpp_wm[i, ] <- quantile(weighted_gpp, probs = QUANTILES)
-  weighted_rs <- rs_results$Rs_raw * (1 - w[i]) + rs_results$Rs_topdown2 * w[i]
-  rs_wm[i, ] <- quantile(weighted_rs, probs = QUANTILES)
-}
-
-gpp_wm$w <- w
-rs_wm$w <- w
-results <- bind_rows("GPP" = gpp_wm, "Rs" = rs_wm, .id = "which")
-
-# add col_scale column, which enable color gradual change in Figure 1 panel 3
-results %>% mutate(col_scale = 1:46) -> results
-
-results_w75 <- filter(results, w == 0.75)
-results_w50 <- filter(results, w == 0.5)
-results_w25 <- filter(results, w == 0.25)
-myarrow <- arrow(length = unit(0.05, "inches"))
-
-p_joint <- ggplot(results, aes(w, q500, group = which)) +
-  geom_vline(xintercept = 0.5, size = 0.25, linetype = 2) +
-  # scale_fill_manual(values=c("#999999", "#E69F00")) +
-
-  geom_line(size = 1.5) +
-  geom_ribbon(aes(fill = which, ymin = q025, ymax = q975),
-    col = NA, alpha = 0.25, show.legend = FALSE
-  ) +
-  coord_cartesian(ylim = c(50, 170), expand = FALSE) +
-  scale_color_discrete("", labels = c("GPP", expression(R[S]))) +
-  theme(legend.text.align = 0) +
-  # scale_fill_manual(values=c("brown", "blueviolet")) +
-
-  # 75%
-  geom_segment(
-    data = results_w75, aes(x = 0, xend = w, yend = q500),
-    linetype = 2, size = 0.5
-  ) +
-  geom_label(
-    data = results_w75, aes(x = 0.125, y = q500, label = round(q500, 0)),
-    size = 2, show.legend = FALSE
-  ) +
-  # 50%
-  geom_segment(
-    data = results_w50, aes(x = 0, xend = w, yend = q500),
-    linetype = 2, size = 1
-  ) +
-  geom_label(
-    data = results_w50, aes(x = 0.075, y = q500, label = round(q500, 0)),
-    size = 3.5, fontface = "bold", show.legend = FALSE
-  ) +
-
-  # 25%
-  geom_segment(
-    data = results_w25, aes(x = 0, xend = w, yend = q500),
-    linetype = 2, size = 0.5
-  ) +
-  geom_label(
-    data = results_w25, aes(x = 0.025, y = q500, label = round(q500, 0)),
-    size = 2, show.legend = FALSE
-  ) +
-
-  # Arrows and labels
-  annotate("segment", x = 0.1, xend = 0.025, y = 60, yend = 60, arrow = myarrow) +
-  annotate("text",
-    x = 0.11, y = 60, size = 3, hjust = "inward",
-    label = expression(bold(Determined ~ more ~ by ~ R[S]))
-  ) +
-  annotate("segment", x = 0.9, xend = 0.975, y = 60, yend = 60, arrow = myarrow) +
-  annotate("text",
-    x = 0.89, y = 60, size = 3, hjust = "inward", fontface = "bold",
-    label = "Determined more by GPP"
-  ) +
-
-  # Other
-  xlab("Weight of GPP") +
-  ylab(expression(Flux ~ (Pg ~ C ~ yr^-1)))
-
-# change color
-# scale_color_manual(values=c("#999999", "#E69F00"))
-
-print(p_joint)
-# ggsave("outputs/Figure3.png")
-knitr::kable(results_w50, digits = 1, format = "markdown")
+ggsave("outputs/Figure2.png", width = 8, height = 6)
 ```
 
 
-
-## Site-specific ratios of GPP to Rs - figure 3
+## Site-specific ratios of GPP to Rs - Figure 3
 
 Presumably, as a matter of mathematics, the ratio of global Rs to global GPP should be the linear combination (sum) of all terrestrial points Neither SRDB nor FLUXNET is an unbiased sample of the land surface, but it may be instructive to look at the Rs:GPP for three data sources:
 
@@ -1192,7 +1008,7 @@ if (file.exists(cmip6_global_data_file)) {
   model_global_ratios %>%
     mutate(
       Scale = "Global scale",
-      Source = paste0("CMIP6\n(N = ", length(unique(model_global_ratios$model)), ")"),
+      Source = paste0("CMIP6\n(N = ", nrow(model_global_ratios), ")"),
       Type = "Models"
     ) ->
   cmip_global
@@ -1217,8 +1033,8 @@ if (file.exists(cmip6_local_data_file)) {
 
   cmip6_local_data %>%
     mutate(
-      Scale = "Local",
-      Source = paste0("Local CMIP6\n(N = ", samples, ")"),
+      Scale = "Ecosystem scale",
+      Source = paste0("CMIP6\n(N = ", samples, ")"),
       Type = "Models"
     ) ->
   cmip_local
