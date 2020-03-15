@@ -151,6 +151,27 @@ Froot %>% mutate(IGBP2 = case_when(
 )) -> Froot
 ```
 
+## Sites with Rs-GPP ratio from SRDB and Fluxnet
+```{r}
+srdb_v4 %>%
+  filter(!is.na(GPP), !is.na(Rs_annual), Ecosystem_state != "Managed") %>%
+  select(Rs = Rs_annual, GPP, Biome, Latitude, Longitude, Ecosystem_type) %>%
+  mutate(Biome = as.character(Biome), Ecosystem_type = as.character(Ecosystem_type)) -> RsGPP_srdb
+
+read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>%
+  select(Biome, Ecosystem_type, FLUXNET_SITE_ID, Latitude, Longitude, GPP = gpp_fluxnet, Rs = Rs_annual) %>%
+  filter(!is.na(GPP), !is.na(Rs)) ->
+RsGPP_fluxnet
+```
+
+```{r missing SD issue}
+# GPP %>% select(GPP, SD) %>% filter (!is.na(SD)) %>% ggplot(aes(GPP, SD)) + geom_point()
+# GPP %>% select(GPP, SD) %>% filter (!is.na(SD)) %>% lm(GPP, SD) %>% summary()
+
+# GlobalRs %>% select(Rs, SD) %>% filter (!is.na(SD)) %>% ggplot(aes(Rs, SD)) + geom_point()
+# GlobalRs %>% select(Rs, SD) %>% filter (!is.na(SD)) %>% lm(Rs, SD) %>% summary()
+```
+
 ## Ratio by vegetation types {.tabset .tabset-fade .tabset-pills}
 ### Plot GPP
 ```{r plot GPP and RSG, fig.height = 6, fig.width = 8, cache=FALSE}
@@ -459,14 +480,12 @@ srdb_v4_ratio
 
 Rs_to_GPP_unweighted <- with(srdb_v4, mean(Rs_annual / GPP, na.rm = TRUE))
 Rs_to_GPP_weighted <- with(srdb_v4_ratio, weighted.mean(Rs_annual / GPP,
-  w = rel_area, na.rm = TRUE
-))
+  w = rel_area, na.rm = TRUE))
 
 bootstrap_data %>%
   mutate(
     Rs = GPP_raw * Rs_to_GPP_weighted,
-    GPP = Rs_raw / Rs_to_GPP_weighted
-  ) ->
+    GPP = Rs_raw / Rs_to_GPP_weighted) ->
 ratio_results
 
 gpp_qt <- quantile(ratio_results$GPP, QUANTILES) %>% round(0)
@@ -545,7 +564,8 @@ ggplot(gpp_results, aes(x = 1 - Froot, y = GPP2)) +
 ### Overlap
 ```{r gpp-overlap, cache=FALSE, results='show'}
 gpp_ip <- calc_overlap(gpp_results$GPP_raw, gpp_results$GPP,
-  intersection_interval = c(100, 150)
+  intersection_interval = c(100, 150),
+  N_test = nrow(GPP)
 )
 ```
 
@@ -826,7 +846,8 @@ ggplot(rs_results, aes(Fire, Rs_topdown)) +
 ### Overlap
 ```{r rs-overlap, cache=FALSE, results='show'}
 rs_ip <- calc_overlap(rs_results$Rs_topdown, rs_results$Rs_raw,
-  intersection_interval = c(70, 90)
+  intersection_interval = c(70, 90),
+  N_test = nrow(GlobalRs)
 )
 ```
 
@@ -1155,25 +1176,14 @@ We evaluated X different resampling methods, which differed in how they treated 
 
 _**Statistical analysis**_  
 
-Summarize stats and software used.
-
-
 ## Compare the results of different re-sampling methods (N = `r N_SAMPLES`)
 ```{r sample method comparison}
 sample_size_tst(10, 10000)
 ggsave("outputs/FigureS7.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
+## Summarize stats and software used.
 
-## Sites with Rs-GPP ratio from SRDB and Fluxnet
-```{r}
-srdb_v4 %>%
-  filter(!is.na(GPP), !is.na(Rs_annual), Ecosystem_state != "Managed") %>%
-  select(Rs = Rs_annual, GPP, Biome, Latitude, Longitude, Ecosystem_type) %>%
-  mutate(Biome = as.character(Biome), Ecosystem_type = as.character(Ecosystem_type)) -> RsGPP_srdb
-
-read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>%
-  select(Biome, Ecosystem_type, FLUXNET_SITE_ID, Latitude, Longitude, GPP = gpp_fluxnet, Rs = Rs_annual) %>%
-  filter(!is.na(GPP), !is.na(Rs)) ->
-RsGPP_fluxnet
+```{r sessionInfo, results='show'}
+sessionInfo()
 ```

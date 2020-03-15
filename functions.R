@@ -346,9 +346,7 @@ plot_Rroot_Rs_NPP <- function(sub_srdb, NPP_data) {
     # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_quasirandom(col = "gray", varwidth = TRUE) +
     geom_boxplot(width = 0.1) +
-    ylab(expression(C[fire] ~ (Pg ~ yr^{
-      -1
-    }))) +
+    ylab(expression(C[fire] ~ (Pg ~ yr^{-1}))) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     theme(axis.title.x = element_blank())
 

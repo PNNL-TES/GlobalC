@@ -23,7 +23,7 @@ variance_decomp <- function(bootstrap_draws, output_var, var_output, calc_functi
 # standard top-down GPP or bottom-up Rs, compute the probability they agree
 prob_agreement <- function(x, raw_quantiles) {
   stopifnot(length(raw_quantiles) == 3)
-
+  
   # assuming x follows a normal distribution, we can calculate the probability
   # of it overlapping the distribution implied by the raw quantiles
   mu <- mean(x)
@@ -49,7 +49,7 @@ t_test <- function(x, y, alternative = "two.sided", ...) {
 # Calculate overlap between two bootstrap samples
 # This implements the method laid out in `toyproblem_overlap.Rmd`
 # Returns the intersection point
-calc_overlap <- function(left_sample, right_sample, intersection_interval) {
+calc_overlap <- function(left_sample, right_sample, intersection_interval, N_test) {
   # The shapiro.test() used below has a max sample size of 5000
   if (length(left_sample) > 5000) {
     left_sample <- sample(left_sample, 5000, replace = FALSE)
@@ -57,7 +57,7 @@ calc_overlap <- function(left_sample, right_sample, intersection_interval) {
   if (length(right_sample) > 5000) {
     right_sample <- sample(right_sample, 5000, replace = FALSE)
   }
-
+  
   # Test for normality
   left_normal_test <- shapiro.test(left_sample)
   left_normal <- left_normal_test$p.value >= 0.05
@@ -65,27 +65,27 @@ calc_overlap <- function(left_sample, right_sample, intersection_interval) {
   right_normal_test <- shapiro.test(right_sample)
   right_normal <- right_normal_test$p.value >= 0.05
   print(right_normal_test)
-
+  
   # Calculate mu, sigma, and both normal and non-normal density functions
   mu_left <- mean(left_sample)
   sigma_left <- sd(left_sample)
   mu_right <- mean(right_sample)
   sigma_right <- sd(right_sample)
-
+  
   if (mu_left > mu_right) {
     stop("It doesn't look like left_sample is actually on the left")
   }
-
+  
   normal_fn_left <- function(x) dnorm(x, mean = mu_left, sd = sigma_left)
-
+  
   density_left <- density(left_sample, n = 1024)
   numerical_fn_left <- approxfun(x = density_left$x, y = density_left$y)
-
+  
   normal_fn_right <- function(x) dnorm(x, mean = mu_right, sd = sigma_right)
-
+  
   density_right <- density(right_sample, n = 1024)
   numerical_fn_right <- approxfun(x = density_right$x, y = density_right$y)
-
+  
   # Decide which density functions we're using
   if (left_normal) {
     left_dist <- normal_fn_left
@@ -97,13 +97,13 @@ calc_overlap <- function(left_sample, right_sample, intersection_interval) {
   } else {
     right_dist <- numerical_fn_right
   }
-
+  
   # Calculate the intersection point
   intersection <- uniroot(function(x) (left_dist(x) - right_dist(x)),
-    interval = intersection_interval
+                          interval = intersection_interval
   )$root
   cat("Intersection =", intersection, "Pg C/yr\n")
-
+  
   # Plot the distributions and intersection
   tibble(
     x = seq(min(left_sample) - 50, max(right_sample) + 50, by = 0.5),
@@ -118,17 +118,17 @@ calc_overlap <- function(left_sample, right_sample, intersection_interval) {
     geom_vline(xintercept = intersection, linetype = 2) +
     annotate("label", x = mu_left, y = 0.01, label = left_normal) +
     annotate("label", x = mu_right, y = 0.01, label = right_normal) ->
-  p
+    p
   print(p)
-
+  
   # Calculate percentage of each distribution in overlap region
-
+  
   # For vectors of x-axis points `x` and corresponding function evaluation points `y`,
   # the area under the curve according to the trapezoidal rule is:
   traprule <- function(x, y) {
     sum(diff(x) * (head(y, -1) + tail(y, -1)), na.rm = TRUE) / 2
   }
-
+  
   # Left sample: define the x-axis points for integration
   dx <- 0.01 # integration step size
   left_xaxis_range <- seq(intersection, 4 * max(left_sample), by = dx) # 4 is arbitrary
@@ -140,11 +140,21 @@ calc_overlap <- function(left_sample, right_sample, intersection_interval) {
   right_xaxis_range <- seq(0, intersection, by = dx)
   right_yaxis_range <- right_dist(right_xaxis_range)
   right_auc <- traprule(x = right_xaxis_range, y = right_yaxis_range)
-
+  
   cat("Left sample overlap =", round(left_auc * 100, 1), "%\n")
   cat("Right sample overlap =", round(right_auc * 100, 1), "%\n")
-
+  
   cat("Left quantile of threshold:", ecdf(left_sample)(intersection), "\n")
   cat("Right quantile of threshold:", ecdf(right_sample)(intersection), "\n")
+  
+  tt <- t.test(sample(left_sample, N_test, replace = FALSE),
+               sample(right_sample, N_test, replace = FALSE),
+               alternative = "two.sided")
+  cat("Student's t-test on", N_test, "samples:",
+      " t =", tt$statistic, 
+      " df =", tt$parameter,
+      " p =", tt$p.value
+  )
+  
   intersection
 }
