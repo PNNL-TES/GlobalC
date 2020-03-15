@@ -607,7 +607,8 @@ ggplot(gpp_results, aes(x = 1 - Froot, y = GPP2)) +
 ### Overlap
 ```{r gpp-overlap, cache=FALSE, results='show'}
 gpp_ip <- calc_overlap(gpp_results$GPP_raw, gpp_results$GPP,
-  intersection_interval = c(100, 150)
+  intersection_interval = c(100, 150),
+  N_test = nrow(GPP)
 )
 ```
 
@@ -928,7 +929,8 @@ ggplot(rs_results, aes(Fire, Rs_topdown)) +
 ### Overlap
 ```{r rs-overlap, cache=FALSE, results='show'}
 rs_ip <- calc_overlap(rs_results$Rs_topdown, rs_results$Rs_raw,
-  intersection_interval = c(70, 90)
+  intersection_interval = c(70, 90),
+  N_test = nrow(GlobalRs)
 )
 ```
 
