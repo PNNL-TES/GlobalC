@@ -107,7 +107,7 @@ read_file <- function(x) read.csv(file.path(DATA_DIR, x), comment.char = "#", st
 srdb_v4 <- read_file("srdbv4.csv") # SRDB_V4 data
 FlFsFr <- read_file("FlFsFrSummary.csv") # Froot (Rroot/Rs) and Fshoot (Rshoot/Rs) from 39 papers
 GPP <- read_file("GlobalGPP_Sum.csv") # GPP estimates from published paper
-GPP %>% filter(Pub_year > 1980 & Flag != "Model") -> GPP
+GPP %>% filter(Year >= 1980 & Flag != "Model") -> GPP
 NPP <- read_file("ITONPP.CSV") # 251 NPP estimates from ITO (2011)
 GlobalRs <- read_file("GlobalRs.csv") # estimates of global Rs
 GlobalRs %>% filter(Pub_year > 1980) -> GlobalRs

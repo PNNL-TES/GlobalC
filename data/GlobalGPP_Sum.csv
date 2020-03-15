@@ -6,7 +6,7 @@ Pub_year,Year,Period,GPP,SD,Trend,Flag,Group,Flag_comment,Reference,URL,Note1,No
 1999,1995,1995,113,,,Model,Model,CASA etc,"Thompson and Randerson, 1999",https://onlinelibrary.wiley.com/doi/abs/10.1046/j.1365-2486.1999.00235.x,,
 2000,1979,1965-1994,114.7,,,Model,Model,DGEMS,"Kucharik et al., 2000",https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/1999GB001138,,
 2001,2000,,183.39,,,Model,Model,BETHY,"Knorr and Heimann, 2001",https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/1998GB001059,Year set to 2000,
-2003,1976,1953-1999,121.5,,,C13-Model,Mixed,Sim-CYCLE model with C13,"ITO, 2003",https://www.tandfonline.com/doi/abs/10.3402/tellusb.v55i2.16757,,
+2003,1980,1953-1999,121.5,,,C13-Model,Mixed,Sim-CYCLE model with C13,"ITO, 2003",https://www.tandfonline.com/doi/abs/10.3402/tellusb.v55i2.16757,,
 2003,2000,,153.48,,,Model,Model,SiB2,"Still et al., 2003",https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2001GB001807,Year set to 2000,
 2004,2000,,124.7,,,Model,Model,Sim-CYCLE model,"ITO and OIKAWA, 2004",http://faculty.petra.ac.id/dwikris/docs/cvitae/docroot/html/www.terrapub.co.jp/e-library/kawahata/pdf/343.pdf,Year set to 2000,
 2004,1994,1990-1999,118,,,Model,Model,SDGVM model,"Woodward and Lomas, 2004",https://doi.org/10.1017/S1464793103006419,Ciais rt al (120),
