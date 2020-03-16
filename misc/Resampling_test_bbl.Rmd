@@ -102,9 +102,7 @@ resample_RSG %>%
   scale_fill_discrete("", h.start = 180) +
   scale_color_discrete(h.start = 180) +
   ylab("Density") +
-  xlab(expression(R[S] ~ (Pg ~ C ~ yr^{
-    -1
-  })))
+  xlab(expression(R[S] ~ (Pg ~ C ~ yr^{-1})))
 
 # comparing GPP resample results
 resample_GPP %>%
@@ -118,9 +116,7 @@ resample_GPP %>%
   scale_fill_discrete("", h.start = 180) +
   scale_color_discrete(h.start = 180) +
   ylab("Density") +
-  xlab(expression(GPP ~ (Pg ~ C ~ yr^{
-    -1
-  })))
+  xlab(expression(GPP ~ (Pg ~ C ~ yr^{-1})))
 ```
 
 

@@ -107,7 +107,7 @@ read_file <- function(x) read.csv(file.path(DATA_DIR, x), comment.char = "#", st
 srdb_v4 <- read_file("srdbv4.csv") # SRDB_V4 data
 FlFsFr <- read_file("FlFsFrSummary.csv") # Froot (Rroot/Rs) and Fshoot (Rshoot/Rs) from 39 papers
 GPP <- read_file("GlobalGPP_Sum.csv") # GPP estimates from published paper
-GPP %>% filter(Pub_year > 1980 & Flag != "Model") -> GPP
+GPP %>% filter(Year >= 1980 & Flag != "Model") -> GPP
 NPP <- read_file("ITONPP.CSV") # 251 NPP estimates from ITO (2011)
 GlobalRs <- read_file("GlobalRs.csv") # estimates of global Rs
 GlobalRs %>% filter(Pub_year > 1980) -> GlobalRs
@@ -209,19 +209,17 @@ GPP %>% ggplot(aes(x = Group, y = GPP, fill = as.factor(Group))) +
   geom_jitter(shape = 16, position = position_jitter(0.2), col = "gray") +
   # geom_boxplot(width = 0.1) +
   theme(legend.title = element_blank()) +
+  scale_fill_brewer(palette="Spectral") +
   xlab("GPP by different groups") +
   ylab(expression(GPP ~ "(Pg C" ~ yr^{-1} ~ ")"))
 
-ggsave("outputs/FigureSX.jpg", width = 8, height = 5, dpi = 300, units = "in")
-
-GPP %>% ggplot(aes(x = Group, y = GPP)) +
-  geom_point() +
-  xlab("GPP by different groups") +
-  ylab(expression(GPP ~ "(Pg C" ~ yr^{-1} ~ ")"))
+ggsave("outputs/FigureS5.jpg", width = 8, height = 5, dpi = 300, units = "in")
 
 GPP %>%
   select(Group, Flag) %>%
   count(Group, Flag)
+
+# RColorBrewer::brewer.pal(8, "Spectral") # get color code
 ```
 
 
@@ -408,18 +406,19 @@ gpp_qt <- quantile(gpp_results$GPP, QUANTILES) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, QUANTILES) %>% round(0)
 
 gpp_results %>%
-  select(`GPP[Rs]` = GPP, `Canonical-GPP` = GPP_raw) %>%
+  select(`GPP[Rs]` = GPP, `Canonical GPP` = GPP_raw) %>%
   gather(GPP_type) ->
 gpp_figure_data
 
 gpp_figure_data %>%
   ggplot(aes(value, fill = GPP_type)) +
   theme_cowplot() +
-  geom_density(stat = "density", alpha = 0.5) +
+  geom_density(stat = "density", alpha = 0.65) +
   theme(legend.position = c(0.75, 0.35)) +
   coord_cartesian(xlim = c(70, 250)) +
-  scale_fill_discrete("",
-    labels = c(expression(Canonical ~ GPP), expression(GPP[Rs]))
+  scale_fill_manual("",
+    labels = c(expression(Canonical~GPP), expression(GPP[Rs])),
+    values=c("#E41A1C", "lightblue")
   ) +
   theme(
     legend.title = element_blank(),
@@ -592,7 +591,7 @@ red <- rgb(1, 0, 0, alpha = 1)
 pairs_colors <- c(black, red)[as.factor(lt_ip)]
 pairsdata <- gpp_results[gpp_vd$Parameter[gpp_vd$Contribution > 0.05]]
 pairsdata <- rename(pairsdata, "Canonical Rs" = Rs_raw, "Rroot : Rs ratio" = Rc, "Rroot : RA ratio" = Froot)
-# pdf("outputs/Figure S8 - Boots GPP pairs.pdf", width = 8, height = 6)
+# pdf("outputs/FigureS8 - Boots GPP pairs.pdf", width = 8, height = 6)
 pairs(pairsdata, col = pairs_colors, main = expression(GPP[Rs]))
 # dev.off()
 # get mean Rroot:Rs of below of above the intercetion (126.7 Pg)
@@ -692,19 +691,19 @@ rsg_qt <- quantile(rs_results$Rs_topdown, QUANTILES) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
 
 rs_results %>%
-  select(`Rs[GPP]` = Rs_topdown, `Canonical-Rs` = Rs_raw) %>%
+  select(`Rs[GPP]` = Rs_topdown, `Canonical Rs` = Rs_raw) %>%
   gather(Rs_type) ->
 rs_figure_data
 
 rs_figure_data %>%
   ggplot(aes(value, fill = Rs_type)) +
   theme_cowplot() +
-  geom_density(stat = "density", alpha = 0.5) +
+  geom_density(stat = "density", alpha = 0.65) +
   theme(legend.position = c(0.75, 0.35)) +
   coord_cartesian(xlim = c(50, 120)) +
   scale_fill_manual("",
     labels = c(expression(Canonical ~ Rs), expression(Rs[GPP])),
-    values = c("#00BFC4", "#F8766D")
+    values = c("lightblue", "#E41A1C")
   ) +
   theme(
     legend.title = element_blank(),
@@ -800,7 +799,7 @@ rs_results %>%
     axis.line = element_line(colour = "black")
   )
 
-ggsave("outputs/FigureS5_RA_Method.jpg", width = 8, height = 4, dpi = 300, units = "in")
+ggsave("outputs/FigureSX_RA_Method.jpg", width = 8, height = 4, dpi = 300, units = "in")
 
 # Rs ~ GPP
 ggplot(rs_results, aes(GPP_raw, Rs_topdown)) +
@@ -878,7 +877,7 @@ gt_ip <- rs_results$Rs_topdown > rs_ip # ">" b/c most bootstrapped Rs values are
 pairs_colors <- c(black, red)[as.factor(gt_ip)]
 pairsdata <- rs_results[vd_rs$Parameter[vd_rs$Contribution > 0.05]]
 pairsdata <- rename(pairsdata, "Canonical GPP" = GPP_raw, "Rroot : RA ratio" = Froot_rest, "RA : GPP ratio" = RaGpp_rest)
-# pdf("outputs/Figure S9 - Boots Rs pairs.pdf", width = 8, height = 6)
+# pdf("outputs/FigureS9 - Boots Rs pairs.pdf", width = 8, height = 6)
 pairs(pairsdata, col = pairs_colors, main = expression(Rs[GPP]))
 # dev.off()
 
@@ -921,11 +920,8 @@ myarrow <- arrow(length = unit(0.1, "inches"))
 
 p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
   geom_point(pch = 20, size = 2, alpha = 0.05) +
-  geom_density2d(bins = 8) +
-  scale_color_discrete("", labels = c(
-    expression(Canonical ~ GPP ~ and ~ R[S] ~ implied ~ by ~ GPP ~ "(" ~ Rs[GPP] ~ ")"),
-    expression(Canonical ~ R[S] ~ and ~ GPP ~ implied ~ by ~ R[S] ~ "(" ~ GPP[Rs] ~ ")")
-  )) +
+  geom_density2d(bins = 8, alpha = 0.65) +
+  scale_color_manual(values = c("#E41A1C", "lightblue")) +
   theme(legend.position = "none", legend.text.align = 0) +
   guides(col = guide_legend(nrow = 2, byrow = TRUE)) +
   xlab(expression(Pg ~ C ~ yr^-1)) +
@@ -933,22 +929,22 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
   annotate("segment",
     x = mean(rs_results$GPP_raw), xend = mean(rs_results$GPP_raw),
     y = 50, yend = mean(rs_results$Rs_topdown2),
-    color = "#F8766D", linetype = 1
+    color = "#E41A1C", linetype = 1
   ) +
   annotate("segment",
     x = mean(rs_results$GPP_raw), xend = 75,
     y = mean(rs_results$Rs_topdown2), yend = mean(rs_results$Rs_topdown2),
-    arrow = myarrow, color = "#F8766D", linetype = 1
+    arrow = myarrow, color = "#E41A1C", linetype = 1
   ) +
   annotate("segment",
     x = 75, xend = mean(gpp_results$GPP2),
     y = mean(gpp_results$Rs_raw), yend = mean(gpp_results$Rs_raw),
-    color = "#00BFC4", linetype = 1
+    color = "lightblue", linetype = 1
   ) +
   annotate("segment",
     x = mean(gpp_results$GPP2), xend = mean(gpp_results$GPP2),
     y = mean(gpp_results$Rs_raw), yend = 50,
-    arrow = myarrow, color = "#00BFC4", linetype = 1
+    arrow = myarrow, color = "lightblue", linetype = 1
   ) +
   annotate("text",
     x = c(100, 151), y = 47.5, size = 4, hjust = "inward", fontface = "bold",
