@@ -209,6 +209,7 @@ GPP %>% ggplot(aes(x = Group, y = GPP, fill = as.factor(Group))) +
   geom_jitter(shape = 16, position = position_jitter(0.2), col = "gray") +
   # geom_boxplot(width = 0.1) +
   theme(legend.title = element_blank()) +
+  scale_fill_brewer(palette="Spectral") +
   xlab("GPP by different groups") +
   ylab(expression(GPP ~ "(Pg C" ~ yr^{-1} ~ ")"))
 
@@ -403,18 +404,19 @@ gpp_qt <- quantile(gpp_results$GPP, QUANTILES) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, QUANTILES) %>% round(0)
 
 gpp_results %>%
-  select(`GPP[Rs]` = GPP, `Canonical-GPP` = GPP_raw) %>%
+  select(`GPP[Rs]` = GPP, `Canonical GPP` = GPP_raw) %>%
   gather(GPP_type) ->
 gpp_figure_data
 
 gpp_figure_data %>%
   ggplot(aes(value, fill = GPP_type)) +
   theme_cowplot() +
-  geom_density(stat = "density", alpha = 0.5) +
+  geom_density(stat = "density", alpha = 0.65) +
   theme(legend.position = c(0.75, 0.35)) +
   coord_cartesian(xlim = c(70, 250)) +
-  scale_fill_discrete("",
-    labels = c(expression(Canonical ~ GPP), expression(GPP[Rs]))
+  scale_fill_manual("",
+    labels = c(expression(Canonical~GPP), expression(GPP[Rs])),
+    values=c("red", "skyblue")
   ) +
   theme(
     legend.title = element_blank(),
@@ -687,19 +689,19 @@ rsg_qt <- quantile(rs_results$Rs_topdown, QUANTILES) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
 
 rs_results %>%
-  select(`Rs[GPP]` = Rs_topdown, `Canonical-Rs` = Rs_raw) %>%
+  select(`Rs[GPP]` = Rs_topdown, `Canonical Rs` = Rs_raw) %>%
   gather(Rs_type) ->
 rs_figure_data
 
 rs_figure_data %>%
   ggplot(aes(value, fill = Rs_type)) +
   theme_cowplot() +
-  geom_density(stat = "density", alpha = 0.5) +
+  geom_density(stat = "density", alpha = 0.65) +
   theme(legend.position = c(0.75, 0.35)) +
   coord_cartesian(xlim = c(50, 120)) +
   scale_fill_manual("",
     labels = c(expression(Canonical ~ Rs), expression(Rs[GPP])),
-    values = c("#00BFC4", "#F8766D")
+    values = c("skyblue", "red")
   ) +
   theme(
     legend.title = element_blank(),
@@ -916,11 +918,8 @@ myarrow <- arrow(length = unit(0.1, "inches"))
 
 p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
   geom_point(pch = 20, size = 2, alpha = 0.05) +
-  geom_density2d(bins = 8) +
-  scale_color_discrete("", labels = c(
-    expression(Canonical ~ GPP ~ and ~ R[S] ~ implied ~ by ~ GPP ~ "(" ~ Rs[GPP] ~ ")"),
-    expression(Canonical ~ R[S] ~ and ~ GPP ~ implied ~ by ~ R[S] ~ "(" ~ GPP[Rs] ~ ")")
-  )) +
+  geom_density2d(bins = 8, alpha = 0.65) +
+  scale_color_manual(values = c("red", "skyblue")) +
   theme(legend.position = "none", legend.text.align = 0) +
   guides(col = guide_legend(nrow = 2, byrow = TRUE)) +
   xlab(expression(Pg ~ C ~ yr^-1)) +
@@ -928,22 +927,22 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
   annotate("segment",
     x = mean(rs_results$GPP_raw), xend = mean(rs_results$GPP_raw),
     y = 50, yend = mean(rs_results$Rs_topdown2),
-    color = "#F8766D", linetype = 1
+    color = "red", linetype = 1
   ) +
   annotate("segment",
     x = mean(rs_results$GPP_raw), xend = 75,
     y = mean(rs_results$Rs_topdown2), yend = mean(rs_results$Rs_topdown2),
-    arrow = myarrow, color = "#F8766D", linetype = 1
+    arrow = myarrow, color = "red", linetype = 1
   ) +
   annotate("segment",
     x = 75, xend = mean(gpp_results$GPP2),
     y = mean(gpp_results$Rs_raw), yend = mean(gpp_results$Rs_raw),
-    color = "#00BFC4", linetype = 1
+    color = "skyblue", linetype = 1
   ) +
   annotate("segment",
     x = mean(gpp_results$GPP2), xend = mean(gpp_results$GPP2),
     y = mean(gpp_results$Rs_raw), yend = 50,
-    arrow = myarrow, color = "#00BFC4", linetype = 1
+    arrow = myarrow, color = "skyblue", linetype = 1
   ) +
   annotate("text",
     x = c(100, 151), y = 47.5, size = 4, hjust = "inward", fontface = "bold",
