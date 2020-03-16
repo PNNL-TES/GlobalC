@@ -209,7 +209,7 @@ GPP %>% ggplot(aes(x = Group, y = GPP, fill = as.factor(Group))) +
   geom_jitter(shape = 16, position = position_jitter(0.2), col = "gray") +
   # geom_boxplot(width = 0.1) +
   theme(legend.title = element_blank()) +
-  scale_fill_brewer(palette="Set1") +
+  scale_fill_brewer(palette="Spectral") +
   xlab("GPP by different groups") +
   ylab(expression(GPP ~ "(Pg C" ~ yr^{-1} ~ ")"))
 
@@ -219,7 +219,7 @@ GPP %>%
   select(Group, Flag) %>%
   count(Group, Flag)
 
-# RColorBrewer::brewer.pal(8, "Set1") # get color code
+# RColorBrewer::brewer.pal(8, "Spectral") # get color code
 ```
 
 
@@ -418,7 +418,7 @@ gpp_figure_data %>%
   coord_cartesian(xlim = c(70, 250)) +
   scale_fill_manual("",
     labels = c(expression(Canonical~GPP), expression(GPP[Rs])),
-    values=c("#E41A1C", "#377EB8")
+    values=c("#E41A1C", "lightblue")
   ) +
   theme(
     legend.title = element_blank(),
@@ -703,7 +703,7 @@ rs_figure_data %>%
   coord_cartesian(xlim = c(50, 120)) +
   scale_fill_manual("",
     labels = c(expression(Canonical ~ Rs), expression(Rs[GPP])),
-    values = c("#377EB8", "#E41A1C")
+    values = c("lightblue", "#E41A1C")
   ) +
   theme(
     legend.title = element_blank(),
@@ -921,7 +921,7 @@ myarrow <- arrow(length = unit(0.1, "inches"))
 p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
   geom_point(pch = 20, size = 2, alpha = 0.05) +
   geom_density2d(bins = 8, alpha = 0.65) +
-  scale_color_manual(values = c("#E41A1C", "#377EB8")) +
+  scale_color_manual(values = c("#E41A1C", "lightblue")) +
   theme(legend.position = "none", legend.text.align = 0) +
   guides(col = guide_legend(nrow = 2, byrow = TRUE)) +
   xlab(expression(Pg ~ C ~ yr^-1)) +
@@ -939,12 +939,12 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
   annotate("segment",
     x = 75, xend = mean(gpp_results$GPP2),
     y = mean(gpp_results$Rs_raw), yend = mean(gpp_results$Rs_raw),
-    color = "#377EB8", linetype = 1
+    color = "lightblue", linetype = 1
   ) +
   annotate("segment",
     x = mean(gpp_results$GPP2), xend = mean(gpp_results$GPP2),
     y = mean(gpp_results$Rs_raw), yend = 50,
-    arrow = myarrow, color = "#377EB8", linetype = 1
+    arrow = myarrow, color = "lightblue", linetype = 1
   ) +
   annotate("text",
     x = c(100, 151), y = 47.5, size = 4, hjust = "inward", fontface = "bold",
