@@ -14,7 +14,7 @@ calc_bootstrap_gpp <- function(x) {
                Rc_gra * gra_area + Rc_shr * shr_area + Rc_rest *
                (1 - ag_area - df_area - ef_area - mf_area - gra_area - shr_area)),
       
-      FsFr = (1 - Froot) / Froot, # calculate Froot to Fshoot ratio of scenario 1
+      FsFr = (1 - Froot) / Froot, # calculate Rshoot to Rroot ratio of scenario 1
       # Bottom up estimate of GPP, scenario 1
       Rroot = Rs_raw * Rc, # root respiration
       Rshoot = Rroot * FsFr, # shoot respiration
@@ -23,7 +23,7 @@ calc_bootstrap_gpp <- function(x) {
       # Froot %>% count(Ecosystem)
       Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area +
         Froot_rest * (1 - df_area - ef_area - mf_area),
-      FsFr2 = (1 - Froot2) / Froot2, # Froot to Fshoot ratio of scenario 2
+      FsFr2 = (1 - Froot2) / Froot2, # Rshoot to Rroot ratio of scenario 2
       # Bottom up estimate of GPP, scenario 2
       Rroot2 = Rs_raw * Rc2,
       Rshoot2 = Rroot2 * FsFr2,
