@@ -1025,7 +1025,7 @@ if (file.exists(cmip6_local_data_file)) {
   cmip6_local_data
 
   cmip6_local_data %>%
-    select(experiment, model, ensemble, Longitude, Latitude) %>%
+    select(experiment, model, ensemble) %>%
     distinct() %>%
     nrow() ->
   samples
@@ -1187,3 +1187,50 @@ ggsave("outputs/FigureS7.jpg", width = 8, height = 6, dpi = 300, units = "in")
 sessionInfo()
 ```
 
+## Compare Local CMIP6 Ratio Esitmates by Ensemble 
+
+This is Figure S10. 
+
+```{r}
+# Add information about what coordinates correspond to the different observations samples. 
+# First collect the lat and lon information for the different observations. 
+bind_rows(srdb_v4 %>% 
+            select(Latitude, Longitude) %>% 
+            mutate(source = 'srbd'), 
+          read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>%  
+            select(Latitude, Longitude) %>%  
+            mutate(source = 'fluxnet')) %>% 
+  mutate(Latitude = signif(Latitude, digits = 4), 
+         Longitude = signif(Longitude, digits = 4)) -> 
+  LatLon_info
+ 
+# Add the lat and lon coordinates for specific coordinates to the cmip local data. 
+
+cmip_local$Model <- cmip_local$model
+cmip_local %>%
+  select(-Source) %>% 
+   mutate(Latitude = signif(Latitude, digits = 4), 
+         Longitude = signif(Longitude, digits = 4)) %>% 
+  full_join(LatLon_info, by = c("Longitude", "Latitude")) %>% 
+  mutate(Ratio = Rs / GPP) %>% 
+  select(source, Ratio, ensemble, Model) %>%  
+  na.omit -> 
+  cmip_local_OBSLatLon
+  
+
+  
+p_ratios_ensemble <- ggplot(data = cmip_local_OBSLatLon, aes(source, Ratio, color = Model,
+                                                             group = interaction(Model, source))) +
+  # If the box plot is essential to include then we may need to revisit this figure a bit, 
+  # it is difficult to illsutrate both the model and observation sources on the x axis with 
+  # both the bee swarm and the box plot. 
+  #geom_boxplot(show.legend = FALSE) +
+  geom_quasirandom(dodge.width = 1, alpha = I(0.25)) +
+  ylab(expression(Ratio ~ of ~ R[S] ~ to ~ GPP)) +
+  xlab("") +
+  facet_wrap("ensemble") +
+  coord_cartesian(ylim = c(0, 1)) +
+  theme(strip.background = element_rect(fill = "white", linetype = "blank")) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+print(p_ratios_ensemble)
+```
