@@ -1018,11 +1018,14 @@ if (file.exists(cmip6_global_data_file)) {
 cmip6_local_data_file <- "cmip/CMIP6_LatLon.csv"
 if (file.exists(cmip6_local_data_file)) {
   read.csv(cmip6_local_data_file, stringsAsFactors = FALSE) %>%
-    as_tibble() ->
+    as_tibble() %>% 
+     group_by(model, experiment, ensemble, Longitude, Latitude) %>%
+    summarise(GPP = mean(GPP), Rs = mean(Rs)) %>%
+    ungroup() -> 
   cmip6_local_data
 
   cmip6_local_data %>%
-    select(experiment, model, Longitude, Latitude) %>%
+    select(experiment, model, ensemble, Longitude, Latitude) %>%
     distinct() %>%
     nrow() ->
   samples
@@ -1183,3 +1186,4 @@ ggsave("outputs/FigureS7.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```{r sessionInfo, results='show'}
 sessionInfo()
 ```
+
