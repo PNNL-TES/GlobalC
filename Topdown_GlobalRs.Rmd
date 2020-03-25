@@ -406,7 +406,7 @@ gpp_qt <- quantile(gpp_results$GPP, QUANTILES) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, QUANTILES) %>% round(0)
 
 gpp_results %>%
-  select(`GPP[Rs]` = GPP, `GPP[Lit]` = GPP_raw) %>%
+  select(`GPP[Rs]` = GPP, `GPP[lit]` = GPP_raw) %>%
   gather(GPP_type) ->
 gpp_figure_data
 
@@ -417,7 +417,7 @@ gpp_figure_data %>%
   theme(legend.position = c(0.75, 0.35)) +
   coord_cartesian(xlim = c(70, 250)) +
   scale_fill_manual("",
-    labels = c(expression(GPP[Lit]), expression(GPP[Rs])),
+    labels = c(expression(GPP[lit]), expression(GPP[Rs])),
     values=c("#E41A1C", "skyblue")
   ) +
   theme(
@@ -450,7 +450,7 @@ gpp_qt <- quantile(gpp_results$GPP2, QUANTILES) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, QUANTILES) %>% round(0)
 
 gpp_results %>%
-  select(`GPP[Rs]` = GPP2, `GPP[Lit]` = GPP_raw) %>%
+  select(`GPP[Rs]` = GPP2, `GPP[lit]` = GPP_raw) %>%
   gather(GPP_type) ->
 gpp_figure2_data
 
@@ -491,7 +491,7 @@ gpp_qt <- quantile(ratio_results$GPP, QUANTILES) %>% round(0)
 gpp_qt_raw <- quantile(ratio_results$GPP_raw, QUANTILES) %>% round(0)
 
 ratio_results %>%
-  select(`GPP[Rs]` = GPP, `GPP[Lit]` = GPP_raw) %>%
+  select(`GPP[Rs]` = GPP, `GPP[lit]` = GPP_raw) %>%
   gather(GPP_type) ->
 gpp_ratio_figure_data
 
@@ -691,7 +691,7 @@ rsg_qt <- quantile(rs_results$Rs_topdown, QUANTILES) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
 
 rs_results %>%
-  select(`Rs[GPP]` = Rs_topdown, `Rs[Lit]` = Rs_raw) %>%
+  select(`Rs[GPP]` = Rs_topdown, `Rs[lit]` = Rs_raw) %>%
   gather(Rs_type) ->
 rs_figure_data
 
@@ -702,7 +702,7 @@ rs_figure_data %>%
   theme(legend.position = c(0.75, 0.35)) +
   coord_cartesian(xlim = c(50, 120)) +
   scale_fill_manual("",
-    labels = c(expression(Rs[Lit]), expression(Rs[GPP])),
+    labels = c(expression(Rs[lit]), expression(Rs[GPP])),
     values = c("skyblue", "#E41A1C")
   ) +
   theme(
@@ -735,7 +735,7 @@ rsg_qt <- quantile(rs_results$Rs_topdown2, QUANTILES) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
 
 rs_results %>%
-  select(`Rs[GPP]` = Rs_topdown2, `Rs[Lit]` = Rs_raw) %>%
+  select(`Rs[GPP]` = Rs_topdown2, `Rs[lit]` = Rs_raw) %>%
   gather(Rs_type) ->
 rs_figure_data
 
@@ -753,7 +753,7 @@ cat("\n\nBottom-up Rs quantiles: ", rsg_qt_raw, "\n")
 # Calculation are the same as above
 
 ratio_results %>%
-  select(`Rs[GPP]` = Rs, `Rs[Lit]` = Rs_raw) %>%
+  select(`Rs[GPP]` = Rs, `Rs[lit]` = Rs_raw) %>%
   gather(Rs_type) ->
 rs_ratio_figure_data
 
@@ -947,12 +947,12 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
     arrow = myarrow, color = "skyblue", linetype = 1
   ) +
   annotate("text",
-    x = c(105, 151), y = 47.5, size = 4, hjust = "inward", fontface = "bold",
-    label = c(expression(GPP[Lit]), expression(GPP[Rs]))
+    x = c(107, 151), y = 47.5, size = 4, hjust = "inward", fontface = "bold",
+    label = c(expression(GPP[lit]), expression(GPP[Rs]))
   ) +
   annotate("text",
-    x = 70, y = c(65, 85), size = 4, hjust = "inward", fontface = "bold",
-    label = c(expression(Rs[GPP]), expression(Rs[Lit])),
+    x = 70, y = c(66, 86), size = 4, hjust = "inward", fontface = "bold",
+    label = c(expression(Rs[GPP]), expression(Rs[lit])),
     angle = 90
   )
 print(p_joint)
