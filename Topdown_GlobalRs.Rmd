@@ -970,7 +970,7 @@ Presumably, as a matter of mathematics, the ratio of global Rs to global GPP sho
 
 ```{r, site-ratios, results='show'}
 topdown <- expand.grid(GPP = GPP$GPP, Rs = GlobalRs$Rs)
-topdown$Source <- paste0("Global Rs\nand GPP\n(N = ", nrow(topdown), ")")
+topdown$Source <- paste0("Rs and GPP\nfrom the literature\n(N = ", nrow(topdown), ")")
 topdown$Type <- "Global"
 topdown$Scale <- "Global scale"
 topdown_mean <- mean(topdown$Rs / topdown$GPP)
