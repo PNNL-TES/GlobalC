@@ -592,7 +592,7 @@ pairs_colors <- c(black, red)[as.factor(lt_ip)]
 pairsdata <- gpp_results[gpp_vd$Parameter[gpp_vd$Contribution > 0.05]]
 pairsdata <- rename(pairsdata, "Rs from literature" = Rs_raw, "Rroot:Rs ratio" = Rc, "Rroot:RA ratio" = Froot)
 # pdf("outputs/FigureS8 - Boots GPP pairs.pdf", width = 8, height = 6)
-pairs(pairsdata, col = pairs_colors, main = expression(GPP[Rs]))
+pairs(pairsdata, col = pairs_colors, pch = ".", main = expression(GPP[Rs]))
 # dev.off()
 # get mean Rroot:Rs of below of above the intercetion (126.7 Pg)
 gpp_results %>%
@@ -878,7 +878,7 @@ pairs_colors <- c(black, red)[as.factor(gt_ip)]
 pairsdata <- rs_results[vd_rs$Parameter[vd_rs$Contribution > 0.05]]
 pairsdata <- rename(pairsdata, "GPP from literature" = GPP_raw, "Rroot : RA ratio" = Froot_rest, "RA : GPP ratio" = RaGpp_rest)
 # pdf("outputs/FigureS9 - Boots Rs pairs.pdf", width = 8, height = 6)
-pairs(pairsdata, col = pairs_colors, main = expression(Rs[GPP]))
+pairs(pairsdata, col = pairs_colors, pch = ".", main = expression(Rs[GPP]))
 # dev.off()
 
 # get mean Rroot:Rs, NPP, GPP[lit] of below of above the intercetion (78.11 Pg)
