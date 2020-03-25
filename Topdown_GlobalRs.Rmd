@@ -406,7 +406,7 @@ gpp_qt <- quantile(gpp_results$GPP, QUANTILES) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, QUANTILES) %>% round(0)
 
 gpp_results %>%
-  select(`GPP[Rs]` = GPP, `Canonical GPP` = GPP_raw) %>%
+  select(`GPP[Rs]` = GPP, `GPP[Lit]` = GPP_raw) %>%
   gather(GPP_type) ->
 gpp_figure_data
 
@@ -417,7 +417,7 @@ gpp_figure_data %>%
   theme(legend.position = c(0.75, 0.35)) +
   coord_cartesian(xlim = c(70, 250)) +
   scale_fill_manual("",
-    labels = c(expression(Canonical~GPP), expression(GPP[Rs])),
+    labels = c(expression(GPP[Lit]), expression(GPP[Rs])),
     values=c("#E41A1C", "skyblue")
   ) +
   theme(
@@ -450,7 +450,7 @@ gpp_qt <- quantile(gpp_results$GPP2, QUANTILES) %>% round(0)
 gpp_qt_raw <- quantile(gpp_results$GPP_raw, QUANTILES) %>% round(0)
 
 gpp_results %>%
-  select(`GPP[Rs]` = GPP2, `Canonical-GPP` = GPP_raw) %>%
+  select(`GPP[Rs]` = GPP2, `GPP[Lit]` = GPP_raw) %>%
   gather(GPP_type) ->
 gpp_figure2_data
 
@@ -491,7 +491,7 @@ gpp_qt <- quantile(ratio_results$GPP, QUANTILES) %>% round(0)
 gpp_qt_raw <- quantile(ratio_results$GPP_raw, QUANTILES) %>% round(0)
 
 ratio_results %>%
-  select(`GPP[Rs]` = GPP, `Canonical-GPP` = GPP_raw) %>%
+  select(`GPP[Rs]` = GPP, `GPP[Lit]` = GPP_raw) %>%
   gather(GPP_type) ->
 gpp_ratio_figure_data
 
@@ -590,7 +590,7 @@ black <- rgb(0, 0, 0, alpha = 0.25)
 red <- rgb(1, 0, 0, alpha = 1)
 pairs_colors <- c(black, red)[as.factor(lt_ip)]
 pairsdata <- gpp_results[gpp_vd$Parameter[gpp_vd$Contribution > 0.05]]
-pairsdata <- rename(pairsdata, "Canonical Rs" = Rs_raw, "Rroot : Rs ratio" = Rc, "Rroot : RA ratio" = Froot)
+pairsdata <- rename(pairsdata, "Rs from literature" = Rs_raw, "Rroot:Rs ratio" = Rc, "Rroot:RA ratio" = Froot)
 # pdf("outputs/FigureS8 - Boots GPP pairs.pdf", width = 8, height = 6)
 pairs(pairsdata, col = pairs_colors, main = expression(GPP[Rs]))
 # dev.off()
@@ -691,7 +691,7 @@ rsg_qt <- quantile(rs_results$Rs_topdown, QUANTILES) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
 
 rs_results %>%
-  select(`Rs[GPP]` = Rs_topdown, `Canonical Rs` = Rs_raw) %>%
+  select(`Rs[GPP]` = Rs_topdown, `Rs[Lit]` = Rs_raw) %>%
   gather(Rs_type) ->
 rs_figure_data
 
@@ -702,7 +702,7 @@ rs_figure_data %>%
   theme(legend.position = c(0.75, 0.35)) +
   coord_cartesian(xlim = c(50, 120)) +
   scale_fill_manual("",
-    labels = c(expression(Canonical ~ Rs), expression(Rs[GPP])),
+    labels = c(expression(Rs[Lit]), expression(Rs[GPP])),
     values = c("skyblue", "#E41A1C")
   ) +
   theme(
@@ -735,7 +735,7 @@ rsg_qt <- quantile(rs_results$Rs_topdown2, QUANTILES) %>% round(0)
 rsg_qt_raw <- quantile(rs_results$Rs_raw, QUANTILES) %>% round(0)
 
 rs_results %>%
-  select(`Rs[GPP]` = Rs_topdown2, `Canonical-Rs` = Rs_raw) %>%
+  select(`Rs[GPP]` = Rs_topdown2, `Rs[Lit]` = Rs_raw) %>%
   gather(Rs_type) ->
 rs_figure_data
 
@@ -753,7 +753,7 @@ cat("\n\nBottom-up Rs quantiles: ", rsg_qt_raw, "\n")
 # Calculation are the same as above
 
 ratio_results %>%
-  select(`Rs[GPP]` = Rs, `Canonical-Rs` = Rs_raw) %>%
+  select(`Rs[GPP]` = Rs, `Rs[Lit]` = Rs_raw) %>%
   gather(Rs_type) ->
 rs_ratio_figure_data
 
@@ -876,12 +876,12 @@ variance_decomp(
 gt_ip <- rs_results$Rs_topdown > rs_ip # ">" b/c most bootstrapped Rs values are below
 pairs_colors <- c(black, red)[as.factor(gt_ip)]
 pairsdata <- rs_results[vd_rs$Parameter[vd_rs$Contribution > 0.05]]
-pairsdata <- rename(pairsdata, "Canonical GPP" = GPP_raw, "Rroot : RA ratio" = Froot_rest, "RA : GPP ratio" = RaGpp_rest)
+pairsdata <- rename(pairsdata, "GPP from literature" = GPP_raw, "Rroot : RA ratio" = Froot_rest, "RA : GPP ratio" = RaGpp_rest)
 # pdf("outputs/FigureS9 - Boots Rs pairs.pdf", width = 8, height = 6)
 pairs(pairsdata, col = pairs_colors, main = expression(Rs[GPP]))
 # dev.off()
 
-# get mean Rroot:Rs, NPP, canonical-GPP of below of above the intercetion (78.11 Pg)
+# get mean Rroot:Rs, NPP, GPP[lit] of below of above the intercetion (78.11 Pg)
 rs_results %>%
   select(Rs_topdown, Froot_rest, NPP, GPP_raw) %>%
   mutate(Group = ifelse(Rs_topdown < rs_ip, "black", "red")) %>%
@@ -947,12 +947,12 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
     arrow = myarrow, color = "skyblue", linetype = 1
   ) +
   annotate("text",
-    x = c(100, 151), y = 47.5, size = 4, hjust = "inward", fontface = "bold",
-    label = c(expression(Canonical ~ GPP), expression(GPP[Rs]))
+    x = c(105, 151), y = 47.5, size = 4, hjust = "inward", fontface = "bold",
+    label = c(expression(GPP[Lit]), expression(GPP[Rs]))
   ) +
   annotate("text",
-    x = 70, y = c(65, 81), size = 4, hjust = "inward", fontface = "bold",
-    label = c(expression(Rs[GPP]), expression(Canonical ~ R[S])),
+    x = 70, y = c(65, 85), size = 4, hjust = "inward", fontface = "bold",
+    label = c(expression(Rs[GPP]), expression(Rs[Lit])),
     angle = 90
   )
 print(p_joint)
