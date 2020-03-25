@@ -417,7 +417,7 @@ gpp_figure_data %>%
   theme(legend.position = c(0.75, 0.35)) +
   coord_cartesian(xlim = c(70, 250)) +
   scale_fill_manual("",
-    labels = c(expression(Canonical~GPP), expression(GPP[Rs])),
+    labels = c(expression(GPP[Lit]), expression(GPP[Rs])),
     values=c("#E41A1C", "skyblue")
   ) +
   theme(
@@ -702,7 +702,7 @@ rs_figure_data %>%
   theme(legend.position = c(0.75, 0.35)) +
   coord_cartesian(xlim = c(50, 120)) +
   scale_fill_manual("",
-    labels = c(expression(Canonical ~ Rs), expression(Rs[GPP])),
+    labels = c(expression(Rs[Lit]), expression(Rs[GPP])),
     values = c("skyblue", "#E41A1C")
   ) +
   theme(
