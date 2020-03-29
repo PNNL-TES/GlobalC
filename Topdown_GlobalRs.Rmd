@@ -703,7 +703,7 @@ rs_figure_data %>%
   coord_cartesian(xlim = c(50, 120)) +
   scale_fill_manual("",
     labels = c(expression(Rs[lit]), expression(Rs[GPP])),
-    values = c("skyblue", "#E41A1C")
+    values = c("#E41A1C", "skyblue")
   ) +
   theme(
     legend.title = element_blank(),
