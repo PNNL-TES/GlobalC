@@ -759,7 +759,7 @@ rs_ratio_figure_data
 
 p1_rsg3 <- ggdraw() +
   draw_plot(rs_base_figure %+% rs_ratio_figure_data) +
-  draw_plot(p_gpp_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5)
+  draw_plot(p_rs_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5)
 print(p1_rsg3)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
