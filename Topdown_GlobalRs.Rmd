@@ -1064,6 +1064,7 @@ ratios %>%
 p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) +
   geom_boxplot(show.legend = FALSE) +
   geom_quasirandom(alpha = I(0.25)) +
+  scale_color_brewer(palette="Set1") +
   geom_hline(yintercept = topdown_mean, linetype = 2, color = "red", alpha = 0.33) +
   ylab(expression(Ratio ~ of ~ R[S] ~ to ~ GPP)) +
   xlab("") +
