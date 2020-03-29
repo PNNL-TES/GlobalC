@@ -594,17 +594,17 @@ pairsdata <- rename(pairsdata, "Rs from literature" = Rs_raw, "Rroot:Rs ratio" =
 # pdf("outputs/FigureS8 - Boots GPP pairs.pdf", width = 8, height = 6)
 pairs(pairsdata, col = pairs_colors, pch = ".", main = expression(GPP[Rs]))
 # dev.off()
-# get mean Rroot:Rs of below of above the intercetion (126.7 Pg)
+# get mean Rroot:Rs of below or above the intercetion (126.7 Pg)
 gpp_results %>%
   select(GPP, Rc) %>%
-  mutate(GPP_group = ifelse(GPP < gpp_ip, "black", "red")) %>%
+  mutate(GPP_group = ifelse(GPP < gpp_ip, "below_ip", "above_ip")) %>%
   group_by(GPP_group) %>%
   summarize(mean(Rc))
 
-# get mean Rroot:Ra of below of above the intercetion (126.7 Pg)
+# get mean Rroot:Ra of below or above the intercetion (126.7 Pg)
 gpp_results %>%
   select(GPP, Froot) %>%
-  mutate(GPP_group = ifelse(GPP < gpp_ip, "black", "red")) %>%
+  mutate(GPP_group = ifelse(GPP < gpp_ip, "below_ip", "above_ip")) %>%
   group_by(GPP_group) %>%
   summarize(mean(Froot))
 ```
@@ -881,10 +881,10 @@ pairsdata <- rename(pairsdata, "GPP from literature" = GPP_raw, "Rroot : RA rati
 pairs(pairsdata, col = pairs_colors, pch = ".", main = expression(Rs[GPP]))
 # dev.off()
 
-# get mean Rroot:Rs, NPP, GPP[lit] of below of above the intercetion (78.11 Pg)
+# get mean Rroot:Rs, NPP, GPP[lit] of below or above the intercetion (78.11 Pg)
 rs_results %>%
   select(Rs_topdown, Froot_rest, NPP, GPP_raw) %>%
-  mutate(Group = ifelse(Rs_topdown < rs_ip, "black", "red")) %>%
+  mutate(Group = ifelse(Rs_topdown < rs_ip, "below_ip", "above_ip")) %>%
   group_by(Group) %>%
   summarize(mean(Froot_rest), mean(NPP), mean(GPP_raw))
 ```
