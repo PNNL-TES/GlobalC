@@ -1197,10 +1197,10 @@ This is Figure S10.
 # First collect the lat and lon information for the different observations. 
 bind_rows(srdb_v4 %>% 
             select(Latitude, Longitude) %>% 
-            mutate(source = 'srbd'), 
+            mutate(source = 'SRDB'), 
           read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>%  
             select(Latitude, Longitude) %>%  
-            mutate(source = 'fluxnet')) %>% 
+            mutate(source = 'FLUXNET')) %>% 
   mutate(Latitude = signif(Latitude, digits = 4), 
          Longitude = signif(Longitude, digits = 4)) -> 
   LatLon_info
@@ -1234,4 +1234,6 @@ p_ratios_ensemble <- ggplot(data = cmip_local_OBSLatLon, aes(source, Ratio, colo
   theme(strip.background = element_rect(fill = "white", linetype = "blank")) +
   guides(colour = guide_legend(override.aes = list(alpha = 1)))
 print(p_ratios_ensemble)
+
+ggsave("outputs/FigureS10.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
