@@ -901,7 +901,8 @@ ggsave("outputs/Figure1.png", width = 10, height = 8)
 
 What's the most likely values for GPP and R[S] that are consistent with the underlying distributions?
 
-```{r joint-plot, results='show', fig.width=6, fig.height=6}
+```{r joint-plot, results='show', fig.width=8, fig.height=8}
+# joint plot
 gpp_results %>%
   select(Rs = Rs_raw, GPP = GPP2) %>%
   mutate(Source = "Rs-driven GPP") ->
@@ -915,6 +916,48 @@ joint
 
 myarrow <- arrow(length = unit(0.1, "inches"))
 
+# Combine Figure 1 and Figure 2 together
+# density 1 panel
+gpp_figure2_data %>%
+  ggplot(aes(value, fill = GPP_type)) +
+  theme_cowplot() +
+  geom_density(stat = "density", alpha = 0.65) +
+  theme(legend.position = c(0.75, 0.35)) +
+  # coord_cartesian(xlim = c(70, 200)) +
+  scale_fill_manual("",
+    labels = c(expression(GPP[lit]), expression(GPP[Rs])),
+    values=c("#E41A1C", "skyblue")) +
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0,
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()) +
+  ylab("Density") +
+  xlab(expression(GPP ~ (Pg ~ C ~ yr^{-1}))) -> 
+  dens1
+
+# density 2 panel
+rs_figure_data %>%
+  ggplot(aes(value, fill = Rs_type)) +
+  theme_cowplot() +
+  geom_density(stat = "density", alpha = 0.65) +
+  theme(legend.position = c(0.7, 0.2)) +
+  # coord_cartesian(xlim = c(50, 120)) +
+  scale_fill_manual("",
+    labels = c(expression(Rs[GPP]), expression(Rs[lit])),
+    values = c("#E41A1C", "skyblue")) +
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0,
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()) +
+  ylab("Density") +
+  xlab(expression(R[S] ~ (Pg ~ C ~ yr^{-1}))) +
+  coord_flip() -> 
+  dens2
+
 # See https://stackoverflow.com/questions/8197559/emulate-ggplot2-default-color-palette
 # for ggplot color defaults - that's how I got color codes below
 
@@ -922,41 +965,48 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
   geom_point(pch = 20, size = 2, alpha = 0.05) +
   geom_density2d(bins = 8, alpha = 0.65) +
   scale_color_manual(values = c("#E41A1C", "skyblue")) +
-  theme(legend.position = "none", legend.text.align = 0) +
+  theme(legend.position = "none", legend.text.align = 0,
+        axis.text=element_text(size=12),
+        axis.title=element_text(size=12,face="bold") ) +
   guides(col = guide_legend(nrow = 2, byrow = TRUE)) +
   xlab(expression(Pg ~ C ~ yr^-1)) +
   ylab(expression(Pg ~ C ~ yr^-1)) +
   annotate("segment",
     x = mean(rs_results$GPP_raw), xend = mean(rs_results$GPP_raw),
     y = 50, yend = mean(rs_results$Rs_topdown2),
-    color = "#E41A1C", linetype = 1
-  ) +
+    color = "#E41A1C", linetype = 1) +
   annotate("segment",
     x = mean(rs_results$GPP_raw), xend = 75,
     y = mean(rs_results$Rs_topdown2), yend = mean(rs_results$Rs_topdown2),
-    arrow = myarrow, color = "#E41A1C", linetype = 1
-  ) +
+    arrow = myarrow, color = "#E41A1C", linetype = 1) +
   annotate("segment",
     x = 75, xend = mean(gpp_results$GPP2),
     y = mean(gpp_results$Rs_raw), yend = mean(gpp_results$Rs_raw),
-    color = "skyblue", linetype = 1
-  ) +
+    color = "skyblue", linetype = 1 ) +
   annotate("segment",
     x = mean(gpp_results$GPP2), xend = mean(gpp_results$GPP2),
     y = mean(gpp_results$Rs_raw), yend = 50,
-    arrow = myarrow, color = "skyblue", linetype = 1
-  ) +
+    arrow = myarrow, color = "skyblue", linetype = 1) +
   annotate("text",
     x = c(107, 151), y = 47.5, size = 4, hjust = "inward", fontface = "bold",
-    label = c(expression(GPP[lit]), expression(GPP[Rs]))
-  ) +
+    label = c(expression(GPP[lit]), expression(GPP[Rs]))) +
   annotate("text",
     x = 70, y = c(66, 86), size = 4, hjust = "inward", fontface = "bold",
     label = c(expression(Rs[GPP]), expression(Rs[lit])),
-    angle = 90
-  )
+    angle = 90)
+
 print(p_joint)
 ggsave("outputs/Figure2.png", width = 8, height = 6)
+
+# Combine three panels together
+library(patchwork)
+dens1 + plot_spacer() + p_joint + dens2 + 
+    plot_layout(
+      ncol = 2, 
+      nrow = 2, 
+      widths = c(4, 2.5),
+      heights = c(2.5, 4) ) 
+
 ```
 
 

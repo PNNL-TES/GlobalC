@@ -1,7 +1,7 @@
 # Global GPP estimates,,,,,,,,,,,,
 Pub_year,Year,Period,GPP,SD,Trend,Flag,Group,Flag_comment,Reference,URL,Note1,Note2
 1978,1975,1975,71.73,,,Model,Model,MIAMI,"Box, 1978",https://link.springer.com/article/10.1007/BF01323458,Table 7 (calculate from GPP mean and earth area),
-1997,1994,1990-1999,120,,,O18,Site-based upscaling,Isotope,"Ciais et al., 1997",https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/96JD02360,,
+2002,1988,1981-1994,125,,,C13,Site-based upscaling,Isotope,"Randerson et al., 2002", https://doi.org/10.1029/2001GB001845,,
 1996,1991,1991,133.1,,,Satellite-Model,Mixed,TURC_Model together with remotely sensed vegetation index,"Ruimy et al., 1996",https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/96GB00349,Temperature data was 1991,
 1999,1995,1995,113,,,Model,Model,CASA etc,"Thompson and Randerson, 1999",https://onlinelibrary.wiley.com/doi/abs/10.1046/j.1365-2486.1999.00235.x,,
 2000,1979,1965-1994,114.7,,,Model,Model,DGEMS,"Kucharik et al., 2000",https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/1999GB001138,,
