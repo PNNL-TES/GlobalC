@@ -226,11 +226,12 @@ plot_Rroot_Ra_ratio <- function(Froot_data) {
   obs_Other <- Froot_data %>%
     filter(IGBP2 == "Other") %>%
     nrow()
-  Fl_plot <- ggplot(Froot_data, aes(x = IGBP2, y = Froot)) +
-    geom_violin() +
+  Fl_plot <- ggplot(Froot_data, aes(x = IGBP2, y = Froot, fill = as.factor(IGBP2))) +
+    geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), show.legend = FALSE) +
     # geom_jitter(shape = 16, position = position_jitter(0.2), col = "gray") +
-    geom_quasirandom(col = "gray") +
-    geom_boxplot(width = 0.1) +
+    geom_quasirandom(col = "gray", alpha = 0.85, show.legend = FALSE) +
+    scale_fill_brewer(palette="Spectral") +
+    # geom_boxplot(width = 0.1) +
     ylab("Froot") +
     # stat_summary(fun.y=median, geom="point", size=2, color="red") +
     scale_x_discrete(
@@ -267,11 +268,12 @@ plot_RaGPP <- function(RaGPP_data) {
 
   RaGPP_data$Global <- paste0("n = ", var_obs)
 
-  Ra_GPP <- ggplot(RaGPP_data, aes(IGBP2, RaGPP_ratio)) +
-    geom_violin() +
+  Ra_GPP <- ggplot(RaGPP_data, aes(IGBP2, RaGPP_ratio, fill = as.factor(IGBP2))) +
+    geom_violin(draw_quantiles = c(0.25, 0.5, 0.75), show.legend = FALSE) +
     # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
-    geom_quasirandom(col = "gray") +
-    geom_boxplot(width = 0.1) +
+    geom_quasirandom(col = "gray", alpha = 0.85, show.legend = FALSE) +
+    scale_fill_brewer(palette="Spectral") +
+    # geom_boxplot(width = 0.1) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     ylab(expression(R[A] ~ ":" ~ GPP ~ ratio)) +
     scale_x_discrete(
@@ -300,7 +302,7 @@ plot_RaGPP <- function(RaGPP_data) {
 plot_Rroot_Rs_NPP <- function(sub_srdb, NPP_data) {
 
   # plot NPP panel
-  NPP_data$Global <- "n = 251"
+  NPP_data$Global <- "n = 237"
   obs_AG <- sub_srdb %>%
     filter(IGBP2 == "Agriculture") %>%
     nrow()
@@ -324,10 +326,11 @@ plot_Rroot_Rs_NPP <- function(sub_srdb, NPP_data) {
     nrow()
 
   p_NPP <- ggplot(NPP_data, aes(Global, NPP)) +
-    geom_violin() +
+    geom_violin( draw_quantiles = c(0.25, 0.5, 0.75), fill = "orange") +
     # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
-    geom_quasirandom(col = "gray", varwidth = TRUE) +
-    geom_boxplot(width = 0.1) +
+    scale_fill_brewer(palette="Spectral") +
+    geom_quasirandom(col = "gray", varwidth = TRUE, alhpa = 0.5) +
+    # geom_boxplot(width = 0.1) +
     ylab(expression(NPP ~ (Pg~C~yr^{-1}))) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     theme(axis.title.x = element_blank())
@@ -340,10 +343,10 @@ plot_Rroot_Rs_NPP <- function(sub_srdb, NPP_data) {
   # plot Fire panel
   p_fire <- tibble(Fire = c(2, 3.5, 7.3, 4, 5.1, 2.02, 2.71, 3.02, 2.08)) %>%
     ggplot(aes(x = "n = 9", y = Fire)) +
-    geom_violin() +
+    geom_violin( draw_quantiles = c(0.25, 0.5, 0.75), fill = "orange" ) +
     # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
     geom_quasirandom(col = "gray", varwidth = TRUE) +
-    geom_boxplot(width = 0.1) +
+    # geom_boxplot(width = 0.1) +
     ylab(expression(C[fire] ~ (Pg~C~yr^{-1}))) +
     # stat_summary(fun.y = median, geom = "point", size = 2, color = "red") +
     theme(axis.title.x = element_blank())
@@ -356,11 +359,13 @@ plot_Rroot_Rs_NPP <- function(sub_srdb, NPP_data) {
   # plot Rroot_Rs ratio panel
   sub_srdb$Global <- paste0("n = ", nrow(sub_srdb))
 
-  RC_plot <- ggplot(sub_srdb, aes(x = IGBP2, y = RC_annual)) +
-    geom_violin() +
+  RC_plot <- ggplot(sub_srdb, aes(x = IGBP2, y = RC_annual, fill = as.factor(IGBP2))) +
+    geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) +
     # geom_jitter(shape = 16, position = position_jitter(0.2), col = 'gray') +
-    geom_quasirandom(col = "gray", varwidth = TRUE) +
-    geom_boxplot(width = 0.1) +
+    geom_quasirandom(col = "gray", varwidth = TRUE, alpha = 0.5) +
+    scale_fill_brewer(palette="Spectral") +
+    theme(legend.position = "none") +
+    # geom_boxplot(width = 0.1) +
     scale_x_discrete(
       limits = c("Agriculture", "DF", "EF", "Mixed", "Grassland", "Shrubland", "Other"),
       labels = c(
