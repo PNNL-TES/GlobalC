@@ -1,0 +1,777 @@
+---
+title: "GlobalC"
+author: "Jinshi Jian and co-authors"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r preliminaries, message=FALSE, echo=FALSE}
+# Constants
+OUTPUT_DIR <- "outputs/"
+DATA_DIR <- "data"
+# Create output and log folders if they do not exist
+if (!file.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
+
+library(kableExtra)
+# Load required packages
+library(data.table)
+library(lubridate)
+library(knitr)
+library(ggpubr)
+
+library(ggplot2)
+theme_set(theme_bw())
+library(cowplot)
+library(ggmap)
+library(maps)
+library(mapdata)
+# install.packages("ggExtra")
+library(ggExtra)
+
+library(tidyr)
+library(hexbin)
+library(dplyr)
+
+# install.packages('ggbeeswarm')
+library(ggbeeswarm)
+library(ggridges)
+
+# Source all needed functions
+source("functions.R")
+source("functions-stats.R")
+source("functions-resampling.R")
+source("functions-calc_bootstrap.R")
+
+library(randomForest)
+library(patchwork)
+
+# Set chunks defaults; these options will be applied to all subsequent chunks
+knitr::opts_chunk$set(
+  results = "hide", message = TRUE, include = TRUE,
+  echo = FALSE, warning = FALSE,
+  fig.height = 4, fig.width = 8, cache = FALSE
+)
+```
+
+## load data
+```{r}
+readd(mgrsd_climate) -> mgrsd_climate 
+mgrsd_climate$EVI[mgrsd_climate$EVI < 0 & !is.na(mgrsd_climate$EVI)] <- 0
+
+readd(global_land) -> global_land
+```
+
+## prepare mgrsd for modeling
+```{r}
+mgrsd_climate %>% 
+  dplyr::select(Rs_Norm, Meas_Month2, Manipulation, Study_number, 
+                BM_aboveground, BM_belowground, N_dep_half_deg, bd_soilgrids, clay_soilgrids, soc_soilgrids, Pmonth, Tmonth, EVI) %>% 
+  filter(Manipulation == "None" & Rs_Norm >= 0) %>% 
+  # filter(!is.na(EVI))
+  na.omit() ->
+  sub_mgrsd
+```
+
+## testing code
+### plot Rs_norm vs variables
+```{r}
+plot_scatter <- function(){
+  for(i in 4:ncol(sub_mgrsd)){
+    subdata <- sub_mgrsd[,c(1,i)]
+    var_factor <- colnames(subdata)[2]
+    colnames(subdata) <- c("Rs", "Factor")
+    lm_mod <- lm(Rs ~ Factor, data = subdata)
+    R2 <- summary(lm_mod)$r.squared %>% round(5)
+    subdata %>% 
+      ggplot(aes(Factor, Rs)) +
+      geom_point(alpha = 0.25) +
+      ggtitle(paste0(var_factor, "(R2=", R2, ")")) ->
+      p
+    plot(p)
+    }
+  }
+
+plot_scatter()
+```
+
+## random forest modeling
+```{r}
+set.seed(20201122)
+## 75% of the sample size
+## set the seed to make your partition reproducible
+smp_size <- floor(0.80 * nrow(sub_mgrsd))
+train_ind <- sample(seq_len(nrow(sub_mgrsd)), size = smp_size)
+
+train <- sub_mgrsd[train_ind, ]
+test <- sub_mgrsd[-train_ind, ]
+
+# rf for train
+rf <- randomForest(Rs_Norm ~ BM_aboveground + BM_belowground +
+                     N_dep_half_deg + bd_soilgrids + clay_soilgrids + soc_soilgrids + EVI + Tmonth + Pmonth, 
+                   data = train,
+                   importance = TRUE, 
+                   proximity = TRUE,
+                   ntree = 200,
+                   mtry = 4,
+                   na.action = na.exclude)   
+
+plot(rf)
+importance(rf)
+varImpPlot(rf)
+```
+
+```{r, fig.width=6, fig.height=8}
+# plot train vs test
+train %>% 
+  mutate(prediction = predict(rf)) ->
+  train
+
+R2_train <- summary(lm(Rs_Norm ~ prediction, data = train))$r.squared %>% round(5)
+train %>% 
+  ggplot(aes(prediction, Rs_Norm)) +
+  geom_point(alpha = 0.25) +
+  geom_smooth(method = "lm") +
+  geom_abline(slope = 1, intercept = 0, col = "red", linetype = "dashed") +
+  ggtitle(paste0("Train data, R2=", R2_train, ", n=21,771(80%)")) +
+  labs(x = expression(Predicted~R[S]~(g~C~m^{2}~day^{-1})),
+       y = expression(Measured~R[S]~(g~C~m^{2}~day^{-1}))) ->
+  train_plot
+
+test %>% 
+  mutate(prediction = predict(rf, test)) ->
+  test
+
+R2_test <- summary(lm(Rs_Norm ~ prediction, data = test))$r.squared %>% round(5)
+test %>% 
+  ggplot(aes(prediction, Rs_Norm)) +
+  geom_point(alpha = 0.25) +
+  geom_smooth(method = "lm") +
+  geom_abline(slope = 1, intercept = 0, col = "red", linetype = "dashed") +
+  ggtitle(paste0("Test data, R2=", R2_test, ", n=5,443(20%)")) +
+  labs(x = expression(Predicted~R[S]~(g~C~m^{2}~day^{-1})),
+       y = expression(Measured~R[S]~(g~C~m^{2}~day^{-1}))) ->
+  test_plot
+
+train_plot / test_plot
+```
+
+```{r}
+# rf for each month
+rf_month <- function(mon){
+  mon_mgrsd <- sub_mgrsd %>% filter(Meas_Month2 == mon)
+  randomForest(Rs_Norm ~ BM_aboveground + BM_belowground +
+                     N_dep_half_deg + bd_soilgrids + clay_soilgrids + soc_soilgrids + EVI + Tmonth + Pmonth, 
+                   data = mon_mgrsd,
+                   importance = TRUE, 
+                   proximity = TRUE,
+                   ntree = 200,
+                   mtry = 4,
+                   na.action = na.exclude)  
+  }
+ 
+rf_Jan <- rf_month(1)
+plot(rf_Jan)
+importance(rf_Jan)
+varImpPlot(rf_Jan)
+
+rf_Feb <- rf_month(2)
+plot(rf_Feb)
+importance(rf_Feb)
+varImpPlot(rf_Feb)
+
+rf_Mar <- rf_month(3)
+rf_Apr <- rf_month(4)
+rf_May <- rf_month(5)
+rf_Jun <- rf_month(6)
+rf_Jul <- rf_month(7)
+rf_Aug <- rf_month(8)
+rf_Sep <- rf_month(9)
+rf_Oct <- rf_month(10)
+rf_Nov <- rf_month(11)
+rf_Dec <- rf_month(12)
+
+```
+
+## test RF model by month
+```{r}
+eval_mon <- function(mon) {
+  mon_mgrsd <- sub_mgrsd %>% filter(Meas_Month2 == mon) %>% 
+    mutate(prediction = if (mon == 1) {
+               predict(rf_Jan)}
+           else if(mon == 2){
+             predict(rf_Feb)
+           } else if (mon == 3) {
+             predict(rf_Mar)
+           } else if (mon == 4) {
+             predict(rf_Apr)
+           } else if (mon == 5) {
+             predict(rf_May)
+           } else if (mon == 6) {
+             predict(rf_Jun)
+           } else if (mon == 7) {
+             predict(rf_Jul)
+           } else if (mon == 8) {
+             predict (rf_Aug)
+           } else if (mon == 9) {
+             predict (rf_Sep)
+           } else if (mon == 10) {
+             predict (rf_Oct)
+           } else if (mon == 11) {
+             predict (rf_Nov)
+           } else if (mon == 12) {
+             predict (rf_Dec)
+           }
+      ) ->
+    mon_mgrsd
+  
+  R2_mon <- summary(lm(Rs_Norm ~ prediction, data = mon_mgrsd))$r.squared %>% round(3)
+  mon_mgrsd %>% 
+    ggplot(aes(prediction, Rs_Norm)) +
+    geom_point(alpha = 0.25) +
+    geom_smooth(method = "lm") +
+    geom_abline(slope = 1, intercept = 0, col = "red", linetype = "dashed") +
+    ggtitle(paste0("Month=", i, ", R^2", "=", R2_mon, ", n=", nrow(mon_mgrsd))) +
+    labs(x = expression(Predicted~R[S]~(g~C~m^{2}~day^{-1})),
+         y = expression(Measured~R[S]~(g~C~m^{2}~day^{-1}))) ->
+    mon_plot
+  print(mon_plot)
+}
+
+for(i in 1:12) {
+  eval_mon(i)}
+```
+
+
+```{r}
+# QA/QC
+sub_mgrsd %>% filter(Meas_Month2 == 6) -> mon_mgrsd
+
+sub_mgrsd$EVI %>% min()
+sub_mgrsd$EVI %>% max()
+
+mon_mgrsd %>% 
+  mutate(prediction = predict(rf_Jun, mon_mgrsd)) ->
+  mon_mgrsd
+
+mon_mgrsd %>% filter(prediction > 10)
+
+# Study number 8887
+mgrsd_climate %>% 
+  filter(Study_number == 8887) %>% 
+  ggplot(aes(Tmonth, Tsoil)) +
+  geom_point()
+
+mgrsd_climate %>% 
+  filter(Study_number == 8887) %>% 
+  ggplot(aes(Tsoil, Rs_Norm)) +
+  geom_point()
+
+mgrsd_climate %>% 
+  filter(Study_number == 8887) %>% 
+  ggplot(aes(Tmonth, Rs_Norm)) +
+  geom_point()
+  
+mgrsd_climate %>% 
+  dplyr::select(Soil_BD, bd_soilgrids) %>% 
+  na.omit() %>% 
+  ggplot(aes(Soil_BD, bd_soilgrids)) +
+  geom_point()
+
+raster("data/EVIs/EVI_mean_month_1.tif") %>% 
+  image()
+```
+
+## Predict global Rs by month
+```{r}
+hist(global_land$EVI_1)
+global_land %>% 
+  ggplot(aes(Longitude, Latitude, col = EVI_1)) + 
+  geom_point()
+
+global_land %>% 
+  ggplot(aes(Longitude, Latitude, col = prec1)) +
+  geom_point()
+
+global_land %>% 
+  filter(is.na(tmean6)) %>% 
+  ggplot(aes(Longitude, Latitude)) +
+  geom_point()
+
+global_land %>% 
+  filter(!is.na(tmean6)) %>% 
+  ggplot(aes(Longitude, Latitude)) +
+  geom_point()
+```
+
+## Handle NA values
+```{r}
+global_land %>% 
+  filter(!is.na(tmean6)) ->
+  global_sub
+
+global_sub %>% 
+  filter(is.na(tmean1) | is.na(tmean2) | is.na(tmean3)| is.na(tmean4) | is.na(tmean5)| is.na(tmean6)
+         | is.na(tmean7)| is.na(tmean8)| is.na(tmean9)| is.na(tmean10)| is.na(tmean11))
+
+global_sub %>% filter(is.na(tmean12))
+
+# use the average of Nov and Jan to get Dec for those 301 NA values
+global_sub$tmean12[is.na(global_sub$tmean12)] = (global_sub$tmean11[is.na(global_sub$tmean12)] + global_sub$tmean11[is.na(global_sub$tmean12)])/2
+
+global_sub %>% 
+  filter(is.na(prec1) | is.na(prec2) | is.na(prec3)| is.na(prec4) | is.na(prec5)| is.na(prec6)
+         | is.na(prec7)| is.na(prec8)| is.na(prec9)| is.na(prec10)| is.na(prec11) | is.na(prec12))
+
+## EVI NA issue
+global_sub$EVI_1[is.nan(global_sub$EVI_1) | global_sub$EVI_1 < 0] = 0
+global_sub$EVI_2[is.nan(global_sub$EVI_2) | global_sub$EVI_2 < 0] = 0
+global_sub$EVI_3[is.nan(global_sub$EVI_3) | global_sub$EVI_3 < 0] = 0
+global_sub$EVI_4[is.nan(global_sub$EVI_4) | global_sub$EVI_4 < 0] = 0
+global_sub$EVI_5[is.nan(global_sub$EVI_5) | global_sub$EVI_5 < 0] = 0
+global_sub$EVI_6[is.nan(global_sub$EVI_6) | global_sub$EVI_6 < 0] = 0
+global_sub$EVI_7[is.nan(global_sub$EVI_7) | global_sub$EVI_7 < 0] = 0
+global_sub$EVI_8[is.nan(global_sub$EVI_8) | global_sub$EVI_8 < 0] = 0
+global_sub$EVI_9[is.nan(global_sub$EVI_9) | global_sub$EVI_9 < 0] = 0
+global_sub$EVI_10[is.nan(global_sub$EVI_10) | global_sub$EVI_10 < 0] = 0
+global_sub$EVI_11[is.nan(global_sub$EVI_11) | global_sub$EVI_11 < 0] = 0
+global_sub$EVI_12[is.nan(global_sub$EVI_12) | global_sub$EVI_12 < 0] = 0
+
+## Soil data NA issue
+global_sub %>% 
+  filter(is.na(BM_aboveground_global)) 
+
+global_sub %>% 
+  filter(is.na(BM_belowground_global)) 
+
+global_sub %>% 
+  filter(is.na(N_dep_global)) 
+
+global_sub %>% 
+  filter(is.na(bd_soilgrids_global)) 
+
+global_sub %>% 
+  filter(is.na(clay_soilgrids_global)) 
+
+global_sub %>% 
+  filter(is.na(soc_soilgrids_global)) 
+
+global_sub %>% 
+  ggplot(aes(BM_belowground_global, soc_soilgrids_global)) +
+  geom_point()
+
+global_sub %>% 
+  dplyr::select(BM_belowground_global, soc_soilgrids_global) %>% 
+  filter(is.na(soc_soilgrids_global)) %>% 
+  count(BM_belowground_global)
+
+global_sub$bd_soilgrids_global %>% min(na.rm = TRUE)
+global_sub$clay_soilgrids_global %>% min(na.rm = TRUE)
+global_sub$soc_soilgrids_global %>% min(na.rm = TRUE)
+
+global_sub %>% mutate(bd_soilgrids_global = bd_soilgrids_global / 1000) -> global_sub
+global_sub$bd_soilgrids_global[is.na(global_sub$bd_soilgrids_global)] = 0
+global_sub$clay_soilgrids_global[is.na(global_sub$clay_soilgrids_global)] = 0
+global_sub$soc_soilgrids_global[is.na(global_sub$soc_soilgrids_global)] = 0
+
+global_sub %>% 
+  filter(is.na(bd_soilgrids_global)) %>% 
+  ggplot(aes(Longitude, Latitude)) +
+  geom_point()
+
+global_sub %>% 
+  na.omit() %>% 
+  ggplot(aes(Longitude, Latitude)) +
+  geom_point()
+```
+
+```{r}
+# change column names of the global data
+colnames(global_sub)[39:44] <- c("BM_aboveground", "BM_belowground", "N_dep_half_deg", "bd_soilgrids", "clay_soilgrids", "soc_soilgrids")
+```
+
+```{r}
+# predict global Rs from Jan to Dec
+global_sub %>% 
+  mutate(EVI = EVI_1, Pmonth = prec1, Tmonth = tmean1) %>% 
+  select(Latitude, Longitude, BM_aboveground, BM_belowground,
+                     N_dep_half_deg, bd_soilgrids, clay_soilgrids, soc_soilgrids, EVI, Tmonth, Pmonth) ->
+  global_sub1
+
+global_sub %>% 
+  mutate(EVI = EVI_2, Pmonth = prec2, Tmonth = tmean2) %>% 
+  select(Latitude, Longitude, BM_aboveground, BM_belowground,
+                     N_dep_half_deg, bd_soilgrids, clay_soilgrids, soc_soilgrids, EVI, Tmonth, Pmonth) ->
+  global_sub2
+
+global_sub %>% 
+  mutate(EVI = EVI_3, Pmonth = prec3, Tmonth = tmean3) %>% 
+  select(Latitude, Longitude, BM_aboveground, BM_belowground,
+                     N_dep_half_deg, bd_soilgrids, clay_soilgrids, soc_soilgrids, EVI, Tmonth, Pmonth) ->
+  global_sub3
+
+global_sub %>% 
+  mutate(EVI = EVI_4, Pmonth = prec4, Tmonth = tmean4) %>% 
+  select(Latitude, Longitude, BM_aboveground, BM_belowground,
+                     N_dep_half_deg, bd_soilgrids, clay_soilgrids, soc_soilgrids, EVI, Tmonth, Pmonth) ->
+  global_sub4
+
+global_sub %>% 
+  mutate(EVI = EVI_5, Pmonth = prec5, Tmonth = tmean5) %>% 
+  select(Latitude, Longitude, BM_aboveground, BM_belowground,
+                     N_dep_half_deg, bd_soilgrids, clay_soilgrids, soc_soilgrids, EVI, Tmonth, Pmonth) ->
+  global_sub5
+
+global_sub %>% 
+  mutate(EVI = EVI_6, Pmonth = prec6, Tmonth = tmean6) %>% 
+  select(Latitude, Longitude, BM_aboveground, BM_belowground,
+                     N_dep_half_deg, bd_soilgrids, clay_soilgrids, soc_soilgrids, EVI, Tmonth, Pmonth) ->
+  global_sub6
+
+global_sub %>% 
+  mutate(EVI = EVI_7, Pmonth = prec7, Tmonth = tmean7) %>% 
+  select(Latitude, Longitude, BM_aboveground, BM_belowground,
+                     N_dep_half_deg, bd_soilgrids, clay_soilgrids, soc_soilgrids, EVI, Tmonth, Pmonth) ->
+  global_sub7
+
+global_sub %>% 
+  mutate(EVI = EVI_8, Pmonth = prec8, Tmonth = tmean8) %>% 
+  select(Latitude, Longitude, BM_aboveground, BM_belowground,
+                     N_dep_half_deg, bd_soilgrids, clay_soilgrids, soc_soilgrids, EVI, Tmonth, Pmonth) ->
+  global_sub8
+
+global_sub %>% 
+  mutate(EVI = EVI_9, Pmonth = prec9, Tmonth = tmean9) %>% 
+  select(Latitude, Longitude, BM_aboveground, BM_belowground,
+                     N_dep_half_deg, bd_soilgrids, clay_soilgrids, soc_soilgrids, EVI, Tmonth, Pmonth) ->
+  global_sub9
+
+global_sub %>% 
+  mutate(EVI = EVI_10, Pmonth = prec10, Tmonth = tmean10) %>% 
+  select(Latitude, Longitude, BM_aboveground, BM_belowground,
+                     N_dep_half_deg, bd_soilgrids, clay_soilgrids, soc_soilgrids, EVI, Tmonth, Pmonth) ->
+  global_sub10
+
+global_sub %>% 
+  mutate(EVI = EVI_11, Pmonth = prec11, Tmonth = tmean11) %>% 
+  select(Latitude, Longitude, BM_aboveground, BM_belowground,
+                     N_dep_half_deg, bd_soilgrids, clay_soilgrids, soc_soilgrids, EVI, Tmonth, Pmonth) ->
+  global_sub11
+
+global_sub %>% 
+  mutate(EVI = EVI_12, Pmonth = prec12, Tmonth = tmean12) %>% 
+  select(Latitude, Longitude, BM_aboveground, BM_belowground,
+                     N_dep_half_deg, bd_soilgrids, clay_soilgrids, soc_soilgrids, EVI, Tmonth, Pmonth) ->
+  global_sub12
+
+```
+
+
+```{r}
+tibble(Rs_Jan = predict(rf_Jan, global_sub1),
+       Rs_Feb = predict(rf_Feb, global_sub2),
+       Rs_Mar = predict(rf_Mar, global_sub3),
+       Rs_Apr = predict(rf_Apr, global_sub4),
+       Rs_May = predict(rf_May, global_sub5),
+       Rs_Jun = predict(rf_Jun, global_sub6),
+       Rs_Jul = predict(rf_Jul, global_sub7),
+       Rs_Aug = predict(rf_Aug, global_sub8),
+       Rs_Sep = predict(rf_Sep, global_sub9),
+       Rs_Oct = predict(rf_Oct, global_sub10),
+       Rs_Nov = predict(rf_Nov, global_sub11),
+       Rs_Dec = predict(rf_Dec, global_sub12)
+       ) -> Global_Rs_prediction
+```
+
+```{r}
+# Global Rs prediction standard diviation
+tibble(
+  Rs_sd_Jan = apply(predict(rf_Jan, global_sub1, predict.all=TRUE)$individual, 1, sd),
+  Rs_sd_Feb = apply(predict(rf_Feb, global_sub2, predict.all=TRUE)$individual, 1, sd),
+  Rs_sd_Mar = apply(predict(rf_Mar, global_sub3, predict.all=TRUE)$individual, 1, sd),
+  Rs_sd_Apr = apply(predict(rf_Apr, global_sub4, predict.all=TRUE)$individual, 1, sd),
+  Rs_sd_May = apply(predict(rf_May, global_sub5, predict.all=TRUE)$individual, 1, sd),
+  Rs_sd_Jun = apply(predict(rf_Jun, global_sub6, predict.all=TRUE)$individual, 1, sd),
+  Rs_sd_Jul = apply(predict(rf_Jul, global_sub7, predict.all=TRUE)$individual, 1, sd),
+  Rs_sd_Aug = apply(predict(rf_Aug, global_sub8, predict.all=TRUE)$individual, 1, sd),
+  Rs_sd_Sep = apply(predict(rf_Sep, global_sub9, predict.all=TRUE)$individual, 1, sd),
+  Rs_sd_Oct = apply(predict(rf_Oct, global_sub10, predict.all=TRUE)$individual, 1, sd),
+  Rs_sd_Nov = apply(predict(rf_Nov, global_sub11, predict.all=TRUE)$individual, 1, sd),
+  Rs_sd_Dec = apply(predict(rf_Dec, global_sub12, predict.all=TRUE)$individual, 1, sd)
+) -> Global_Rs_sd
+ 
+```
+
+
+```{r}
+Global_Rs_prediction$Rs_mean <- apply(Global_Rs_prediction, 1, mean)
+Global_Rs_prediction$Rs_sd_mean <- apply(Global_Rs_sd, 1, mean)
+cbind(global_sub, Global_Rs_prediction) -> Global_Rs_prediction
+```
+
+
+```{r}
+hist(Global_Rs_prediction$Rs_mean)
+mean(Global_Rs_prediction$Rs_mean)
+sd(Global_Rs_prediction$Rs_mean)
+hist(Global_Rs_prediction$Rs_sd_mean)
+mean(Global_Rs_prediction$Rs_sd_mean)
+```
+
+```{r}
+# Winter
+bind_rows(
+  Global_Rs_prediction %>% 
+    mutate(Type = "Global", Rs_mon = Rs_Dec) %>% 
+    dplyr::select(Rs_mon, Type),
+  
+  sub_mgrsd %>% 
+    mutate(Type = "MGRsD", Rs_mon = Rs_Norm) %>% 
+    filter(Meas_Month2 == 12) %>% 
+    dplyr::select(Rs_mon, Type) ) %>% 
+  ggplot(aes(Rs_mon, Type, fill = 0.5 - abs(0.5 - stat(ecdf)))) +
+  xlim(0, 15) +
+  stat_density_ridges(geom = "density_ridges_gradient", calc_ecdf = TRUE) +
+  scale_fill_viridis_c(name = "Probability", direction = -1) +
+  xlab(element_blank()) +
+  ylab(element_blank()) +
+  theme(axis.text.y = element_text(angle = 0),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "none") ->
+  Dec_comp
+
+bind_rows(
+  Global_Rs_prediction %>% 
+    mutate(Type = "Global", Rs_mon = Rs_Jan) %>% 
+    dplyr::select(Rs_mon, Type),
+  
+  sub_mgrsd %>% 
+    mutate(Type = "MGRsD", Rs_mon = Rs_Norm) %>% 
+    filter(Meas_Month2 == 1) %>% 
+    dplyr::select(Rs_mon, Type) ) %>% 
+  ggplot(aes(Rs_mon, Type, fill = 0.5 - abs(0.5 - stat(ecdf)))) +
+  xlim(0, 15) +
+  stat_density_ridges(geom = "density_ridges_gradient", calc_ecdf = TRUE) +
+  scale_fill_viridis_c(name = "Probability", direction = -1) +
+  xlab(element_blank()) +
+  ylab(element_blank()) +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        legend.position = "none") ->
+  Jan_comp
+
+bind_rows(
+  Global_Rs_prediction %>% 
+    mutate(Type = "Global", Rs_mon = Rs_Feb) %>% 
+    dplyr::select(Rs_mon, Type),
+  
+  sub_mgrsd %>% 
+    mutate(Type = "MGRsD", Rs_mon = Rs_Norm) %>% 
+    filter(Meas_Month2 == 2) %>% 
+    dplyr::select(Rs_mon, Type) ) %>% 
+  ggplot(aes(Rs_mon, Type, fill = 0.5 - abs(0.5 - stat(ecdf)))) +
+  xlim(0, 15) +
+  stat_density_ridges(geom = "density_ridges_gradient", calc_ecdf = TRUE) +
+  scale_fill_viridis_c(name = "Probability", direction = -1) +
+  xlab(element_blank()) +
+  ylab(element_blank()) +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank()) ->
+  Feb_comp
+
+# Spring
+bind_rows(
+  Global_Rs_prediction %>% 
+    mutate(Type = "Global", Rs_mon = Rs_Mar) %>% 
+    dplyr::select(Rs_mon, Type),
+  
+  sub_mgrsd %>% 
+    mutate(Type = "MGRsD", Rs_mon = Rs_Norm) %>% 
+    filter(Meas_Month2 == 3) %>% 
+    dplyr::select(Rs_mon, Type) ) %>% 
+  ggplot(aes(Rs_mon, Type, fill = 0.5 - abs(0.5 - stat(ecdf)))) +
+  xlim(0, 15) +
+  stat_density_ridges(geom = "density_ridges_gradient", calc_ecdf = TRUE) +
+  scale_fill_viridis_c(name = "Probability", direction = -1) +
+  xlab(element_blank()) +
+  ylab(element_blank()) +
+  theme(axis.text.y = element_text(angle = 0),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "none") ->
+  Mar_comp
+
+bind_rows(
+  Global_Rs_prediction %>% 
+    mutate(Type = "Global", Rs_mon = Rs_Apr) %>% 
+    dplyr::select(Rs_mon, Type),
+  
+  sub_mgrsd %>% 
+    mutate(Type = "MGRsD", Rs_mon = Rs_Norm) %>% 
+    filter(Meas_Month2 == 4) %>% 
+    dplyr::select(Rs_mon, Type) ) %>% 
+  ggplot(aes(Rs_mon, Type, fill = 0.5 - abs(0.5 - stat(ecdf)))) +
+  xlim(0, 15) +
+  stat_density_ridges(geom = "density_ridges_gradient", calc_ecdf = TRUE) +
+  scale_fill_viridis_c(name = "Probability", direction = -1) +
+  xlab(element_blank()) +
+  ylab(element_blank()) +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        legend.position = "none") ->
+  Apr_comp
+
+bind_rows(
+  Global_Rs_prediction %>% 
+    mutate(Type = "Global", Rs_mon = Rs_May) %>% 
+    dplyr::select(Rs_mon, Type),
+  
+  sub_mgrsd %>% 
+    mutate(Type = "MGRsD", Rs_mon = Rs_Norm) %>% 
+    filter(Meas_Month2 == 5) %>% 
+    dplyr::select(Rs_mon, Type) ) %>% 
+  ggplot(aes(Rs_mon, Type, fill = 0.5 - abs(0.5 - stat(ecdf)))) +
+  xlim(0, 15) +
+  stat_density_ridges(geom = "density_ridges_gradient", calc_ecdf = TRUE) +
+  scale_fill_viridis_c(name = "Probability", direction = -1) +
+  xlab(element_blank()) +
+  ylab(element_blank()) +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank()) ->
+  May_comp
+
+# Summer
+bind_rows(
+  Global_Rs_prediction %>% 
+    mutate(Type = "Global", Rs_mon = Rs_Jun) %>% 
+    dplyr::select(Rs_mon, Type),
+  
+  sub_mgrsd %>% 
+    mutate(Type = "MGRsD", Rs_mon = Rs_Norm) %>% 
+    filter(Meas_Month2 == 6) %>% 
+    dplyr::select(Rs_mon, Type) ) %>% 
+  ggplot(aes(Rs_mon, Type, fill = 0.5 - abs(0.5 - stat(ecdf)))) +
+  xlim(0, 15) +
+  stat_density_ridges(geom = "density_ridges_gradient", calc_ecdf = TRUE) +
+  scale_fill_viridis_c(name = "Probability", direction = -1) +
+  xlab(element_blank()) +
+  ylab(element_blank()) +
+  theme(axis.text.y = element_text(angle = 0),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "none") ->
+  Jun_comp
+
+bind_rows(
+  Global_Rs_prediction %>% 
+    mutate(Type = "Global", Rs_mon = Rs_Jul) %>% 
+    dplyr::select(Rs_mon, Type),
+  
+  sub_mgrsd %>% 
+    mutate(Type = "MGRsD", Rs_mon = Rs_Norm) %>% 
+    filter(Meas_Month2 == 7) %>% 
+    dplyr::select(Rs_mon, Type) ) %>% 
+  ggplot(aes(Rs_mon, Type, fill = 0.5 - abs(0.5 - stat(ecdf)))) +
+  xlim(0, 15) +
+  stat_density_ridges(geom = "density_ridges_gradient", calc_ecdf = TRUE) +
+  scale_fill_viridis_c(name = "Probability", direction = -1) +
+  xlab(element_blank()) +
+  ylab(element_blank()) +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        legend.position = "none") ->
+  Jul_comp
+
+bind_rows(
+  Global_Rs_prediction %>% 
+    mutate(Type = "Global", Rs_mon = Rs_Aug) %>% 
+    dplyr::select(Rs_mon, Type),
+  
+  sub_mgrsd %>% 
+    mutate(Type = "MGRsD", Rs_mon = Rs_Norm) %>% 
+    filter(Meas_Month2 == 8) %>% 
+    dplyr::select(Rs_mon, Type) ) %>% 
+  ggplot(aes(Rs_mon, Type, fill = 0.5 - abs(0.5 - stat(ecdf)))) +
+  xlim(0, 15) +
+  stat_density_ridges(geom = "density_ridges_gradient", calc_ecdf = TRUE) +
+  scale_fill_viridis_c(name = "Probability", direction = -1) +
+  xlab(element_blank()) +
+  ylab(element_blank()) +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank()) ->
+  Aug_comp
+
+# Autumn
+bind_rows(
+  Global_Rs_prediction %>% 
+    mutate(Type = "Global", Rs_mon = Rs_Sep) %>% 
+    dplyr::select(Rs_mon, Type),
+  
+  sub_mgrsd %>% 
+    mutate(Type = "MGRsD", Rs_mon = Rs_Norm) %>% 
+    filter(Meas_Month2 == 9) %>% 
+    dplyr::select(Rs_mon, Type) ) %>% 
+  ggplot(aes(Rs_mon, Type, fill = 0.5 - abs(0.5 - stat(ecdf)))) +
+  xlim(0, 15) +
+  stat_density_ridges(geom = "density_ridges_gradient", calc_ecdf = TRUE) +
+  scale_fill_viridis_c(name = "Probability", direction = -1) +
+  xlab(expression(R[S]~(g~C~m^{-2}~day^{-1}))) +
+  ylab(element_blank()) +
+  theme(axis.text.y = element_text(angle = 0),
+        legend.position = "none") ->
+  Sep_comp
+
+bind_rows(
+  Global_Rs_prediction %>% 
+    mutate(Type = "Global", Rs_mon = Rs_Oct) %>% 
+    dplyr::select(Rs_mon, Type),
+  
+  sub_mgrsd %>% 
+    mutate(Type = "MGRsD", Rs_mon = Rs_Norm) %>% 
+    filter(Meas_Month2 == 10) %>% 
+    dplyr::select(Rs_mon, Type) ) %>% 
+  ggplot(aes(Rs_mon, Type, fill = 0.5 - abs(0.5 - stat(ecdf)))) +
+  xlim(0, 15) +
+  stat_density_ridges(geom = "density_ridges_gradient", calc_ecdf = TRUE) +
+  scale_fill_viridis_c(name = "Probability", direction = -1) +
+  xlab(expression(R[S]~(g~C~m^{-2}~day^{-1}))) +
+  ylab(element_blank()) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") ->
+  Oct_comp
+
+bind_rows(
+  Global_Rs_prediction %>% 
+    mutate(Type = "Global", Rs_mon = Rs_Nov) %>% 
+    dplyr::select(Rs_mon, Type),
+  
+  sub_mgrsd %>% 
+    mutate(Type = "MGRsD", Rs_mon = Rs_Norm) %>% 
+    filter(Meas_Month2 == 11) %>% 
+    dplyr::select(Rs_mon, Type) ) %>% 
+  ggplot(aes(Rs_mon, Type, fill = 0.5 - abs(0.5 - stat(ecdf)))) +
+  xlim(0, 15) +
+  stat_density_ridges(geom = "density_ridges_gradient", calc_ecdf = TRUE) +
+  scale_fill_viridis_c(name = "Probability", direction = -1) +
+  xlab(expression(R[S]~(g~C~m^{-2}~day^{-1}))) +
+  ylab(element_blank()) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) ->
+  Nov_comp
+```
+
+
+```{r, fig.height=7, fig.width=8}
+(Dec_comp | Jan_comp | Feb_comp) / (Mar_comp | Apr_comp | May_comp) /
+  (Jun_comp | Jul_comp | Aug_comp) / (Sep_comp | Oct_comp | Nov_comp)
+```
+
+```{r}
+# write global Rs production out
+# write.csv(Global_Rs_prediction, "outputs/Global_Rs_prediction.csv", row.names = FALSE)
+# write.table(Global_Rs_prediction, "outputs/Global_Rs_prediction.txt",sep = ",", row.names = FALSE)
+```
+
