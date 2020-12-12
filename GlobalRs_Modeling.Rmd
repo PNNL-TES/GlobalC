@@ -13,37 +13,28 @@ OUTPUT_DIR <- "outputs/"
 DATA_DIR <- "data"
 # Create output and log folders if they do not exist
 if (!file.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
-
 library(kableExtra)
-# Load required packages
 library(data.table)
 library(lubridate)
 library(knitr)
 library(ggpubr)
-
 library(ggplot2)
 theme_set(theme_bw())
 library(cowplot)
 library(ggmap)
 library(maps)
 library(mapdata)
-# install.packages("ggExtra")
 library(ggExtra)
-
 library(tidyr)
 library(hexbin)
 library(dplyr)
-
-# install.packages('ggbeeswarm')
 library(ggbeeswarm)
 library(ggridges)
-
 # Source all needed functions
 source("functions.R")
 source("functions-stats.R")
 source("functions-resampling.R")
 source("functions-calc_bootstrap.R")
-
 library(randomForest)
 library(patchwork)
 
@@ -57,14 +48,14 @@ knitr::opts_chunk$set(
 
 ## load data
 ```{r}
-readd(mgrsd_climate) -> mgrsd_climate 
-mgrsd_climate$EVI[mgrsd_climate$EVI < 0 & !is.na(mgrsd_climate$EVI)] <- 0
-
-readd(global_land) -> global_land
+drake::readd(mgrsd_climate) -> mgrsd_climate #read mgrsd data from drake (linked with environmental factors in drake)
+mgrsd_climate$EVI[mgrsd_climate$EVI < 0 & !is.na(mgrsd_climate$EVI)] <- 0 # for those EVI is null and < 0 (covered by snow etc), set to 0
+drake::readd(global_land) -> global_land # read global 0.5 by 0.5 resolution data for upscaling RF model to predict global RS
 ```
 
 ## prepare mgrsd for modeling
 ```{r}
+# Prepare mgrsd for RF modeling, need remove NA data, exclude Rs_annual < 0 value, and need to remove manupulation != "none"
 mgrsd_climate %>% 
   dplyr::select(Rs_Norm, Meas_Month2, Manipulation, Study_number, 
                 BM_aboveground, BM_belowground, N_dep_half_deg, bd_soilgrids, clay_soilgrids, soc_soilgrids, Pmonth, Tmonth, EVI) %>% 
@@ -75,7 +66,7 @@ mgrsd_climate %>%
 ```
 
 ## testing code
-### plot Rs_norm vs variables
+### plot Rs_norm vs all those 9 variables used in the RF model
 ```{r}
 plot_scatter <- function(){
   for(i in 4:ncol(sub_mgrsd)){
@@ -124,17 +115,20 @@ varImpPlot(rf)
 
 ```{r, fig.width=6, fig.height=8}
 # plot train vs test
+# Using RF model predict Rs_annual for train dataset and test dataset and evaluate the model performance
 train %>% 
   mutate(prediction = predict(rf)) ->
   train
 
-R2_train <- summary(lm(Rs_Norm ~ prediction, data = train))$r.squared %>% round(5)
+R2_train <- summary(lm(Rs_Norm ~ prediction, data = train))$r.squared %>% round(2)
 train %>% 
   ggplot(aes(prediction, Rs_Norm)) +
   geom_point(alpha = 0.25) +
   geom_smooth(method = "lm") +
   geom_abline(slope = 1, intercept = 0, col = "red", linetype = "dashed") +
-  ggtitle(paste0("Train data, R2=", R2_train, ", n=21,771(80%)")) +
+  ggtitle(paste0("(a) train data (n = 21771, 80%)")) +
+  annotate("text", x = 0, y = 27.5, label = paste0("italic(R) ^ 2"), parse = TRUE, col = "black", hjust = 0) +
+  annotate("text", x = 0.75, y = 27.5, label = paste0("=", R2_train), col = "black", hjust = 0) +
   labs(x = expression(Predicted~R[S]~(g~C~m^{2}~day^{-1})),
        y = expression(Measured~R[S]~(g~C~m^{2}~day^{-1}))) ->
   train_plot
@@ -143,13 +137,15 @@ test %>%
   mutate(prediction = predict(rf, test)) ->
   test
 
-R2_test <- summary(lm(Rs_Norm ~ prediction, data = test))$r.squared %>% round(5)
+R2_test <- summary(lm(Rs_Norm ~ prediction, data = test))$r.squared %>% round(2)
 test %>% 
   ggplot(aes(prediction, Rs_Norm)) +
   geom_point(alpha = 0.25) +
   geom_smooth(method = "lm") +
   geom_abline(slope = 1, intercept = 0, col = "red", linetype = "dashed") +
-  ggtitle(paste0("Test data, R2=", R2_test, ", n=5,443(20%)")) +
+  ggtitle(paste0("(b) test data (n = 5443, 20%)")) +
+  annotate("text", x = 0, y = 27.5, label = paste0("italic(R) ^ 2"), parse = TRUE, col = "black", hjust = 0) +
+  annotate("text", x = 0.6, y = 27.5, label = paste0("=", R2_test), col = "black", hjust = 0) +
   labs(x = expression(Predicted~R[S]~(g~C~m^{2}~day^{-1})),
        y = expression(Measured~R[S]~(g~C~m^{2}~day^{-1}))) ->
   test_plot
@@ -157,6 +153,7 @@ test %>%
 train_plot / test_plot
 ```
 
+## test the model performance by each month
 ```{r}
 # rf for each month
 rf_month <- function(mon){
@@ -194,7 +191,7 @@ rf_Dec <- rf_month(12)
 
 ```
 
-## test RF model by month
+## Create a functiin to test RF model by month
 ```{r}
 eval_mon <- function(mon) {
   mon_mgrsd <- sub_mgrsd %>% filter(Meas_Month2 == mon) %>% 
@@ -243,9 +240,8 @@ for(i in 1:12) {
   eval_mon(i)}
 ```
 
-
+## QA/QC to check pottential issues (no problem was found)
 ```{r}
-# QA/QC
 sub_mgrsd %>% filter(Meas_Month2 == 6) -> mon_mgrsd
 
 sub_mgrsd$EVI %>% min()
@@ -283,7 +279,7 @@ raster("data/EVIs/EVI_mean_month_1.tif") %>%
   image()
 ```
 
-## Predict global Rs by month
+## Prepare global 0.5 resolution data for predicting global Rs by month
 ```{r}
 hist(global_land$EVI_1)
 global_land %>% 
@@ -307,6 +303,7 @@ global_land %>%
 
 ## Handle NA values
 ```{r}
+# cells with no temperature records removed and save to global_sub
 global_land %>% 
   filter(!is.na(tmean6)) ->
   global_sub
@@ -324,7 +321,7 @@ global_sub %>%
   filter(is.na(prec1) | is.na(prec2) | is.na(prec3)| is.na(prec4) | is.na(prec5)| is.na(prec6)
          | is.na(prec7)| is.na(prec8)| is.na(prec9)| is.na(prec10)| is.na(prec11) | is.na(prec12))
 
-## EVI NA issue
+## Take care of the EVI NA issue
 global_sub$EVI_1[is.nan(global_sub$EVI_1) | global_sub$EVI_1 < 0] = 0
 global_sub$EVI_2[is.nan(global_sub$EVI_2) | global_sub$EVI_2 < 0] = 0
 global_sub$EVI_3[is.nan(global_sub$EVI_3) | global_sub$EVI_3 < 0] = 0
@@ -519,6 +516,7 @@ hist(Global_Rs_prediction$Rs_sd_mean)
 mean(Global_Rs_prediction$Rs_sd_mean)
 ```
 
+## Model evaluation: compare measured Rs vs predicted Rs from Jan to Dec
 ```{r}
 # Winter
 bind_rows(
