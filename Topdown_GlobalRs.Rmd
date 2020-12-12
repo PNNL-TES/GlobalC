@@ -941,6 +941,9 @@ gpp_figure2_data %>%
   ggplot(aes(value, fill = GPP_type)) +
   theme_cowplot() +
   geom_density(stat = "density", alpha = 0.65) +
+  geom_point(aes(x = 157, y = 0.0025), shape = 16,
+             size = 5, col = "blue", show.legend = FALSE) +
+  theme(legend.position = c(0.7, 0.2)) +
   theme(legend.position = c(0.75, 0.35)) +
   # coord_cartesian(xlim = c(70, 200)) +
   scale_fill_manual("",
@@ -961,6 +964,8 @@ rs_figure_data %>%
   ggplot(aes(value, fill = Rs_type)) +
   theme_cowplot() +
   geom_density(stat = "density", alpha = 0.65) +
+  geom_point(aes(x = 93, y = 0.005), shape = 16,
+             size = 5, col = "blue", show.legend = FALSE) +
   theme(legend.position = c(0.7, 0.2)) +
   # coord_cartesian(xlim = c(50, 120)) +
   scale_fill_manual("",
@@ -992,30 +997,39 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
   ylab(expression(Pg ~ C ~ yr^-1)) +
   annotate("segment",
     x = mean(rs_results$GPP_raw), xend = mean(rs_results$GPP_raw),
-    y = 50, yend = mean(rs_results$Rs_topdown2),
+    y = mean(rs_results$Rs_topdown2), yend = 100,
     color = "#E41A1C", linetype = 1) +
   annotate("segment",
-    x = mean(rs_results$GPP_raw), xend = 75,
+    x = mean(rs_results$GPP_raw), xend = 200,
     y = mean(rs_results$Rs_topdown2), yend = mean(rs_results$Rs_topdown2),
     arrow = myarrow, color = "#E41A1C", linetype = 1) +
   annotate("segment",
-    x = 75, xend = mean(gpp_results$GPP2),
+    x = 200, xend = mean(gpp_results$GPP2),
     y = mean(gpp_results$Rs_raw), yend = mean(gpp_results$Rs_raw),
     color = "skyblue", linetype = 1 ) +
   annotate("segment",
     x = mean(gpp_results$GPP2), xend = mean(gpp_results$GPP2),
-    y = mean(gpp_results$Rs_raw), yend = 50,
+    y = mean(gpp_results$Rs_raw), yend = 100,
     arrow = myarrow, color = "skyblue", linetype = 1) +
-  annotate("text",
-    x = c(107, 155), y = 47.5, size = 4, hjust = "inward", fontface = "bold",
-    label = c(expression(GPP[lit]), expression(GPP[Rs]))) +
-  annotate("text",
-    x = 70, y = c(66, 86), size = 4, hjust = "inward", fontface = "bold",
-    label = c(expression(Rs[GPP]), expression(Rs[lit])),
-    angle = 90)
+  # Rs = 93, GPP = 157
+  annotate("segment",
+    x = 200, xend = 157,
+    y = 93, yend = 93,
+    color = "blue", linetype = 1 ) +
+  annotate("segment",
+    x = 157, xend = 157,
+    y = 93, yend = 100,
+    arrow = myarrow, color = "blue", linetype = 1)
+  # annotate("text",
+  #   x = c(107, 155), y = 47.5, size = 4, hjust = "inward", fontface = "bold",
+  #   label = c(expression(GPP[lit]), expression(GPP[Rs]))) +
+  # annotate("text",
+  #   x = 70, y = c(66, 86), size = 4, hjust = "inward", fontface = "bold",
+  #   label = c(expression(Rs[GPP]), expression(Rs[lit])),
+  #   angle = 90)
 
 print(p_joint)
-ggsave("outputs/Figure2.png", width = 8, height = 6)
+# ggsave("outputs/Figure2.png", width = 8, height = 6)
 
 # Combine three panels together
 library(patchwork)
@@ -1025,6 +1039,12 @@ dens1 + plot_spacer() + p_joint + dens2 +
       nrow = 2, 
       widths = c(4, 2.5),
       heights = c(2.5, 4) ) 
+
+## find out when Rs ~= 93, GPP
+joint$Source %>% unique()
+joint %>% dplyr::filter(Source == "Rs-driven GPP" & Rs < 94 & Rs > 92) %>% 
+  group_by(Source) %>% 
+  summarise(GPPmean = mean(GPP))
 
 ```
 
@@ -1318,11 +1338,9 @@ bootstrap_raw <- tibble(
 ```
 
 
-
 ```{r}
 bootstrap_raw$Rs_raw %>% 
   mean()
 ```
-
 
 
