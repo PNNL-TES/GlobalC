@@ -995,7 +995,7 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
         axis.text=element_text(size=12),
         axis.title=element_text(size=12,face="bold") ) +
   guides(col = guide_legend(nrow = 2, byrow = TRUE)) +
-  xlab(expression(Pg ~ C ~ yr^-1)) +
+  xlab(expression(GPP~(Pg ~ C ~ yr^-1))) +
   ylab(expression(Pg ~ C ~ yr^-1)) +
   annotate("segment",
     x = mean(rs_results$GPP_raw), xend = mean(rs_results$GPP_raw),
