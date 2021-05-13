@@ -195,6 +195,7 @@ p_gpp <- ggplot(GPP, aes(Year, GPP)) +
   geom_errorbar(aes(ymin = GPP - SD, ymax = GPP + SD), na.rm = TRUE) +
   geom_smooth(method = "lm") +
   theme_cowplot() +
+  xlim(1980, 2020) +
   ylab(expression(GPP ~ (Pg ~ C ~ yr^-1)))
 p_gpp_marg <- ggMarginal(p_gpp, type = "densigram", margins = "y", fill = "red")
 
@@ -204,6 +205,7 @@ p_rs <- ggplot(GlobalRs, aes(Pub_year, Rs)) +
   geom_smooth(method = "lm") +
   theme_cowplot() +
   xlab("Year") +
+  xlim(1980, 2020) +
   ylab(expression(R[S] ~ (Pg ~ C ~ yr^-1)))
 p_rs_marg <- ggMarginal(p_rs, type = "densigram", margins = "y", fill = "red")
 ```
