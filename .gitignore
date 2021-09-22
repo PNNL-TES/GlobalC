@@ -61,4 +61,4 @@ old/
 papers/
 AGU/
 data/extdata/
-
+*.ini

@@ -1,0 +1,941 @@
+---
+title: "NC_revision"
+author: "Jinshi"
+date: "5/26/2021"
+output: html_document
+Note: before run this Rmd file, need to run "Topdown_GlobalRs.Rmd" first 
+---
+
+```{r preliminaries, message=FALSE, echo=FALSE}
+# Constants
+OUTPUT_DIR <- "outputs/"
+DATA_DIR <- "data"
+# Create output and log folders if they do not exist
+if (!file.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
+
+library(kableExtra)
+# Load required packages
+library(data.table)
+library(lubridate)
+library(knitr)
+library(ggpubr)
+
+library(ggplot2)
+theme_set(theme_bw())
+library(cowplot)
+library(ggmap)
+library(maps)
+library(mapdata)
+# install.packages("ggExtra")
+library(ggExtra)
+
+library(tidyr)
+library(hexbin)
+library(dplyr)
+
+# install.packages('ggbeeswarm')
+library(ggbeeswarm)
+library(ggridges)
+library(patchwork)
+
+# Source all needed functions
+source("functions.R")
+source("functions-stats.R")
+source("functions-resampling.R")
+source("functions-calc_bootstrap.R")
+
+# Set chunks defaults; these options will be applied to all subsequent chunks
+knitr::opts_chunk$set(
+  results = "hide", message = TRUE, include = TRUE,
+  echo = FALSE, warning = FALSE,
+  fig.height = 4, fig.width = 8, cache = FALSE
+)
+```
+
+```{r load data}
+# input data
+read_file <- function(x) read.csv(file.path(DATA_DIR, x), comment.char = "#", stringsAsFactors = FALSE)
+
+GPP <- read_file("GlobalGPP_Sum.csv") # GPP estimates from published paper
+GPP %>% filter(Year >= 1980 & Flag != "Model") -> GPP
+
+GlobalRs <- read_file("GlobalRs.csv") # estimates of global Rs
+GlobalRs %>% filter(Pub_year > 1980) -> GlobalRs
+
+# aggregate by year to test the temporal representativeness issue
+GPP %>% dplyr::select(Year, GPP, SD) %>% 
+  group_by(Year) %>% 
+  summarise_at(vars(GPP, SD), list(mean), na.rm=T) -> GPP_agg
+
+GPP %>% dplyr::select(Group2, GPP, SD) %>% 
+  group_by(Group2) %>% 
+  summarise_at(vars(GPP, SD), list(mean), na.rm=T) -> GPP_group
+
+GPP %>% dplyr::select(Year, Group2, GPP, SD) %>% 
+  group_by(Year, Group2) %>% 
+  summarise_at(vars(GPP, SD), list(mean), na.rm=T) -> GPP_agg_group
+
+GlobalRs %>% dplyr::select(Pub_year, Rs, SD) %>% 
+  group_by(Pub_year) %>% 
+  summarise_at(vars(Rs, SD), list(mean), na.rm=T) -> GlobalRs_agg
+
+```
+
+```{r bootstrap Rs_raw and GPP_raw}
+## bootstrap and test how data temporal uneven distribution affect global Rs and GPP
+set.seed(20210526)
+bootstrap_data2 <- tibble(
+  Rs_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GlobalRs$Rs, GlobalRs$SD),
+  Rs_raw_agg = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GlobalRs_agg$Rs, GlobalRs_agg$SD),
+  GPP_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GPP$GPP, GPP$SD),
+  GPP_raw_agg = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GPP_agg$GPP, GPP_agg$SD),
+  GPP_raw_group = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GPP_group$GPP, GPP_group$SD),
+)
+
+bootstrap_data2$Rs_raw_agg %>% mean()
+bootstrap_data2$GPP_raw_agg %>% mean()
+```
+
+```{r plot and show representiveness analysis results}
+## rs_results is from "Topdown_GlobalRs.Rmd"
+## plot and show how data temporal uneven distribution affect global Rs and GPP
+bind_rows(
+  rs_results %>% select(`value` = Rs_topdown2) %>% 
+  mutate(Rs_type = "Rs_gpp"),
+  bootstrap_data2 %>%
+  select(`Rs` = Rs_raw, `Rs[agg]` = Rs_raw_agg) %>%
+  gather(Rs_type)) %>% 
+  ggplot(aes(value, fill = Rs_type)) +
+  theme_cowplot() +
+  geom_density(stat = "density", alpha = 0.65) +
+  theme(legend.position = c(0.75, 0.50)) +
+  coord_cartesian(xlim = c(50, 110)) +
+  scale_fill_manual("",
+    labels = c(expression(Rs[lit]), expression(Rs[lit-agg]), expression(Rs[GPP])),
+    values=c("skyblue", "blue", "#E41A1C")
+  ) +
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0
+  ) +
+  ylab("Density") +
+  xlab(expression(Rs ~ (Pg ~ C ~ yr^{-1}))) -> Rs_lit_plot
+
+## gpp_results is from "Topdown_GlobalRs.Rmd"
+bind_rows(
+  gpp_results %>% select(`value` = GPP2) %>% 
+  mutate(GPP_type = "GPP_Rs"),
+  bootstrap_data2 %>%
+  select(`GPP` = GPP_raw, `GPP[agg]` = GPP_raw_agg) %>%
+  gather(GPP_type)) %>% 
+  ggplot(aes(value, fill = GPP_type)) +
+  theme_cowplot() +
+  geom_density(stat = "density", alpha = 0.65) +
+  theme(legend.position = c(0.70, 0.50)) +
+  coord_cartesian(xlim = c(80, 210)) +
+  scale_fill_manual("",
+    labels = c(expression(GPP[lit]), expression(GPP[lit-agg]), expression(GPP[Rs])),
+    values=c("#E41A1C", "darkred", "skyblue")
+  ) +
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0
+  ) +
+  ylab("Density") +
+  xlab(expression(GPP ~ (Pg ~ C ~ yr^{-1}))) -> GPP_lit_plot
+  
+```
+
+
+```{r gpp and rs aggregate by year}
+## plot rs and gpp vs year (both raw data and aggregated by year)
+p_gpp <- ggplot(GPP, aes(Year, GPP)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = GPP - SD, ymax = GPP + SD), na.rm = TRUE) +
+  geom_smooth(method = "lm") +
+  theme_cowplot() +
+  xlim(1980, 2020) +
+  ylab(expression(GPP ~ (Pg ~ C ~ yr^-1)))
+
+p_rs <- ggplot(GlobalRs, aes(Pub_year, Rs)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = Rs - SD, ymax = Rs + SD), na.rm = TRUE) +
+  geom_smooth(method = "lm") +
+  theme_cowplot() +
+  xlab("Year") +
+  xlim(1980, 2020) +
+  ylab(expression(R[S] ~ (Pg ~ C ~ yr^-1)))
+
+p_gpp_agg <- ggplot(GPP_agg, aes(Year, GPP)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = GPP - SD, ymax = GPP + SD), na.rm = TRUE) +
+  geom_smooth(method = "lm") +
+  theme_cowplot() +
+  xlim(1980, 2020) +
+  ylab(expression(GPP ~ (Pg ~ C ~ yr^-1)))
+
+p_rs_agg <- ggplot(GlobalRs_agg, aes(Pub_year, Rs)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = Rs - SD, ymax = Rs + SD), na.rm = TRUE) +
+  geom_smooth(method = "lm") +
+  theme_cowplot() +
+  xlab("Year") +
+  xlim(1980, 2020) +
+  ylab(expression(R[S] ~ (Pg ~ C ~ yr^-1)))
+
+```
+```{r plot representativeness results, fig.height=9, fig.width=8}
+(p_gpp | p_rs) / (p_gpp_agg | p_rs_agg) / (GPP_lit_plot | Rs_lit_plot) +
+  plot_annotation(tag_levels = 'a')
+
+# ggsave("outputs/FigureS7.png", width = 9, height = 8)
+```
+
+
+```{r ratio sites spatial coverage plot, fig.height=8, fig.width=9}
+# plot and show the spatial coverage of ratio data compared with MAT and MAP
+
+UDel_climate <- read_file("UDel_summarized_climate.csv")
+
+left_join(Froot %>% mutate(Latitude = round(Latitude*2)/2+0.25, 
+                 Longitude = round(Longitude*2)/2+0.25),
+          UDel_climate,
+          by = c("Latitude", "Longitude")) -> Froot_del
+
+left_join(sub_srdb %>% mutate(Latitude = round(Latitude*2)/2+0.25, 
+                 Longitude = round(Longitude*2)/2+0.25),
+          UDel_climate,
+          by = c("Latitude", "Longitude")) -> sub_srdb_del
+
+
+left_join(
+  srdb_v4 %>%
+    select(Ecosystem_type, Leaf_habit, Latitude, Longitude, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>%
+    filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER)) %>%
+    mutate(
+      Latitude = round(Latitude*2)/2+0.25, 
+      Longitude = round(Longitude*2)/2+0.25,
+      ER = if_else(is.na(ER), GPP, ER), # assume NEP very small
+      RaGPP_ratio = (ER - NPP) / GPP) %>%
+    filter(RaGPP_ratio > 0, RaGPP_ratio < 1, !is.na(Ecosystem_type)),
+  UDel_climate,
+  by = c("Latitude", "Longitude")) -> sub_raGPP_del
+
+## plot Rroot:Ra representative
+bind_rows(
+  Froot_del %>% select(MAT, MAP) %>% mutate(Source = "Froot"),
+  UDel_climate %>% select(MAT, MAP) %>% mutate(Source = "Global")) %>% 
+  ggplot(aes(x = MAT, fill = factor(Source))) +
+  theme(legend.position = c(0.25,0.75)) +
+  # geom_violin(draw_quantiles = c(0.5))
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(breaks = c("Froot", "Global"),
+                    labels = c(expression(R[root]~':'~R[A]), expression(Global)),
+                    values = c("chocolate", "coral4"))+
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0)+
+  labs(x=element_blank(), y=expression(Density)) ->
+  rep_rroot_ra_mat
+
+bind_rows(
+  Froot_del %>% select(MAT, MAP) %>% mutate(Source = "Froot"),
+  UDel_climate %>% select(MAT, MAP) %>% mutate(Source = "Global")) %>% 
+  ggplot(aes(x = MAP, fill = factor(Source))) +
+  theme(legend.position = c(0.75,0.75)) +
+  # geom_violin(draw_quantiles = c(0.5))
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(breaks = c("Froot", "Global"),
+                    labels = c(expression(R[root]~':'~R[A]), expression(Global)),
+                    values = c("skyblue", "blue"))+
+  xlim(c(0,5000))+
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0)+
+  labs(x=element_blank(), y=expression(Density)) ->
+  rep_rroot_ra_map
+
+## plot rroot:rs representative
+bind_rows(
+  sub_srdb_del %>% select(MAT, MAP) %>% mutate(Source = "RrRs"),
+  UDel_climate %>% select(MAT, MAP) %>% mutate(Source = "Global")) %>% 
+  ggplot(aes(x = MAT, fill = factor(Source))) +
+  theme(legend.position = c(0.25,0.75)) +
+  # geom_violin(draw_quantiles = c(0.5))
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(breaks = c("RrRs", "Global"),
+                    labels = c(expression(R[root]~':'~R[S]), expression(Global)),
+                    values = c("chocolate", "coral4"))+
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0)+
+  labs(x=element_blank(), y=expression(Density)) ->
+  rep_rroot_rs_mat
+
+bind_rows(
+  sub_srdb_del %>% select(MAT, MAP) %>% mutate(Source = "RrRs"),
+  UDel_climate %>% select(MAT, MAP) %>% mutate(Source = "Global")) %>% 
+  ggplot(aes(x = MAP, fill = factor(Source))) +
+  theme(legend.position = c(0.75,0.75)) +
+  # geom_violin(draw_quantiles = c(0.5))
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(breaks = c("RrRs", "Global"),
+                    labels = c(expression(R[root]~':'~R[S]), expression(Global)),
+                    values = c("skyblue", "blue"))+
+  xlim(c(0,5000)) +
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0)+
+  labs(x=element_blank(), y=expression(Density)) ->
+  rep_rroot_rs_map
+
+## plot ra:GPP representative
+bind_rows(
+  sub_raGPP_del %>% select(MAT, MAP) %>% mutate(Source = "RaGPP"),
+  UDel_climate %>% select(MAT, MAP) %>% mutate(Source = "Global")) %>% 
+  ggplot(aes(x = MAT, fill = factor(Source))) +
+  theme(legend.position = c(0.25,0.75)) +
+  # geom_violin(draw_quantiles = c(0.5))
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(breaks = c("RaGPP", "Global"),
+                    labels = c(expression(R[A]~':'~GPP), expression(Global)),
+                    values = c("chocolate", "coral4"))+
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0)+
+  labs(x=expression(MAT~"("~degree~C~")"), y=expression(Density)) ->
+  rep_ra_gpp_mat
+
+bind_rows(
+  sub_raGPP_del %>% select(MAT, MAP) %>% mutate(Source = "RaGPP"),
+  UDel_climate %>% select(MAT, MAP) %>% mutate(Source = "Global")) %>% 
+  ggplot(aes(x = MAP, fill = factor(Source))) +
+  theme(legend.position = c(0.75,0.75)) +
+  # geom_violin(draw_quantiles = c(0.5))
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(breaks = c("RaGPP", "Global"),
+                    labels = c(expression(R[A]~':'~GPP), expression(Global)),
+                    values = c("skyblue", "blue"))+
+  xlim(c(0,5000)) +
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0)+
+  labs(x=expression(MAP~"("~mm~yr^{-1}~")"), y=expression(Density)) ->
+  rep_ra_gpp_map
+
+
+(rep_rroot_rs_mat | rep_rroot_rs_map) / (rep_rroot_ra_mat | rep_rroot_ra_map) / (rep_ra_gpp_mat | rep_ra_gpp_map) +
+  plot_annotation(tag_levels = 'a')
+
+# ggsave("outputs/FigureSX.png", width = 9, height = 8)
+
+```
+
+```{r ratio sites spatial coverage plot using fluxcom gpp, fig.height=8, fig.width=8}
+# plot and show the spatial coverage of ratio data compared with MAT and MAP
+
+Fluxcon_gpp <- read_file("Fluxcom_summarized_GPP.csv")
+
+left_join(Froot %>% mutate(Latitude = round(Latitude*2)/2+0.25, 
+                 Longitude = round(Longitude*2)/2+0.25),
+          Fluxcon_gpp,
+          by = c("Latitude", "Longitude")) -> Froot_fluxcom
+
+left_join(sub_srdb %>% mutate(Latitude = round(Latitude*2)/2+0.25, 
+                 Longitude = round(Longitude*2)/2+0.25),
+          Fluxcon_gpp,
+          by = c("Latitude", "Longitude")) -> sub_srdb_fluxcom
+
+
+left_join(
+  srdb_v4 %>%
+    select(Ecosystem_type, Leaf_habit, Latitude, Longitude, Rs_annual, Ra_annual, Rh_annual, ER, GPP, NPP) %>%
+    filter(!is.na(GPP) | !is.na(NPP) | !is.na(ER)) %>%
+    mutate(
+      Latitude = round(Latitude*2)/2+0.25, 
+      Longitude = round(Longitude*2)/2+0.25,
+      ER = if_else(is.na(ER), GPP, ER), # assume NEP very small
+      RaGPP_ratio = (ER - NPP) / GPP) %>%
+    filter(RaGPP_ratio > 0, RaGPP_ratio < 1, !is.na(Ecosystem_type)),
+  Fluxcon_gpp,
+  by = c("Latitude", "Longitude")) -> sub_raGPP_fluxcom
+
+## plot Rroot:Ra representative
+bind_rows(
+  Froot_fluxcom %>% select(FLUXCOM_GPP) %>% mutate(Source = "Froot"),
+  Fluxcon_gpp %>% select(FLUXCOM_GPP) %>% mutate(Source = "Global")) %>% 
+  ggplot(aes(x = FLUXCOM_GPP, fill = factor(Source))) +
+  theme(legend.position = c(0.75,0.75)) +
+  # geom_violin(draw_quantiles = c(0.5))
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(breaks = c("Froot", "Global"),
+                    labels = c(expression(R[root]~':'~R[A]), expression(Global)),
+                    values = c("chocolate", "coral4"))+
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0)+
+  labs(x=element_blank(), y=expression(Density)) ->
+  rep_rroot_ra_gpp
+
+## regresstion between ratios and GPP
+lm(Froot_fluxcom$Froot ~ Froot_fluxcom$FLUXCOM_GPP) %>% summary()
+
+Froot_fluxcom %>% select(Froot, FLUXCOM_GPP) %>% 
+  ggplot(aes(FLUXCOM_GPP, Froot)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0)+
+  labs(x=element_blank(), y=expression(R[root]~':'~R[A])) ->
+  rep_froot_regression
+
+## how this relationship affect GPPrs
+
+ggplot(rs_results, aes(Froot2, Rs_topdown)) +
+  geom_hex() +
+  scale_fill_gradient(low = "gray", high = "blue") +
+  geom_smooth(method = "lm") +
+  # xlab(expression(R[root]~':'~R[S])) +
+  # ylab(expression(Rs[GPP] ~ (Pg ~ C ~ yr^{-1}))) +
+  labs(x = element_blank(), y = element_blank()) +
+  theme(legend.position = "none") -> rep_Rroot_Rsgpp_regression
+
+ggdraw() +
+  draw_plot(rep_froot_regression) +
+  draw_plot(rep_Rroot_Rsgpp_regression, x = 0.45, y = 0.5, width = 0.5, height = 0.4) ->
+  rep_froot_regression_draw
+
+
+
+## plot rroot:rs representative
+bind_rows(
+  sub_srdb_fluxcom %>% select(FLUXCOM_GPP) %>% mutate(Source = "RrRs"),
+  Fluxcon_gpp %>% select(FLUXCOM_GPP) %>% mutate(Source = "Global")) %>% 
+  ggplot(aes(x = FLUXCOM_GPP, fill = factor(Source))) +
+  theme(legend.position = c(0.75,0.75)) +
+  # geom_violin(draw_quantiles = c(0.5))
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(breaks = c("RrRs", "Global"),
+                    labels = c(expression(R[root]~':'~R[S]), expression(Global)),
+                    values = c("chocolate", "coral4"))+
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0)+
+  labs(x=element_blank(), y=expression(Density)) ->
+  rep_rroot_rs_gpp
+
+## regresstion between ratios and GPP
+lm(sub_srdb_fluxcom$RC_annual ~ sub_srdb_fluxcom$FLUXCOM_GPP) %>% summary()
+
+sub_srdb_fluxcom %>% select(RC_annual, FLUXCOM_GPP) %>% 
+  ggplot(aes(FLUXCOM_GPP, RC_annual)) +
+  geom_point() +
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0)+
+  labs(x=element_blank(), y=expression(R[root]~':'~R[S])) ->
+  rep_Rroot_regression
+
+
+## plot ra:GPP representative
+bind_rows(
+  sub_raGPP_fluxcom %>% select(FLUXCOM_GPP) %>% mutate(Source = "RaGPP"),
+  Fluxcon_gpp %>% select(FLUXCOM_GPP) %>% mutate(Source = "Global")) %>% 
+  ggplot(aes(x = FLUXCOM_GPP, fill = factor(Source))) +
+  theme(legend.position = c(0.75,0.75)) +
+  # geom_violin(draw_quantiles = c(0.5))
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(breaks = c("RaGPP", "Global"),
+                    labels = c(expression(R[A]~':'~GPP), expression(Global)),
+                    values = c("chocolate", "coral4"))+
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0)+
+  labs(x=expression(GPP~"("~g~C~m^{-2}~day^{-1}~")"), y=expression(Density)) ->
+  rep_ra_gpp_gpp
+
+## regresstion between ratios and GPP
+lm(sub_raGPP_fluxcom$RaGPP_ratio ~ sub_raGPP_fluxcom$FLUXCOM_GPP) %>% summary()
+
+sub_raGPP_fluxcom %>% select(RaGPP_ratio, FLUXCOM_GPP) %>% 
+  ggplot(aes(FLUXCOM_GPP, RaGPP_ratio)) +
+  geom_point() +
+  # geom_smooth(method = "lm") +
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0)+
+  labs(x=expression(GPP~"("~g~C~m^{-2}~day^{-1}~")"), y=expression(R[A]~':'~GPP)) ->
+  rep_RaGPP_regression  
+
+
+(rep_rroot_rs_gpp | rep_Rroot_regression) / (rep_rroot_ra_gpp | rep_froot_regression) / (rep_ra_gpp_gpp | rep_RaGPP_regression) +
+  plot_annotation(tag_levels = 'a')
+
+# ggsave("outputs/FigureSX.png", width = 9, height = 8)
+
+```
+
+
+```{r GPP by group plot}
+# plot gpp by different group category
+GPP %>% ggplot(aes(x = Group2, y = GPP, fill = as.factor(Group2))) +
+  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) +
+  geom_jitter(shape = 16, position = position_jitter(0.2), col = "gray") +
+  # geom_boxplot(width = 0.1) +
+  theme(legend.title = element_blank()) +
+  scale_fill_brewer(palette="Spectral") +
+  xlab("GPP by different groups") +
+  ylab(expression(GPP ~ "(Pg C" ~ yr^{-1} ~ ")")) -> gpp_by_group
+```
+
+
+```{r gpp group and its affect}
+## gpp_results is from "Topdown_GlobalRs.Rmd"
+## plot and show how aggregating through group could affect gpp bootdtrap output
+
+bind_rows(
+  gpp_results %>% select(`value` = GPP2) %>% 
+  mutate(GPP_type = "GPP_Rs"),
+  bootstrap_data2 %>%
+  select(`GPP` = GPP_raw, `GPP[group]` = GPP_raw_group) %>%
+  gather(GPP_type)) %>% 
+  ggplot(aes(value, fill = GPP_type)) +
+  geom_density(stat = "density", alpha = 0.65) +
+  # theme(legend.position = c(0.70, 0.50)) +
+  coord_cartesian(xlim = c(80, 210)) +
+  scale_fill_manual("",
+    labels = c(expression(GPP[lit]), expression(GPP[lit-group]), expression(GPP[Rs])),
+    values=c("#E41A1C", "darkred", "skyblue")
+  ) +
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0
+  ) +
+  ylab("Density") +
+  xlab(expression(GPP ~ (Pg ~ C ~ yr^{-1}))) -> GPP_lit_group_plot
+```
+
+```{r outputs gpp group affect result}
+gpp_by_group / GPP_lit_group_plot +
+  plot_annotation(tag_levels = 'a')
+# ggsave("outputs/FigureSX5.png", width = 8, height = 6)
+```
+
+Presumably, as a matter of mathematics, the ratio of global Rs to global GPP should be the linear combination (sum) of all terrestrial points Neither SRDB nor FLUXNET is an unbiased sample of the land surface, but it may be instructive to look at the Rs:GPP for three data sources:
+* Global GPP estimates, comparing them against the mean Rs estimate (~85 Pg C);
+* the SRDB itself, for sites at which both GPP and Rs were measured;
+* and FLUXNET2015 Tier 1, using Rs data measured very close to the towers.
+
+```{r, site-ratios, results='show'}
+topdown <- expand.grid(GPP = GPP$GPP, Rs = GlobalRs$Rs)
+topdown$Source <- paste0("Rs and GPP\nfrom the literature\n(N = ", nrow(topdown), ")")
+topdown$Type <- "Global"
+topdown$Scale <- "Global scale"
+topdown_mean <- mean(topdown$Rs / topdown$GPP)
+
+srdb_v4 %>%
+  filter(!is.na(GPP), !is.na(Rs_annual), Ecosystem_state != "Managed") %>%
+  select(Rs = Rs_annual, GPP, Biome, Ecosystem_type) ->
+srdb
+srdb$Source <- paste0("SRDB\n(N = ", nrow(srdb), ")")
+srdb$Type <- "Observations"
+srdb$Scale <- "Ecosystem scale"
+
+read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>%
+  select(Biome, Ecosystem_type, FLUXNET_SITE_ID, GPP = gpp_fluxnet, Rs = Rs_annual) %>%
+  filter(!is.na(GPP), !is.na(Rs)) ->
+fluxnet
+fluxnet$Source <- paste0("FLUXNET\n(N = ", nrow(fluxnet), ")")
+fluxnet$Type <- "Observations"
+fluxnet$Scale <- "Ecosystem scale"
+
+cmip6_global_data_file <- "cmip/CMIP6_annual_RstoGPP.csv"
+if (file.exists(cmip6_global_data_file)) {
+  read.csv(cmip6_global_data_file, stringsAsFactors = FALSE) %>%
+    as_tibble() %>%
+    filter(year >= 2005) %>%
+    group_by(model, experiment, ensemble) %>%
+    summarise(GPP = mean(GPP), Rs = mean(Rs)) %>%
+    ungroup() ->
+  model_global_ratios
+
+  model_global_ratios %>%
+    mutate(
+      Scale = "Global scale",
+      Source = paste0("CMIP6\n(N = ", nrow(model_global_ratios), ")"),
+      Type = "Models"
+    ) ->
+  cmip_global
+} else {
+  cmip_global <- data.frame(
+    Source = "CMIP6\n(N = 0)", Scale = "Global",
+    Type = "Models", stringsAsFactors = FALSE
+  )
+}
+
+cmip6_local_data_file <- "cmip/CMIP6_LatLon.csv"
+if (file.exists(cmip6_local_data_file)) {
+  read.csv(cmip6_local_data_file, stringsAsFactors = FALSE) %>%
+    as_tibble() %>% 
+     group_by(model, experiment, ensemble, Longitude, Latitude) %>%
+    summarise(GPP = mean(GPP), Rs = mean(Rs)) %>%
+    ungroup() -> 
+  cmip6_local_data
+
+  cmip6_local_data %>%
+    select(experiment, model, ensemble) %>%
+    distinct() %>%
+    nrow() ->
+  samples
+
+  cmip6_local_data %>%
+    mutate(
+      Scale = "Ecosystem scale",
+      Source = paste0("CMIP6\n(N = ", samples, ")"),
+      Type = "Models"
+    ) ->
+  cmip_local
+} else {
+  cmip_local <- data.frame(
+    Source = "CMIP6\n(N = 0)",
+    Scale = "Ecosystem scale",
+    Type = "Models",
+    stringsAsFactors = FALSE
+  )
+}
+
+bind_rows(topdown, srdb, fluxnet, cmip_global, cmip_local) %>%
+  mutate(
+    Ratio = Rs / GPP,
+    Source = factor(Source, unique(Source)[c(2, 3, 5, 4, 1)])
+  ) ->
+ratios
+
+ratios %>%
+  group_by(Source) %>%
+  summarise(
+    Ratio_median = round(median(Ratio, na.rm = TRUE), 3),
+    Ratio_sd = round(sd(Ratio, na.rm = TRUE), 3)
+  ) 
+
+p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) +
+  geom_boxplot(show.legend = FALSE, col = "black", fill = "white", alpha = 1) +
+  geom_quasirandom(alpha = I(0.20)) +
+  scale_color_brewer(palette="Set1") +
+  geom_hline(yintercept = topdown_mean, linetype = 2, color = "red", alpha = 0.33) +
+  ylab(expression(Ratio ~ of ~ R[S] ~ to ~ GPP)) +
+  xlab("") +
+  coord_cartesian(ylim = c(0, 2)) +
+  facet_grid(~Scale, scales = "free_x") +
+  theme(strip.background = element_rect(fill = "white", linetype = "blank")) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+print(p_ratios)
+
+# ggsave("outputs/Figure2-1.png")
+
+# Test whether global group is significantly higher than others
+ratios %>%
+  select(Source, Ratio, Scale, Type) %>%
+  as_tibble() %>%
+  na.omit() %>%
+  mutate(globalcase = Type == "Global") ->
+ratiotest
+cat("Test whether global RS:GPP higher than all others:")
+wilcox.test(Ratio ~ globalcase, data = ratiotest, alternative = "less")
+cat("Test whether global RS:GPP higher than observations:")
+ratiotest_obs <- filter(ratiotest, Type %in% c("Global", "Observations"))
+wilcox.test(Ratio ~ globalcase, data = ratiotest_obs, alternative = "less")
+```
+
+# bootstrapping and show the representation affects
+
+```{r bootstrap-creation}
+# Bootstrap settings
+RESAMPLE <- method3
+RESAMPLE_noSD <- method1
+N_SAMPLES <- 10000
+sample_size <- 10
+QUANTILES <- c(0.025, 0.5, 0.975) # Generate mean and 95% CI
+set.seed(20190827)
+
+# Rs and GPP draws used by bootstrapping GPP and Rs blocks below
+bootstrap_data3 <- tibble(
+  Rs_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GlobalRs$Rs, GlobalRs$SD),
+  Rs_raw_agg = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GlobalRs_agg$Rs, GlobalRs_agg$SD),
+  GPP_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GPP$GPP, GPP$SD),
+  GPP_raw_agg_group = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GPP_agg_group$GPP, GPP_agg_group$SD),
+)
+
+sd(bootstrap_data3$Rs_raw_agg) # why is sd so small? not as expected
+sd(bootstrap_data3$GPP_raw_agg_group) # why is sd so small? not as expected
+```
+
+
+## Bootstrapping GPP
+```{r gpp-bootstrap}
+# Bottom-up approach to estimate GPP
+# Rroot = Rs * RC (Rroot to Rs ratio, from srdb)
+# Froot = Rroot / Ra (root autotrophic respiration to total autotrophic respiration fraction/ratio, calculation please see plot_Rroot_Ra_ratio function)
+# Fshoot = 1-Froot
+# FsFr = (1-Froot)/Froot (FsFr = Rshoot/Rroot ratio)
+# Ra = Rroot + Rshoot
+# GPP = NPP + Rroot + Rshoot
+
+# Step 1. Prepare samples of all variables that go into the GPP calculation
+bootstrap_data3 %>%
+  mutate(
+    NPP = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, NPP$NPP),
+
+    # Rroot-to Rs ratio (RC)
+    Rc_agr = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_agr_rc$RC_annual),
+
+    # forests are separated into 3 groups
+    Rc_df = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_df_rc$RC_annual),
+    Rc_ef = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_ef_rc$RC_annual),
+    Rc_mf = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_mf_rc$RC_annual),
+    # other ecosystems
+    Rc_gra = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_gra_rc$RC_annual),
+    Rc_shr = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_shr_rc$RC_annual),
+    # for other ecosystems we sample from all RC records
+    Rc_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_rest_rc$RC_annual),
+
+    # Rroot-to-Ra ratio (Froot)
+    Froot_df = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_df_froot),
+    Froot_ef = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_ef_froot),
+    Froot_mf = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_mf_froot),
+    # for other ecosystems we sample from all RC records
+    Froot_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_rest_froot),
+
+    Rc = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RC$RC_annual),
+
+    # Scenario 1: Froot not separated into different ecosystems
+    Froot = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, Froot$Froot)
+  ) -> bootstrap_gpp_draws
+
+# update the function to get Rs_gpp based on 
+calc_bootstrap_gpp_agg <- function(x) {
+  x %>%
+    mutate(
+      # Scenario 2: Rc separate into groups: agriculture, deciduous forest, grassland, etc
+      # all other ecosystems with obs<40, take samples from all RC records
+      # area of rest ecosystem = 1-sum(agriculture, forest, grassland, etc)
+      Rc2 = (Rc_agr * ag_area + Rc_df * df_area + Rc_ef * ef_area + Rc_mf * mf_area +
+               Rc_gra * gra_area + Rc_shr * shr_area + Rc_rest *
+               (1 - ag_area - df_area - ef_area - mf_area - gra_area - shr_area)),
+      
+      FsFr = (1 - Froot) / Froot, # calculate Rshoot to Rroot ratio of scenario 1
+      # Bottom up estimate of GPP, scenario 1
+      Rroot = Rs_raw * Rc, # root respiration
+      Rshoot = Rroot * FsFr, # shoot respiration
+      
+      # Scenario 2: separate into different ecosystems and weighted by area
+      # Froot %>% count(Ecosystem)
+      Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area +
+        Froot_rest * (1 - df_area - ef_area - mf_area),
+      FsFr2 = (1 - Froot2) / Froot2, # Rshoot to Rroot ratio of scenario 2
+      # Bottom up estimate of GPP, scenario 2
+      Rroot2 = Rs_raw * Rc2,
+      Rshoot2 = Rroot2 * FsFr2,
+      
+      # Bottom up estimate of GPP, scenario 4 - using aggregated Rs
+      Rroot4 = Rs_raw_agg * Rc2,
+      Rshoot4 = Rroot4 * FsFr2,
+      
+      GPP = NPP + Rroot + Rshoot, # scenario 1: GPP
+      GPP2 = NPP + Rroot2 + Rshoot2, # scenario 2: GPP2
+      GPP4 = NPP + Rroot4 + Rshoot4 # scenario 4: GPP4
+    )
+}
+# Now we can run the initial GPP bootstrapping
+gpp_results_agg <- calc_bootstrap_gpp_agg(bootstrap_gpp_draws)
+```
+
+## boottrapping Rs
+```{r rs-bootstrap}
+# topdown approach to estimate Rs
+# Ra = GPP * Ra_GPP_ratio (calculated based on data from a
+#   summary paper and from srdb; see plot_RaGPP function)
+# Ra = GPP - NPP (two approaches yield very similar results;
+#   we thus used the average of two estimates)
+
+# Step 1. Prepare samples of all variables that go into the Rs calculation
+bootstrap_data3 %>%
+  mutate(
+    # NPP and NPP consumed by fire etc.
+    NPP = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, NPP$NPP),
+
+    # Carbon comsumed by herbivores (mean:2.2, SD: 0.2), from
+    # Doughty et al., Agricultural net primary production in relation to that liberated by the extinction of Pleistocene mega-herbivores:
+    # an estimate of agricultural carrying capacity? ERL 5, 044001 (2010).
+    # https://iopscience.iop.org/article/10.1088/1748-9326/5/4/044001/meta
+    HerbComsum = rnorm(n = N_SAMPLES, mean = 2.2, sd = 0.2),
+    # Fire = sample(var_Fire$Amount_Pg, N_SAMPLES, replace = TRUE),
+    Fire = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, var_Fire$Amount_Pg, var_Fire$SD),
+    # Carbon going to terrestrial as carbon sink (mean = 2.1, SD = 0.28), from
+    # Le Quéré, C. et al. Global carbon budget 2015. Earth Syst. Sci. Data 7, 349–396 (2015).
+    sink = rnorm(n = N_SAMPLES, mean = 2.10, sd = 0.28),
+    # Dissolved organic carbon exports (Table S3)
+    DOC = rnorm(n = N_SAMPLES, mean = 2.3, sd = 0.25),
+    # Carbon of BVOCs (there is no SD information, take SD = Mean*0.1, see Table S3)
+    BVOCs = rnorm(n = N_SAMPLES, mean = 1.007, sd = 0.1),
+
+    # Step 2. Ra-to-GPP ratio boosting
+    # RaGpp = sample(var_RaGpp$RaGPP_ratio, N_SAMPLES, replace = TRUE),
+    RaGpp_df = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RaGpp_df),
+    RaGpp_ef = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RaGpp_ef),
+    RaGpp_mf = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RaGpp_mf),
+    RaGpp_gra = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RaGpp_gra),
+    # for other ecosystems, we use samples from all Froot
+    RaGpp_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_RaGpp$RaGPP_ratio),
+
+    # Step 3. Sampling Rroot-to-Ra ratio (Froot)
+    Froot_df = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_df_froot),
+    Froot_ef = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_ef_froot),
+    Froot_mf = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_mf_froot),
+    Froot_gra = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_gra_froot),
+    # for other ecosystems, we use samples from all Froot
+    Froot_rest = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, var_rest_froot)
+  ) ->
+bootstrap_rs_draws
+
+## update the bootstrap function for scenario 4
+# Do the static (no random draws) steps that calculate Rs
+# We define a function to re-use later for variance decomposition
+calc_bootstrap_rs_agg <- function(x) {
+  x %>%
+    mutate(
+      # Scenario 1
+      RaGpp = RaGpp_rest,
+      # Scenario 2
+      RaGpp2 = RaGpp_df * df_area + RaGpp_ef * ef_area + RaGpp_mf * mf_area +
+        RaGpp_gra * gra_area + RaGpp_rest * (1 - df_area - ef_area - mf_area - gra_area),
+      
+      # get Froot (weight by area of ecosystem type)
+      Froot2 = Froot_df * df_area + Froot_ef * ef_area + Froot_mf * mf_area +
+        Froot_rest * (1 - df_area - ef_area - mf_area),
+      
+      Ra1 = GPP_raw * RaGpp, # first way to calculate Ra, Ra = GPP * RaGPP
+      Ra2 = GPP_raw - NPP, # second way to calculate Ra, Ra = GPP - NPP
+      Ra3 = if_else(Ra2 < 0, Ra1, Ra2),
+      Ra_avg1 = (Ra1 + Ra3) / 2,
+      
+      Rroot = Ra_avg1 * Froot2,
+      Rshoot = Ra_avg1 * (1 - Froot2),
+      Rs_topdown = NPP - HerbComsum - Fire - sink - DOC - BVOCs + Rroot,
+      
+      # Scenario 2
+      Ra4 = GPP_raw * RaGpp2, # first way to calculate Ra, Ra = GPP * RaGPP
+      Ra_avg2 = (Ra4 + Ra3) / 2,
+      Rroot2 = Ra_avg2 * Froot2,
+      Rshoot2 = Ra_avg2 * (1 - Froot2),
+      Rs_topdown2 = NPP - HerbComsum - Fire - sink - DOC - BVOCs + Rroot2,
+      
+      
+      
+      # Scenario 4
+      Ra5 = GPP_raw_agg_group * RaGpp, # first way to calculate Ra, Ra = GPP * RaGPP
+      Ra6 = GPP_raw_agg_group - NPP, # second way to calculate Ra, Ra = GPP - NPP
+      Ra7 = if_else(Ra6 < 0, Ra5, Ra6),
+      
+      Ra8 = GPP_raw_agg_group * RaGpp2, # first way to calculate Ra, Ra = GPP * RaGPP
+      Ra_avg4 = (Ra8 + Ra7) / 2,
+      Rroot4 = Ra_avg4 * Froot2,
+      Rs_topdown4 = NPP - HerbComsum - Fire - sink - DOC - BVOCs + Rroot4
+    )
+}
+
+rs_results_agg <- calc_bootstrap_rs_agg(bootstrap_rs_draws)
+```
+
+
+```{r plot and show the representative final results}
+# plot 1
+gpp_results_agg %>%
+  select(`GPP[lit]` = GPP_raw, `GPP[Rs]` = GPP2) %>%
+  gather(GPP_type) %>% 
+  ggplot(aes(value, fill = GPP_type)) +
+  geom_density(stat = "density", alpha = 0.65) +
+  coord_cartesian(xlim = c(80, 210)) +
+  scale_fill_manual("",
+    labels = c(expression(GPP[lit]), expression(GPP[Rs])),
+    values=c("#E41A1C", "skyblue")
+  ) +
+  theme(
+    legend.position = c(0.80, 0.50),
+    legend.title = element_blank(),
+    legend.text.align = 0
+  ) +
+  ylab("Density") +
+  xlab(expression(GPP ~ (Pg ~ C ~ yr^{-1}))) -> GPP_plot1
+# print(GPP_plot1)
+
+# plot 2
+gpp_results_agg %>%
+  select(`GPP[agg]` = GPP_raw_agg_group, `GPP[Rs-agg]` = GPP4) %>%
+  gather(GPP_type) %>% 
+  ggplot(aes(value, fill = GPP_type)) +
+  geom_density(stat = "density", alpha = 0.65) +
+  coord_cartesian(xlim = c(80, 210)) +
+  scale_fill_manual("",
+    labels = c(expression(GPP[lit-agg]), expression(GPP[Rs-agg])),
+    values=c("#E41A1C", "skyblue")
+  ) +
+  theme(
+    legend.position = c(0.80, 0.50),
+    legend.title = element_blank(),
+    legend.text.align = 0
+  ) +
+  ylab("Density") +
+  xlab(expression(GPP ~ (Pg ~ C ~ yr^{-1}))) -> GPP_plot2
+
+# plot3
+rs_results_agg %>%
+  select(`Rs[lit]` = Rs_raw, `Rs[GPP]` = Rs_topdown2) %>%
+  gather(Rs_type) %>% 
+  ggplot(aes(value, fill = Rs_type)) +
+  geom_density(stat = "density", alpha = 0.65) +
+  coord_cartesian(xlim = c(50, 110)) +
+  scale_fill_manual("",
+    labels = c(expression(Rs[GPP]), expression(Rs[lit])),
+    values=c("#E41A1C", "skyblue")
+  ) +
+  theme(
+    legend.position = c(0.85, 0.50),
+    legend.title = element_blank(),
+    legend.text.align = 0
+  ) +
+  ylab("Density") +
+  xlab(expression(Rs ~ (Pg ~ C ~ yr^{-1}))) -> Rs_plot3
+
+
+# plot4
+rs_results_agg %>%
+  select(`Rs[lit]` = Rs_raw_agg, `Rs[GPP]` = Rs_topdown4) %>%
+  gather(Rs_type) %>% 
+  ggplot(aes(value, fill = Rs_type)) +
+  geom_density(stat = "density", alpha = 0.65) +
+  coord_cartesian(xlim = c(50, 110)) +
+  scale_fill_manual("",
+    labels = c(expression(Rs[GPP-agg]), expression(Rs[lit-agg])),
+    values=c("#E41A1C", "skyblue")
+  ) +
+  theme(
+    legend.position = c(0.80, 0.50),
+    legend.title = element_blank(),
+    legend.text.align = 0
+  ) +
+  ylab("Density") +
+  xlab(expression(Rs ~ (Pg ~ C ~ yr^{-1}))) -> Rs_plot4
+
+
+```
+
+
+```{r, fig.height=6, fig.width=8}
+(GPP_plot1 | Rs_plot3) / (GPP_plot2 | Rs_plot4) +
+  plot_annotation(tag_levels = 'a')
+# ggsave("outputs/FigureSXXX.png", width = 8, height = 6)
+```
+
+

@@ -84,6 +84,7 @@ library(dplyr)
 # install.packages('ggbeeswarm')
 library(ggbeeswarm)
 library(ggridges)
+library(patchwork)
 
 # Source all needed functions
 source("functions.R")
@@ -252,6 +253,7 @@ plot_Rroot_Rs_NPP(sub_srdb, NPP)
 ```{r plot Rroot-Ra ratio, fig.height = 4, fig.width = 6}
 # potential issue: only two points from grassland
 # no points from tundra
+Froot %>% count(IGBP)
 Froot %>% count(IGBP2)
 plot_Rroot_Ra_ratio(Froot)
 # ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
@@ -281,7 +283,7 @@ var_RaGpp %>%
 var_RaGpp %>% count(Ecosystem)
 var_RaGpp %>% count(IGBP2)
 plot_RaGPP(var_RaGpp)
-ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
+# ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
 
 var_RaGpp %>%
   group_by(Ecosystem) %>%
@@ -744,7 +746,6 @@ cat("\n\nBottom-up Rs quantiles: ", rsg_qt_raw, "\n")
 ```
 
 ```{r gpp and Rs raw data plot, fig.height=6, fig.width=6}
-library(patchwork)
 p_gpp / p_rs +
   plot_annotation(tag_levels = 'a')
 ```
@@ -915,7 +916,7 @@ rs_results %>%
 ```{r combine GPP and RSG comparison into figure 2, fig.height=8, fig.width=8, cache=FALSE}
 # Scenario 2, RC separate into 4 groups, and Froot separate into 2 groups
 plot_grid(p1_gpp2, p2_rs2, ncol = 1, labels = c("(a)", "(b)"), hjust = 0)
-ggsave("outputs/Figure1.png", width = 10, height = 8)
+# ggsave("outputs/Figure1.png", width = 10, height = 8)
 ```
 
 ## Combining GPP and Rs - Figure 2
@@ -1124,7 +1125,7 @@ if (file.exists(cmip6_local_data_file)) {
   cmip6_local_data %>%
     mutate(
       Scale = "Ecosystem scale",
-      Source = paste0("CMIP6\n(N = ", samples, ")"),
+      Source = paste0("CMIP6\n(N = ", nrow(cmip6_local_data), ")"),
       Type = "Models"
     ) ->
   cmip_local
@@ -1163,9 +1164,9 @@ p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) +
   facet_grid(~Scale, scales = "free_x") +
   theme(strip.background = element_rect(fill = "white", linetype = "blank")) +
   guides(colour = guide_legend(override.aes = list(alpha = 1)))
-print(p_ratios)
+# print(p_ratios)
 
-ggsave("outputs/Figure3.png")
+# ggsave("outputs/Figure3.png")
 
 # Test whether global group is significantly higher than others
 ratios %>%
@@ -1181,7 +1182,198 @@ ratiotest_obs <- filter(ratiotest, Type %in% c("Global", "Observations"))
 wilcox.test(Ratio ~ globalcase, data = ratiotest_obs, alternative = "less")
 ```
 
+
+```{r Rh-to-GPP ratio}
+# global Rh from Hashimoto2015, Zhao2017, Warner2019, Konings2019(43.6, 33.4)
+topdown_rh <- expand.grid(GPP = GPP$GPP, Rh = c(50.5, 59.5, 49.7, 43.6, 57.2))
+topdown_rh$Source <- paste0("Rh and GPP\nfrom the literature\n(N = ", nrow(topdown_rh), ")")
+topdown_rh$Type <- "Global"
+topdown_rh$Scale <- "Global scale"
+topdown_rh_mean <- mean(topdown_rh$Rh / topdown_rh$GPP)
+
+srdb_v4 %>%
+  filter(!is.na(GPP), !is.na(Rh_annual), Ecosystem_state != "Managed") %>%
+  select(Rh = Rh_annual, GPP, Biome, Ecosystem_type) ->
+srdb_rh
+srdb_rh$Source <- paste0("SRDB\n(N = ", nrow(srdb_rh), ")")
+srdb_rh$Type <- "Observations"
+srdb_rh$Scale <- "Ecosystem scale"
+
+read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>%
+  select(Biome, Ecosystem_type, FLUXNET_SITE_ID, GPP = gpp_fluxnet, Rh = Rh_annual) %>%
+  filter(!is.na(GPP), !is.na(Rh)) ->
+fluxnet_Rh
+fluxnet_Rh$Source <- paste0("FLUXNET\n(N = ", nrow(fluxnet_Rh), ")")
+fluxnet_Rh$Type <- "Observations"
+fluxnet_Rh$Scale <- "Ecosystem scale"
+
+cmip6_global_Rh_file <- "cmip/CMIP6_GPP-Ra-Rh.csv"
+if (file.exists(cmip6_global_Rh_file)) {
+  read.csv(cmip6_global_Rh_file, stringsAsFactors = FALSE) %>%
+    as_tibble() %>%
+    filter(year >= 2005) %>%
+    group_by(model, experiment, ensemble) %>%
+    summarise(GPP = mean(gpp), Rh = mean(rh), ra = mean(ra)) %>%
+    ungroup() ->
+  model_global_ratios_rh
+
+  model_global_ratios_rh %>%
+    mutate(
+      Scale = "Global scale",
+      Source = paste0("CMIP6\n(N = ", nrow(model_global_ratios_rh), ")"),
+      Type = "Models"
+    ) ->
+  cmip_global_rh
+  
+} else {
+  cmip_global_rh <- data.frame(
+    Source = "CMIP6\n(N = 0)", Scale = "Global",
+    Type = "Models", stringsAsFactors = FALSE
+  )
+}
+
+cmip6_local_data_file_rh <- "cmip/CMIP6_GPP-Ra-Rh.csv"
+if (file.exists(cmip6_local_data_file_rh)) {
+  read.csv(cmip6_local_data_file_rh, stringsAsFactors = FALSE) %>%
+    as_tibble() %>% 
+     group_by(model, experiment, ensemble, Longitude, Latitude) %>%
+    summarise(GPP = mean(gpp), Rh = mean(rh), Ra = mean(ra)) %>%
+    ungroup() -> 
+  cmip6_local_data_rh
+
+  cmip6_local_data_rh %>%
+    select(experiment, model, ensemble) %>%
+    distinct() %>%
+    nrow() ->
+  samples_rh
+
+  cmip6_local_data_rh %>%
+    mutate(
+      Scale = "Ecosystem scale",
+      Source = paste0("CMIP6\n(N = ", nrow(cmip6_local_data_rh), ")"),
+      Type = "Models"
+    ) ->
+  cmip_local_rh
+} else {
+  cmip_local_rh <- data.frame(
+    Source = "CMIP6\n(N = 0)",
+    Scale = "Ecosystem scale",
+    Type = "Models",
+    stringsAsFactors = FALSE
+  )
+}
+
+bind_rows(topdown_rh, srdb_rh, fluxnet_Rh, cmip_global_rh, cmip_local_rh) %>%
+  mutate(
+    Ratio = Rh / GPP,
+    Source = factor(Source, unique(Source)[c(2, 3, 5, 4, 1)])
+  ) ->
+ratios_rh
+
+ratios_rh %>%
+  group_by(Source) %>%
+  summarise(
+    Ratio_median = round(median(Ratio, na.rm = TRUE), 3),
+    Ratio_sd = round(sd(Ratio, na.rm = TRUE), 3)
+  ) %>%
+  knitr::kable(type = "markdown")
+
+p_ratios_rh <- ggplot(ratios_rh, aes(Source, Ratio, color = Type)) +
+  geom_quasirandom(alpha = I(0.25)) +
+  scale_color_brewer(palette="Set1") +
+  geom_hline(yintercept = topdown_rh_mean, linetype = 2, color = "red", alpha = 0.33) +
+  geom_boxplot(show.legend = FALSE, col = "gray", fill = "white", alpha = 0) +
+  ylab(expression(Ratio ~ of ~ R[H] ~ to ~ GPP)) +
+  xlab("") +
+  coord_cartesian(ylim = c(0, 2)) +
+  facet_grid(~Scale, scales = "free_x") +
+  theme(strip.background = element_rect(fill = "white", linetype = "blank")) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+
+# p_ratios / p_ratios_rh -> p_ratio_all
+# print(p_ratio_all)
+
+# Test whether global group is significantly higher than others
+ratios_rh %>%
+  select(Source, Ratio, Scale, Type) %>%
+  as_tibble() %>%
+  na.omit() %>%
+  mutate(globalcase = Type == "Global") ->
+ratiotest_rh
+
+cat("Test whether global Rh:GPP higher than all others:")
+wilcox.test(Ratio ~ globalcase, data = ratiotest_rh, alternative = "less")
+cat("Test whether global Rh:GPP higher than observations:")
+ratiotest_obs_rh <- filter(ratiotest_rh, Type %in% c("Global", "Observations"))
+wilcox.test(Ratio ~ globalcase, data = ratiotest_obs_rh, alternative = "less")
+
+# ggsave("outputs/Figure3.jpg", width = 8, height = 8, units = "in")
+
+```
+
 Note that the arithmetic mean of Rs:GPP in SRDB is `r round(Rs_to_GPP_unweighted, 3)` (median `r round(median(srdb_v4$Rs_annual / srdb_v4$GPP, na.rm = TRUE), 3)`), while the weighted (by area of ecosystem types globally) is `r round(Rs_to_GPP_weighted, 3)`. This close agreement implies that SRDB is in fact a pretty good representation of the land surface (and/or that Rs:GPP doesn't vary much).
+
+
+```{r bootstrap to get Rroot of CMIP6 models and Rs-GPP ratio}
+cmip_global_rh$Rroot_Ra_ratio <- sample(Froot$Froot, nrow(cmip_global_rh), replace = TRUE)
+cmip_global_rh$Rs = cmip_global_rh$Rh + cmip_global_rh$Rroot_Ra_ratio * cmip_global_rh$ra
+
+cmip_local_rh$Rroot_Ra_ratio <- sample(Froot$Froot, nrow(cmip_local_rh), replace = TRUE)
+cmip_local_rh$Rs = cmip_local_rh$Rh + cmip_local_rh$Rroot_Ra_ratio * cmip_local_rh$Ra
+cmip_local_rh$Rs %>% mean()
+cmip_local_rh$GPP %>% mean()
+hist(Froot$Froot)
+hist(cmip_local_rh$Rroot_Ra_ratio)
+
+
+
+# global Rs and fluxnet Rs see above
+bind_rows(topdown, srdb, fluxnet, cmip_global_rh, cmip_local_rh) %>%
+  mutate(
+    Ratio = Rs / GPP,
+    Source = factor(Source, unique(Source)[c(2, 3, 5, 4, 1)])
+  ) ->
+ratios_rs_cmip
+
+ratios_rs_cmip %>%
+  group_by(Source) %>%
+  summarise(
+    Ratio_median = round(median(Ratio, na.rm = TRUE), 3),
+    Ratio_sd = round(sd(Ratio, na.rm = TRUE), 3)
+  ) %>%
+  knitr::kable(type = "markdown")
+
+p_ratios_rs_cmip <- ggplot(ratios_rs_cmip, aes(Source, Ratio, color = Type)) +
+  geom_quasirandom(alpha = I(0.25)) +
+  scale_color_brewer(palette="Set1") +
+  geom_hline(yintercept = topdown_mean, linetype = 2, color = "red", alpha = 0.33) +
+  geom_boxplot(show.legend = FALSE, col = "gray", fill = "white", alpha = 0) +
+  ylab(expression(Ratio ~ of ~ R[S] ~ to ~ GPP)) +
+  xlab("") +
+  coord_cartesian(ylim = c(0, 2)) +
+  facet_grid(~Scale, scales = "free_x") +
+  theme(strip.background = element_rect(fill = "white", linetype = "blank")) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+
+p_ratios_rs_cmip / p_ratios_rh -> p_ratio_all
+# print(p_ratio_all)
+
+# Test whether global group is significantly higher than others
+ratios_rs_cmip %>%
+  select(Source, Ratio, Scale, Type) %>%
+  as_tibble() %>%
+  na.omit() %>%
+  mutate(globalcase = Type == "Global") ->
+ratiotest_rs_cmip
+
+cat("Test whether global Rh:GPP higher than all others:")
+wilcox.test(Ratio ~ globalcase, data = ratiotest_rs_cmip, alternative = "less")
+cat("Test whether global Rh:GPP higher than observations:")
+ratiotest_obs_rs_cmip <- filter(ratiotest_rs_cmip, Type %in% c("Global", "Observations"))
+wilcox.test(Ratio ~ globalcase, data = ratiotest_obs_rs_cmip, alternative = "less")
+
+# ggsave("outputs/Figure3.jpg", width = 8, height = 8, units = "in")
+```
 
 
 ## Other diagnoses
