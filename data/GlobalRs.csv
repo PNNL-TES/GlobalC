@@ -1,23 +1,26 @@
 # Global soil respiration (Rs) estimates,,,,,,,,,,
-# Columns include ID number (not used),Paper publication year,Period (year range of estimate),Rs estimate (PgC/yr),Standard diviation of Rs estimate,Rate of change during the period,reference,Hetertrophic respiration,Autotrophic respiration,Paper URL,
-ID,Pub_year,Period,Rs,SD,IncreaseRate,Rs_Reference,Rh,Ra,URL,
-1,1977,1977,75,,,Schlesinger (1977),,,https://www.annualreviews.org/doi/pdf/10.1146/annurev.es.08.110177.000411,
-2,1992,1962-1992,68,,,Raich (1992),,,https://onlinelibrary.wiley.com/doi/abs/10.1034/j.1600-0889.1992.t01-1-00001.x,
-3,1995,1962-1994,76.5,,,Raich (1995),,,https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/94GB02723,
-4,2002,1980-1994,80.4,16.9,0.098,Raich (2002),,,https://onlinelibrary.wiley.com/doi/full/10.1046/j.1365-2486.2002.00511.x,
-5,2010,1962-2008,98,12,0.1,Bond-Lamberty (2010),,,https://www.nature.com/articles/nature08930,
-6,2012,1980-2010,79,7.65,,Hashimoto (2012),,,https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0041962,
-7,2013,1970-2008,94.4,4.59,0.04,Chen (2013),,,https://link.springer.com/article/10.1007/s11434-013-5912-1,
-8,2015,1966-2012,91,2.04,0.09,Hashimoto (2015),50.5,40.5,https://pure.mpg.de/rest/items/item_2161024/component/file_2161028/content,
-9,2016,1960-2010,94.3,9.13,,Xu (2016),,,https://www.sciencedirect.com/science/article/pii/S0176161716301742,
-10,2017,2001,94.8,,,Adachi (2017),,,https://www.sciencedirect.com/science/article/pii/S0301479717305613,
-11,2017,2009,93.8,,,Adachi (2017),,,https://www.sciencedirect.com/science/article/pii/S0301479717305613,
-12,2018,1964-2016,78.76,,,Jian (2018a),,,https://onlinelibrary.wiley.com/doi/full/10.1111/gcb.14301,
-13,2018,1964-2016,88.22,,,Jian (2018a),,,https://onlinelibrary.wiley.com/doi/full/10.1111/gcb.14301,
-14,2018,1964-2016,78.34,2.24,0.028,Jian (2018b),,,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2018EF000937,
-15,2018,1964-2016,72.55,7.13,0.032,Jian (2018b),,,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2018EF000937,
-16,2017,1960-2012,93.3,3.11,0.04,Zhao (2017),59.5,,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2016EF000480,
-17,2019,1961-2011,87.9,18.6,,Warner (2019),,,"Warner, D. L., Bond-Lamberty, B., Jian, J., Stell, E. & Vargas, R. Spatial predictions and associated uncertainty of annual soil respiration at the global scale. Global Biogeochem. Cycles (2019).",
-18,2000,,69,,,Peng and Apps (2000),,,https://content.iospress.com/articles/journal-of-environmental-sciences/jes12-3-01,
-19,2016,,95.5,,,Oertel et al. (2016),,,dx.doi.org/10.1016/j.chemer.2016.04.002,
-20,2019,,87.4,,,,57.2,43.8,"https://www.earth-syst-sci-data-discuss.net/essd-2019-123/, https://www.earth-syst-sci-data-discuss.net/essd-2019-18/essd-2019-18.pdf",Rh from Konings and Ra from Tang ESSD data
+# Columns include ID number (not used),Paper publication year,Period (year range of estimate),Rs estimate (PgC/yr),Standard diviation of Rs estimate,Rate of change during the period,reference,Hetertrophic respiration,Autotrophic respiration,Based on annual or monthly Rs data,Paper URL
+ID,Pub_year,Period,Rs,SD,IncreaseRate,Rs_Reference,Rh,Ra,A_M,URL
+1,1977,1977,75,,,Schlesinger (1977),,,O,https://www.annualreviews.org/doi/pdf/10.1146/annurev.es.08.110177.000411
+2,1992,,68,,,Raich (1992),,,A,https://onlinelibrary.wiley.com/doi/abs/10.1034/j.1600-0889.1992.t01-1-00001.x
+3,1995,,76.5,,,Raich (1995),,,A,https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/94GB02723
+4,1987,1980-1994,80.4,16.9,0.098,Raich (2002),,,A,https://onlinelibrary.wiley.com/doi/full/10.1046/j.1365-2486.2002.00511.x
+5,1985,1962-2008,98,12,0.1,Bond-Lamberty (2010),,,A,https://www.nature.com/articles/nature08930
+6,1995,1980-2010,79,7.65,,Hashimoto (2012),,,O,https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0041962
+7,1989,1970-2008,94.4,4.59,0.04,Chen (2013),,,A,https://link.springer.com/article/10.1007/s11434-013-5912-1
+8,1989,1966-2012,91,2.04,0.09,Hashimoto (2015),50.5,40.5,A,https://pure.mpg.de/rest/items/item_2161024/component/file_2161028/content
+9,1985,1960-2010,94.3,9.13,,Xu (2016),,,A,https://www.sciencedirect.com/science/article/pii/S0176161716301742
+10,2001,,94.8,,,Adachi (2017),,,O,https://www.sciencedirect.com/science/article/pii/S0301479717305613
+11,2009,,93.8,,,Adachi (2017),,,O,https://www.sciencedirect.com/science/article/pii/S0301479717305613
+12,1990,1964-2016,78.76,,,Jian (2018a),,,M,https://onlinelibrary.wiley.com/doi/full/10.1111/gcb.14301
+13,1990,1964-2016,88.22,,,Jian (2018a),,,A,https://onlinelibrary.wiley.com/doi/full/10.1111/gcb.14301
+14,1990,1964-2016,78.34,2.24,0.028,Jian (2018b),,,M,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2018EF000937
+15,1990,1964-2016,72.55,7.13,0.032,Jian (2018b),,,M,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2018EF000937
+16,1986,1960-2012,93.3,3.11,0.04,Zhao (2017),59.5,,A,https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2016EF000480
+17,1986,1961-2011,87.9,18.6,,Warner (2019),,,A,"Warner, D. L., Bond-Lamberty, B., Jian, J., Stell, E. & Vargas, R. Spatial predictions and associated uncertainty of annual soil respiration at the global scale. Global Biogeochem. Cycles (2019)."
+18,2000,,69,,,Peng and Apps (2000),,,O,https://content.iospress.com/articles/journal-of-environmental-sciences/jes12-3-01
+19,2016,,95.5,,,Oertel et al. (2016),,,A,dx.doi.org/10.1016/j.chemer.2016.04.002
+20,2014,,93.9,,,Hursh et al. (2017),,,A,doi: 10.1111/gcb.13489
+21,2014,,80.3,,,Hursh et al. (2017),,,A,doi: 10.1111/gcb.13489
+22,2014,,108.6,,,Hursh et al. (2017),,,A,doi: 10.1111/gcb.13489
+23,2007,2000-2014,72.6,,0.13,Huang et al (2020),,,A,DOI: 10.1126/sciadv.abb8508

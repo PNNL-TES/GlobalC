@@ -83,6 +83,8 @@ library(dplyr)
 
 # install.packages('ggbeeswarm')
 library(ggbeeswarm)
+library(ggridges)
+library(patchwork)
 
 # Source all needed functions
 source("functions.R")
@@ -104,11 +106,17 @@ knitr::opts_chunk$set(
 # input data
 read_file <- function(x) read.csv(file.path(DATA_DIR, x), comment.char = "#", stringsAsFactors = FALSE)
 
-srdb_v4 <- read_file("srdbv4.csv") # SRDB_V4 data
+# srdb_v4 <- read_file("srdbv4.csv") # SRDB_V4 data
+srdb_v4 <- read_file("srdb-data-v5.csv") # updated to srdb-v5
 FlFsFr <- read_file("FlFsFrSummary.csv") # Froot (Rroot/Rs) and Fshoot (Rshoot/Rs) from 39 papers
 GPP <- read_file("GlobalGPP_Sum.csv") # GPP estimates from published paper
 GPP %>% filter(Year >= 1980 & Flag != "Model") -> GPP
 NPP <- read_file("ITONPP.CSV") # 251 NPP estimates from ITO (2011)
+
+# remove NPP outliers
+boxplot.stats(NPP$NPP)$out
+NPP <- NPP %>% filter(NPP <= 83 & NPP >= 25)
+
 GlobalRs <- read_file("GlobalRs.csv") # estimates of global Rs
 GlobalRs %>% filter(Pub_year > 1980) -> GlobalRs
 # (Ra/GPP) Piao, Shilong, et al. "Forest annual carbon cost: A global‐scale analysis of autotrophic respiration." Ecology 91.3 (2010): 652-661.
@@ -188,6 +196,7 @@ p_gpp <- ggplot(GPP, aes(Year, GPP)) +
   geom_errorbar(aes(ymin = GPP - SD, ymax = GPP + SD), na.rm = TRUE) +
   geom_smooth(method = "lm") +
   theme_cowplot() +
+  xlim(1980, 2020) +
   ylab(expression(GPP ~ (Pg ~ C ~ yr^-1)))
 p_gpp_marg <- ggMarginal(p_gpp, type = "densigram", margins = "y", fill = "red")
 
@@ -197,6 +206,7 @@ p_rs <- ggplot(GlobalRs, aes(Pub_year, Rs)) +
   geom_smooth(method = "lm") +
   theme_cowplot() +
   xlab("Year") +
+  xlim(1980, 2020) +
   ylab(expression(R[S] ~ (Pg ~ C ~ yr^-1)))
 p_rs_marg <- ggMarginal(p_rs, type = "densigram", margins = "y", fill = "red")
 ```
@@ -213,13 +223,19 @@ GPP %>% ggplot(aes(x = Group, y = GPP, fill = as.factor(Group))) +
   xlab("GPP by different groups") +
   ylab(expression(GPP ~ "(Pg C" ~ yr^{-1} ~ ")"))
 
-ggsave("outputs/FigureS5.jpg", width = 8, height = 5, dpi = 300, units = "in")
+# ggsave("outputs/FigureS5.jpg", width = 8, height = 5, dpi = 300, units = "in")
 
 GPP %>%
   select(Group, Flag) %>%
   count(Group, Flag)
 
 # RColorBrewer::brewer.pal(8, "Spectral") # get color code
+GPP %>% ggplot(aes(GPP, Group, fill = 0.5 - abs(0.5 - stat(ecdf)))) +
+  stat_density_ridges(geom = "density_ridges_gradient", calc_ecdf = TRUE) +
+  scale_fill_viridis_c(name = "Probability", direction = -1) +
+  xlab("GPP by different groups") +
+  ylab(expression(GPP ~ "(Pg C" ~ yr^{-1} ~ ")"))
+
 ```
 
 
@@ -230,16 +246,17 @@ GPP %>%
 # For more details please see function plot_Rroot_Rs_NPP()
 sub_srdb %>% count(IGBP2)
 plot_Rroot_Rs_NPP(sub_srdb, NPP)
-ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
+# ggsave("outputs/FigureS2.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
 ### Plot Rroot-Ra ratio
 ```{r plot Rroot-Ra ratio, fig.height = 4, fig.width = 6}
 # potential issue: only two points from grassland
 # no points from tundra
+Froot %>% count(IGBP)
 Froot %>% count(IGBP2)
 plot_Rroot_Ra_ratio(Froot)
-ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
+# ggsave("outputs/FigureS3.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
 
 ### Plot Ra to GPP ratio
@@ -266,7 +283,7 @@ var_RaGpp %>%
 var_RaGpp %>% count(Ecosystem)
 var_RaGpp %>% count(IGBP2)
 plot_RaGPP(var_RaGpp)
-ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
+# ggsave("outputs/FigureS4.jpg", width = 6, height = 4, dpi = 300, units = "in")
 
 var_RaGpp %>%
   group_by(Ecosystem) %>%
@@ -279,7 +296,7 @@ var_RaGpp %>%
 ```{r plot spatial distribution, echo=FALSE, warning=FALSE}
 # Figure. Sites distribution -- FlFsFr sites and RC/HC sites
 plot_sites(srdb_v4, Froot)
-ggsave("outputs/FigureS6.jpg", width = 6, height = 4, dpi = 300, units = "in")
+# ggsave("outputs/FigureS6.jpg", width = 6, height = 4, dpi = 300, units = "in")
 ```
 
 
@@ -589,22 +606,22 @@ lt_ip <- gpp_results$GPP < gpp_ip # "<" b/c most bootstrapped GPP values are abo
 black <- rgb(0, 0, 0, alpha = 0.25)
 red <- rgb(1, 0, 0, alpha = 1)
 pairs_colors <- c(black, red)[as.factor(lt_ip)]
-pairsdata <- gpp_results[gpp_vd$Parameter[gpp_vd$Contribution > 0.05]]
+pairsdata <- gpp_results[gpp_vd$Parameter[gpp_vd$Contribution > 0.01]]
 pairsdata <- rename(pairsdata, "Rs from literature" = Rs_raw, "Rroot:Rs ratio" = Rc, "Rroot:RA ratio" = Froot)
 # pdf("outputs/FigureS8 - Boots GPP pairs.pdf", width = 8, height = 6)
-pairs(pairsdata, col = pairs_colors, main = expression(GPP[Rs]))
+pairs(pairsdata, col = pairs_colors, pch = ".", main = expression(GPP[Rs]))
 # dev.off()
-# get mean Rroot:Rs of below of above the intercetion (126.7 Pg)
+# get mean Rroot:Rs of below or above the intercetion (126.7 Pg)
 gpp_results %>%
   select(GPP, Rc) %>%
-  mutate(GPP_group = ifelse(GPP < gpp_ip, "black", "red")) %>%
+  mutate(GPP_group = ifelse(GPP < gpp_ip, "below_ip", "above_ip")) %>%
   group_by(GPP_group) %>%
   summarize(mean(Rc))
 
-# get mean Rroot:Ra of below of above the intercetion (126.7 Pg)
+# get mean Rroot:Ra of below or above the intercetion (126.7 Pg)
 gpp_results %>%
   select(GPP, Froot) %>%
-  mutate(GPP_group = ifelse(GPP < gpp_ip, "black", "red")) %>%
+  mutate(GPP_group = ifelse(GPP < gpp_ip, "below_ip", "above_ip")) %>%
   group_by(GPP_group) %>%
   summarize(mean(Froot))
 ```
@@ -702,8 +719,8 @@ rs_figure_data %>%
   theme(legend.position = c(0.75, 0.35)) +
   coord_cartesian(xlim = c(50, 120)) +
   scale_fill_manual("",
-    labels = c(expression(Rs[lit]), expression(Rs[GPP])),
-    values = c("skyblue", "#E41A1C")
+    labels = c(expression(Rs[GPP]), expression(Rs[lit])),
+    values = c("#E41A1C", "skyblue")
   ) +
   theme(
     legend.title = element_blank(),
@@ -726,6 +743,11 @@ print(p2_rs)
 
 cat("\n\nRs implied by GPP quantiles: ", rsg_qt, "\n")
 cat("\n\nBottom-up Rs quantiles: ", rsg_qt_raw, "\n")
+```
+
+```{r gpp and Rs raw data plot, fig.height=6, fig.width=6}
+p_gpp / p_rs +
+  plot_annotation(tag_levels = 'a')
 ```
 
 ### Scenario 2 - ratio __weighted__ by ecosystem
@@ -759,7 +781,7 @@ rs_ratio_figure_data
 
 p1_rsg3 <- ggdraw() +
   draw_plot(rs_base_figure %+% rs_ratio_figure_data) +
-  draw_plot(p_gpp_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5)
+  draw_plot(p_rs_marg, x = 0.6, y = 0.5, width = 0.4, height = 0.5)
 print(p1_rsg3)
 
 cat("\n\nGPP implied by Rs quantiles: ", gpp_qt, "\n")
@@ -875,16 +897,16 @@ variance_decomp(
 ```{r rs-input-pairs, results='show', fig.height=6, fig.width=8}
 gt_ip <- rs_results$Rs_topdown > rs_ip # ">" b/c most bootstrapped Rs values are below
 pairs_colors <- c(black, red)[as.factor(gt_ip)]
-pairsdata <- rs_results[vd_rs$Parameter[vd_rs$Contribution > 0.05]]
+pairsdata <- rs_results[vd_rs$Parameter[vd_rs$Contribution > 0.04]]
 pairsdata <- rename(pairsdata, "GPP from literature" = GPP_raw, "Rroot : RA ratio" = Froot_rest, "RA : GPP ratio" = RaGpp_rest)
 # pdf("outputs/FigureS9 - Boots Rs pairs.pdf", width = 8, height = 6)
-pairs(pairsdata, col = pairs_colors, main = expression(Rs[GPP]))
+pairs(pairsdata, col = pairs_colors, pch = ".", main = expression(Rs[GPP]))
 # dev.off()
 
-# get mean Rroot:Rs, NPP, GPP[lit] of below of above the intercetion (78.11 Pg)
+# get mean Rroot:Rs, NPP, GPP[lit] of below or above the intercetion (78.11 Pg)
 rs_results %>%
   select(Rs_topdown, Froot_rest, NPP, GPP_raw) %>%
-  mutate(Group = ifelse(Rs_topdown < rs_ip, "black", "red")) %>%
+  mutate(Group = ifelse(Rs_topdown < rs_ip, "below_ip", "above_ip")) %>%
   group_by(Group) %>%
   summarize(mean(Froot_rest), mean(NPP), mean(GPP_raw))
 ```
@@ -894,14 +916,15 @@ rs_results %>%
 ```{r combine GPP and RSG comparison into figure 2, fig.height=8, fig.width=8, cache=FALSE}
 # Scenario 2, RC separate into 4 groups, and Froot separate into 2 groups
 plot_grid(p1_gpp2, p2_rs2, ncol = 1, labels = c("(a)", "(b)"), hjust = 0)
-ggsave("outputs/Figure1.png", width = 10, height = 8)
+# ggsave("outputs/Figure1.png", width = 10, height = 8)
 ```
 
 ## Combining GPP and Rs - Figure 2
 
 What's the most likely values for GPP and R[S] that are consistent with the underlying distributions?
 
-```{r joint-plot, results='show', fig.width=6, fig.height=6}
+```{r joint-plot, results='show', fig.width=8, fig.height=8}
+# joint plot
 gpp_results %>%
   select(Rs = Rs_raw, GPP = GPP2) %>%
   mutate(Source = "Rs-driven GPP") ->
@@ -915,6 +938,53 @@ joint
 
 myarrow <- arrow(length = unit(0.1, "inches"))
 
+# Combine Figure 1 and Figure 2 together
+# density 1 panel
+gpp_figure2_data %>%
+  ggplot(aes(value, fill = GPP_type)) +
+  theme_cowplot() +
+  geom_density(stat = "density", alpha = 0.65) +
+  geom_point(aes(x = 157, y = 0.0025), shape = 16,
+             size = 5, col = "blue", show.legend = FALSE) +
+  theme(legend.position = c(0.7, 0.2)) +
+  theme(legend.position = c(0.75, 0.35)) +
+  # coord_cartesian(xlim = c(70, 200)) +
+  scale_fill_manual("",
+    labels = c(expression(GPP[lit]), expression(GPP[Rs])),
+    values=c("#E41A1C", "skyblue")) +
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0,
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()) +
+  ylab("Density") +
+  xlab(expression(GPP ~ (Pg ~ C ~ yr^{-1}))) -> 
+  dens1
+
+# density 2 panel
+rs_figure_data %>%
+  ggplot(aes(value, fill = Rs_type)) +
+  theme_cowplot() +
+  geom_density(stat = "density", alpha = 0.65) +
+  geom_point(aes(x = 93, y = 0.005), shape = 16,
+             size = 5, col = "blue", show.legend = FALSE) +
+  theme(legend.position = c(0.7, 0.2)) +
+  # coord_cartesian(xlim = c(50, 120)) +
+  scale_fill_manual("",
+    labels = c(expression(Rs[GPP]), expression(Rs[lit])),
+    values = c("#E41A1C", "skyblue")) +
+  theme(
+    legend.title = element_blank(),
+    legend.text.align = 0,
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()) +
+  ylab("Density") +
+  xlab(expression(R[S] ~ (Pg ~ C ~ yr^{-1}))) +
+  coord_flip() -> 
+  dens2
+
 # See https://stackoverflow.com/questions/8197559/emulate-ggplot2-default-color-palette
 # for ggplot color defaults - that's how I got color codes below
 
@@ -922,41 +992,63 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
   geom_point(pch = 20, size = 2, alpha = 0.05) +
   geom_density2d(bins = 8, alpha = 0.65) +
   scale_color_manual(values = c("#E41A1C", "skyblue")) +
-  theme(legend.position = "none", legend.text.align = 0) +
+  theme(legend.position = "none", legend.text.align = 0,
+        axis.text=element_text(size=12),
+        axis.title=element_text(size=12,face="bold") ) +
   guides(col = guide_legend(nrow = 2, byrow = TRUE)) +
-  xlab(expression(Pg ~ C ~ yr^-1)) +
+  xlab(expression(GPP~(Pg ~ C ~ yr^-1))) +
   ylab(expression(Pg ~ C ~ yr^-1)) +
   annotate("segment",
     x = mean(rs_results$GPP_raw), xend = mean(rs_results$GPP_raw),
-    y = 50, yend = mean(rs_results$Rs_topdown2),
-    color = "#E41A1C", linetype = 1
-  ) +
+    y = mean(rs_results$Rs_topdown2), yend = 100,
+    color = "#E41A1C", linetype = 1) +
   annotate("segment",
-    x = mean(rs_results$GPP_raw), xend = 75,
+    x = mean(rs_results$GPP_raw), xend = 200,
     y = mean(rs_results$Rs_topdown2), yend = mean(rs_results$Rs_topdown2),
-    arrow = myarrow, color = "#E41A1C", linetype = 1
-  ) +
+    arrow = myarrow, color = "#E41A1C", linetype = 1) +
   annotate("segment",
-    x = 75, xend = mean(gpp_results$GPP2),
+    x = 200, xend = mean(gpp_results$GPP2),
     y = mean(gpp_results$Rs_raw), yend = mean(gpp_results$Rs_raw),
-    color = "skyblue", linetype = 1
-  ) +
+    color = "skyblue", linetype = 1 ) +
   annotate("segment",
     x = mean(gpp_results$GPP2), xend = mean(gpp_results$GPP2),
-    y = mean(gpp_results$Rs_raw), yend = 50,
-    arrow = myarrow, color = "skyblue", linetype = 1
-  ) +
-  annotate("text",
-    x = c(107, 151), y = 47.5, size = 4, hjust = "inward", fontface = "bold",
-    label = c(expression(GPP[lit]), expression(GPP[Rs]))
-  ) +
-  annotate("text",
-    x = 70, y = c(66, 86), size = 4, hjust = "inward", fontface = "bold",
-    label = c(expression(Rs[GPP]), expression(Rs[lit])),
-    angle = 90
-  )
+    y = mean(gpp_results$Rs_raw), yend = 100,
+    arrow = myarrow, color = "skyblue", linetype = 1) +
+  # Rs = 93, GPP = 157
+  annotate("segment",
+    x = 200, xend = 157,
+    y = 93, yend = 93,
+    color = "blue", linetype = 1 ) +
+  annotate("segment",
+    x = 157, xend = 157,
+    y = 93, yend = 100,
+    arrow = myarrow, color = "blue", linetype = 1)
+  # annotate("text",
+  #   x = c(107, 155), y = 47.5, size = 4, hjust = "inward", fontface = "bold",
+  #   label = c(expression(GPP[lit]), expression(GPP[Rs]))) +
+  # annotate("text",
+  #   x = 70, y = c(66, 86), size = 4, hjust = "inward", fontface = "bold",
+  #   label = c(expression(Rs[GPP]), expression(Rs[lit])),
+  #   angle = 90)
+
 print(p_joint)
-ggsave("outputs/Figure2.png", width = 8, height = 6)
+# ggsave("outputs/Figure2.png", width = 8, height = 6)
+
+# Combine three panels together
+library(patchwork)
+dens1 + plot_spacer() + p_joint + dens2 + 
+    plot_layout(
+      ncol = 2, 
+      nrow = 2, 
+      widths = c(4, 2.5),
+      heights = c(2.5, 4) ) 
+
+## find out when Rs ~= 93, GPP
+joint$Source %>% unique()
+joint %>% dplyr::filter(Source == "Rs-driven GPP" & Rs < 94 & Rs > 92) %>% 
+  group_by(Source) %>% 
+  summarise(GPPmean = mean(GPP))
+
 ```
 
 
@@ -1033,7 +1125,7 @@ if (file.exists(cmip6_local_data_file)) {
   cmip6_local_data %>%
     mutate(
       Scale = "Ecosystem scale",
-      Source = paste0("CMIP6\n(N = ", samples, ")"),
+      Source = paste0("CMIP6\n(N = ", nrow(cmip6_local_data), ")"),
       Type = "Models"
     ) ->
   cmip_local
@@ -1062,18 +1154,19 @@ ratios %>%
   knitr::kable(type = "markdown")
 
 p_ratios <- ggplot(ratios, aes(Source, Ratio, color = Type)) +
-  geom_boxplot(show.legend = FALSE) +
   geom_quasirandom(alpha = I(0.25)) +
+  scale_color_brewer(palette="Set1") +
   geom_hline(yintercept = topdown_mean, linetype = 2, color = "red", alpha = 0.33) +
+  geom_boxplot(show.legend = FALSE, col = "gray", fill = "white", alpha = 0) +
   ylab(expression(Ratio ~ of ~ R[S] ~ to ~ GPP)) +
   xlab("") +
   coord_cartesian(ylim = c(0, 2)) +
   facet_grid(~Scale, scales = "free_x") +
   theme(strip.background = element_rect(fill = "white", linetype = "blank")) +
   guides(colour = guide_legend(override.aes = list(alpha = 1)))
-print(p_ratios)
+# print(p_ratios)
 
-ggsave("outputs/Figure3.png")
+# ggsave("outputs/Figure3.png")
 
 # Test whether global group is significantly higher than others
 ratios %>%
@@ -1089,7 +1182,198 @@ ratiotest_obs <- filter(ratiotest, Type %in% c("Global", "Observations"))
 wilcox.test(Ratio ~ globalcase, data = ratiotest_obs, alternative = "less")
 ```
 
+
+```{r Rh-to-GPP ratio}
+# global Rh from Hashimoto2015, Zhao2017, Warner2019, Konings2019(43.6, 33.4)
+topdown_rh <- expand.grid(GPP = GPP$GPP, Rh = c(50.5, 59.5, 49.7, 43.6, 57.2))
+topdown_rh$Source <- paste0("Rh and GPP\nfrom the literature\n(N = ", nrow(topdown_rh), ")")
+topdown_rh$Type <- "Global"
+topdown_rh$Scale <- "Global scale"
+topdown_rh_mean <- mean(topdown_rh$Rh / topdown_rh$GPP)
+
+srdb_v4 %>%
+  filter(!is.na(GPP), !is.na(Rh_annual), Ecosystem_state != "Managed") %>%
+  select(Rh = Rh_annual, GPP, Biome, Ecosystem_type) ->
+srdb_rh
+srdb_rh$Source <- paste0("SRDB\n(N = ", nrow(srdb_rh), ")")
+srdb_rh$Type <- "Observations"
+srdb_rh$Scale <- "Ecosystem scale"
+
+read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>%
+  select(Biome, Ecosystem_type, FLUXNET_SITE_ID, GPP = gpp_fluxnet, Rh = Rh_annual) %>%
+  filter(!is.na(GPP), !is.na(Rh)) ->
+fluxnet_Rh
+fluxnet_Rh$Source <- paste0("FLUXNET\n(N = ", nrow(fluxnet_Rh), ")")
+fluxnet_Rh$Type <- "Observations"
+fluxnet_Rh$Scale <- "Ecosystem scale"
+
+cmip6_global_Rh_file <- "cmip/CMIP6_GPP-Ra-Rh.csv"
+if (file.exists(cmip6_global_Rh_file)) {
+  read.csv(cmip6_global_Rh_file, stringsAsFactors = FALSE) %>%
+    as_tibble() %>%
+    filter(year >= 2005) %>%
+    group_by(model, experiment, ensemble) %>%
+    summarise(GPP = mean(gpp), Rh = mean(rh), ra = mean(ra)) %>%
+    ungroup() ->
+  model_global_ratios_rh
+
+  model_global_ratios_rh %>%
+    mutate(
+      Scale = "Global scale",
+      Source = paste0("CMIP6\n(N = ", nrow(model_global_ratios_rh), ")"),
+      Type = "Models"
+    ) ->
+  cmip_global_rh
+  
+} else {
+  cmip_global_rh <- data.frame(
+    Source = "CMIP6\n(N = 0)", Scale = "Global",
+    Type = "Models", stringsAsFactors = FALSE
+  )
+}
+
+cmip6_local_data_file_rh <- "cmip/CMIP6_GPP-Ra-Rh.csv"
+if (file.exists(cmip6_local_data_file_rh)) {
+  read.csv(cmip6_local_data_file_rh, stringsAsFactors = FALSE) %>%
+    as_tibble() %>% 
+     group_by(model, experiment, ensemble, Longitude, Latitude) %>%
+    summarise(GPP = mean(gpp), Rh = mean(rh), Ra = mean(ra)) %>%
+    ungroup() -> 
+  cmip6_local_data_rh
+
+  cmip6_local_data_rh %>%
+    select(experiment, model, ensemble) %>%
+    distinct() %>%
+    nrow() ->
+  samples_rh
+
+  cmip6_local_data_rh %>%
+    mutate(
+      Scale = "Ecosystem scale",
+      Source = paste0("CMIP6\n(N = ", nrow(cmip6_local_data_rh), ")"),
+      Type = "Models"
+    ) ->
+  cmip_local_rh
+} else {
+  cmip_local_rh <- data.frame(
+    Source = "CMIP6\n(N = 0)",
+    Scale = "Ecosystem scale",
+    Type = "Models",
+    stringsAsFactors = FALSE
+  )
+}
+
+bind_rows(topdown_rh, srdb_rh, fluxnet_Rh, cmip_global_rh, cmip_local_rh) %>%
+  mutate(
+    Ratio = Rh / GPP,
+    Source = factor(Source, unique(Source)[c(2, 3, 5, 4, 1)])
+  ) ->
+ratios_rh
+
+ratios_rh %>%
+  group_by(Source) %>%
+  summarise(
+    Ratio_median = round(median(Ratio, na.rm = TRUE), 3),
+    Ratio_sd = round(sd(Ratio, na.rm = TRUE), 3)
+  ) %>%
+  knitr::kable(type = "markdown")
+
+p_ratios_rh <- ggplot(ratios_rh, aes(Source, Ratio, color = Type)) +
+  geom_quasirandom(alpha = I(0.25)) +
+  scale_color_brewer(palette="Set1") +
+  geom_hline(yintercept = topdown_rh_mean, linetype = 2, color = "red", alpha = 0.33) +
+  geom_boxplot(show.legend = FALSE, col = "gray", fill = "white", alpha = 0) +
+  ylab(expression(Ratio ~ of ~ R[H] ~ to ~ GPP)) +
+  xlab("") +
+  coord_cartesian(ylim = c(0, 2)) +
+  facet_grid(~Scale, scales = "free_x") +
+  theme(strip.background = element_rect(fill = "white", linetype = "blank")) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+
+# p_ratios / p_ratios_rh -> p_ratio_all
+# print(p_ratio_all)
+
+# Test whether global group is significantly higher than others
+ratios_rh %>%
+  select(Source, Ratio, Scale, Type) %>%
+  as_tibble() %>%
+  na.omit() %>%
+  mutate(globalcase = Type == "Global") ->
+ratiotest_rh
+
+cat("Test whether global Rh:GPP higher than all others:")
+wilcox.test(Ratio ~ globalcase, data = ratiotest_rh, alternative = "less")
+cat("Test whether global Rh:GPP higher than observations:")
+ratiotest_obs_rh <- filter(ratiotest_rh, Type %in% c("Global", "Observations"))
+wilcox.test(Ratio ~ globalcase, data = ratiotest_obs_rh, alternative = "less")
+
+# ggsave("outputs/Figure3.jpg", width = 8, height = 8, units = "in")
+
+```
+
 Note that the arithmetic mean of Rs:GPP in SRDB is `r round(Rs_to_GPP_unweighted, 3)` (median `r round(median(srdb_v4$Rs_annual / srdb_v4$GPP, na.rm = TRUE), 3)`), while the weighted (by area of ecosystem types globally) is `r round(Rs_to_GPP_weighted, 3)`. This close agreement implies that SRDB is in fact a pretty good representation of the land surface (and/or that Rs:GPP doesn't vary much).
+
+
+```{r bootstrap to get Rroot of CMIP6 models and Rs-GPP ratio}
+cmip_global_rh$Rroot_Ra_ratio <- sample(Froot$Froot, nrow(cmip_global_rh), replace = TRUE)
+cmip_global_rh$Rs = cmip_global_rh$Rh + cmip_global_rh$Rroot_Ra_ratio * cmip_global_rh$ra
+
+cmip_local_rh$Rroot_Ra_ratio <- sample(Froot$Froot, nrow(cmip_local_rh), replace = TRUE)
+cmip_local_rh$Rs = cmip_local_rh$Rh + cmip_local_rh$Rroot_Ra_ratio * cmip_local_rh$Ra
+cmip_local_rh$Rs %>% mean()
+cmip_local_rh$GPP %>% mean()
+hist(Froot$Froot)
+hist(cmip_local_rh$Rroot_Ra_ratio)
+
+
+
+# global Rs and fluxnet Rs see above
+bind_rows(topdown, srdb, fluxnet, cmip_global_rh, cmip_local_rh) %>%
+  mutate(
+    Ratio = Rs / GPP,
+    Source = factor(Source, unique(Source)[c(2, 3, 5, 4, 1)])
+  ) ->
+ratios_rs_cmip
+
+ratios_rs_cmip %>%
+  group_by(Source) %>%
+  summarise(
+    Ratio_median = round(median(Ratio, na.rm = TRUE), 3),
+    Ratio_sd = round(sd(Ratio, na.rm = TRUE), 3)
+  ) %>%
+  knitr::kable(type = "markdown")
+
+p_ratios_rs_cmip <- ggplot(ratios_rs_cmip, aes(Source, Ratio, color = Type)) +
+  geom_quasirandom(alpha = I(0.25)) +
+  scale_color_brewer(palette="Set1") +
+  geom_hline(yintercept = topdown_mean, linetype = 2, color = "red", alpha = 0.33) +
+  geom_boxplot(show.legend = FALSE, col = "gray", fill = "white", alpha = 0) +
+  ylab(expression(Ratio ~ of ~ R[S] ~ to ~ GPP)) +
+  xlab("") +
+  coord_cartesian(ylim = c(0, 2)) +
+  facet_grid(~Scale, scales = "free_x") +
+  theme(strip.background = element_rect(fill = "white", linetype = "blank")) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+
+p_ratios_rs_cmip / p_ratios_rh -> p_ratio_all
+# print(p_ratio_all)
+
+# Test whether global group is significantly higher than others
+ratios_rs_cmip %>%
+  select(Source, Ratio, Scale, Type) %>%
+  as_tibble() %>%
+  na.omit() %>%
+  mutate(globalcase = Type == "Global") ->
+ratiotest_rs_cmip
+
+cat("Test whether global Rh:GPP higher than all others:")
+wilcox.test(Ratio ~ globalcase, data = ratiotest_rs_cmip, alternative = "less")
+cat("Test whether global Rh:GPP higher than observations:")
+ratiotest_obs_rs_cmip <- filter(ratiotest_rs_cmip, Type %in% c("Global", "Observations"))
+wilcox.test(Ratio ~ globalcase, data = ratiotest_obs_rs_cmip, alternative = "less")
+
+# ggsave("outputs/Figure3.jpg", width = 8, height = 8, units = "in")
+```
 
 
 ## Other diagnoses
@@ -1176,7 +1460,7 @@ We evaluated X different resampling methods, which differed in how they treated 
 _**Statistical analysis**_  
 
 ## Compare the results of different re-sampling methods (N = `r N_SAMPLES`)
-```{r sample method comparison}
+```{r sample method comparison, fig.height=6, fig.width=8}
 sample_size_tst(10, 10000)
 ggsave("outputs/FigureS7.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
@@ -1196,10 +1480,10 @@ This is Figure S10.
 # First collect the lat and lon information for the different observations. 
 bind_rows(srdb_v4 %>% 
             select(Latitude, Longitude) %>% 
-            mutate(source = 'srbd'), 
+            mutate(source = 'SRDB'), 
           read.csv("data/site-data-temp/srdb_filtered.csv", stringsAsFactors = FALSE) %>%  
             select(Latitude, Longitude) %>%  
-            mutate(source = 'fluxnet')) %>% 
+            mutate(source = 'FLUXNET')) %>% 
   mutate(Latitude = signif(Latitude, digits = 4), 
          Longitude = signif(Longitude, digits = 4)) -> 
   LatLon_info
@@ -1233,4 +1517,24 @@ p_ratios_ensemble <- ggplot(data = cmip_local_OBSLatLon, aes(source, Ratio, colo
   theme(strip.background = element_rect(fill = "white", linetype = "blank")) +
   guides(colour = guide_legend(override.aes = list(alpha = 1)))
 print(p_ratios_ensemble)
+
+ggsave("outputs/FigureS10.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
+
+# Conceptual diagram to explian the mechanism
+```{r Conceptual diagram}
+# Rs and GPP draws used by bootstrapping GPP and Rs blocks below
+GlobalRs[GlobalRs$A_M == "A",] -> conc_Rs
+bootstrap_raw <- tibble(
+  Rs_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, conc_Rs$Rs, conc_Rs$SD),
+  GPP_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GPP$GPP, GPP$SD)
+)
+```
+
+
+```{r}
+bootstrap_raw$Rs_raw %>% 
+  mean()
+```
+
+
