@@ -28,8 +28,13 @@ calc_bootstrap_gpp <- function(x) {
       Rroot2 = Rs_raw * Rc2,
       Rshoot2 = Rroot2 * FsFr2,
       
+      # scenario 4 - using aggregated Rs
+      Rroot4 = Rs_raw_agg * Rc2,
+      Rshoot4 = Rroot4 * FsFr2,
+      
       GPP = NPP + Rroot + Rshoot, # scenario 1: GPP
-      GPP2 = NPP + Rroot2 + Rshoot2 # scenario 2: GPP2
+      GPP2 = NPP + Rroot2 + Rshoot2, # scenario 2: GPP2
+      GPP4 = NPP + Rroot4 + Rshoot4 # scenario 4: GPP4
     )
 }
 
@@ -62,6 +67,16 @@ calc_bootstrap_rs <- function(x) {
       Ra_avg2 = (Ra4 + Ra3) / 2,
       Rroot2 = Ra_avg2 * Froot2,
       Rshoot2 = Ra_avg2 * (1 - Froot2),
-      Rs_topdown2 = NPP - HerbComsum - Fire - sink - DOC - BVOCs + Rroot2
+      Rs_topdown2 = NPP - HerbComsum - Fire - sink - DOC - BVOCs + Rroot2,
+      
+      # Scenario 4
+      Ra5 = GPP_raw_agg_group * RaGpp, # first way to calculate Ra, Ra = GPP * RaGPP
+      Ra6 = GPP_raw_agg_group - NPP, # second way to calculate Ra, Ra = GPP - NPP
+      Ra7 = if_else(Ra6 < 0, Ra5, Ra6),
+      
+      Ra8 = GPP_raw_agg_group * RaGpp2, # first way to calculate Ra, Ra = GPP * RaGPP
+      Ra_avg4 = (Ra8 + Ra7) / 2,
+      Rroot4 = Ra_avg4 * Froot2,
+      Rs_topdown4 = NPP - HerbComsum - Fire - sink - DOC - BVOCs + Rroot4
     )
 }

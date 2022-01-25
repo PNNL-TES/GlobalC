@@ -60,136 +60,24 @@ GPP <- read_file("GlobalGPP_Sum.csv") # GPP estimates from published paper
 GPP %>% filter(Year >= 1980 & Flag != "Model") -> GPP
 
 GlobalRs <- read_file("GlobalRs.csv") # estimates of global Rs
-GlobalRs %>% filter(Pub_year > 1980) -> GlobalRs
-
-# aggregate by year to test the temporal representativeness issue
-GPP %>% dplyr::select(Year, GPP, SD) %>% 
-  group_by(Year) %>% 
-  summarise_at(vars(GPP, SD), list(mean), na.rm=T) -> GPP_agg
-
-GPP %>% dplyr::select(Group2, GPP, SD) %>% 
-  group_by(Group2) %>% 
-  summarise_at(vars(GPP, SD), list(mean), na.rm=T) -> GPP_group
-
-GPP %>% dplyr::select(Year, Group2, GPP, SD) %>% 
-  group_by(Year, Group2) %>% 
-  summarise_at(vars(GPP, SD), list(mean), na.rm=T) -> GPP_agg_group
-
-GlobalRs %>% dplyr::select(Pub_year, Rs, SD) %>% 
-  group_by(Pub_year) %>% 
-  summarise_at(vars(Rs, SD), list(mean), na.rm=T) -> GlobalRs_agg
+GlobalRs %>% filter(Pub_year > 1980 & !is.na(Rs)) -> GlobalRs
 
 ```
 
 ```{r bootstrap Rs_raw and GPP_raw}
 ## bootstrap and test how data temporal uneven distribution affect global Rs and GPP
-set.seed(20210526)
-bootstrap_data2 <- tibble(
-  Rs_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GlobalRs$Rs, GlobalRs$SD),
-  Rs_raw_agg = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GlobalRs_agg$Rs, GlobalRs_agg$SD),
-  GPP_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GPP$GPP, GPP$SD),
-  GPP_raw_agg = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GPP_agg$GPP, GPP_agg$SD),
-  GPP_raw_group = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GPP_group$GPP, GPP_group$SD),
-)
 
-bootstrap_data2$Rs_raw_agg %>% mean()
-bootstrap_data2$GPP_raw_agg %>% mean()
-```
+bootstrap_data$Rs_raw %>% mean()
+bootstrap_data$Rs_raw_agg %>% mean()
 
-```{r plot and show representiveness analysis results}
-## rs_results is from "Topdown_GlobalRs.Rmd"
-## plot and show how data temporal uneven distribution affect global Rs and GPP
-bind_rows(
-  rs_results %>% select(`value` = Rs_topdown2) %>% 
-  mutate(Rs_type = "Rs_gpp"),
-  bootstrap_data2 %>%
-  select(`Rs` = Rs_raw, `Rs[agg]` = Rs_raw_agg) %>%
-  gather(Rs_type)) %>% 
-  ggplot(aes(value, fill = Rs_type)) +
-  theme_cowplot() +
-  geom_density(stat = "density", alpha = 0.65) +
-  theme(legend.position = c(0.75, 0.50)) +
-  coord_cartesian(xlim = c(50, 110)) +
-  scale_fill_manual("",
-    labels = c(expression(Rs[lit]), expression(Rs[lit-agg]), expression(Rs[GPP])),
-    values=c("skyblue", "blue", "#E41A1C")
-  ) +
-  theme(
-    legend.title = element_blank(),
-    legend.text.align = 0
-  ) +
-  ylab("Density") +
-  xlab(expression(Rs ~ (Pg ~ C ~ yr^{-1}))) -> Rs_lit_plot
-
-## gpp_results is from "Topdown_GlobalRs.Rmd"
-bind_rows(
-  gpp_results %>% select(`value` = GPP2) %>% 
-  mutate(GPP_type = "GPP_Rs"),
-  bootstrap_data2 %>%
-  select(`GPP` = GPP_raw, `GPP[agg]` = GPP_raw_agg) %>%
-  gather(GPP_type)) %>% 
-  ggplot(aes(value, fill = GPP_type)) +
-  theme_cowplot() +
-  geom_density(stat = "density", alpha = 0.65) +
-  theme(legend.position = c(0.70, 0.50)) +
-  coord_cartesian(xlim = c(80, 210)) +
-  scale_fill_manual("",
-    labels = c(expression(GPP[lit]), expression(GPP[lit-agg]), expression(GPP[Rs])),
-    values=c("#E41A1C", "darkred", "skyblue")
-  ) +
-  theme(
-    legend.title = element_blank(),
-    legend.text.align = 0
-  ) +
-  ylab("Density") +
-  xlab(expression(GPP ~ (Pg ~ C ~ yr^{-1}))) -> GPP_lit_plot
-  
+bootstrap_data$GPP_raw %>% mean()
+bootstrap_data$GPP_raw_agg %>% mean()
+bootstrap_data$GPP_raw_group %>% mean()
 ```
 
 
-```{r gpp and rs aggregate by year}
-## plot rs and gpp vs year (both raw data and aggregated by year)
-p_gpp <- ggplot(GPP, aes(Year, GPP)) +
-  geom_point() +
-  geom_errorbar(aes(ymin = GPP - SD, ymax = GPP + SD), na.rm = TRUE) +
-  geom_smooth(method = "lm") +
-  theme_cowplot() +
-  xlim(1980, 2020) +
-  ylab(expression(GPP ~ (Pg ~ C ~ yr^-1)))
 
-p_rs <- ggplot(GlobalRs, aes(Pub_year, Rs)) +
-  geom_point() +
-  geom_errorbar(aes(ymin = Rs - SD, ymax = Rs + SD), na.rm = TRUE) +
-  geom_smooth(method = "lm") +
-  theme_cowplot() +
-  xlab("Year") +
-  xlim(1980, 2020) +
-  ylab(expression(R[S] ~ (Pg ~ C ~ yr^-1)))
 
-p_gpp_agg <- ggplot(GPP_agg, aes(Year, GPP)) +
-  geom_point() +
-  geom_errorbar(aes(ymin = GPP - SD, ymax = GPP + SD), na.rm = TRUE) +
-  geom_smooth(method = "lm") +
-  theme_cowplot() +
-  xlim(1980, 2020) +
-  ylab(expression(GPP ~ (Pg ~ C ~ yr^-1)))
-
-p_rs_agg <- ggplot(GlobalRs_agg, aes(Pub_year, Rs)) +
-  geom_point() +
-  geom_errorbar(aes(ymin = Rs - SD, ymax = Rs + SD), na.rm = TRUE) +
-  geom_smooth(method = "lm") +
-  theme_cowplot() +
-  xlab("Year") +
-  xlim(1980, 2020) +
-  ylab(expression(R[S] ~ (Pg ~ C ~ yr^-1)))
-
-```
-```{r plot representativeness results, fig.height=9, fig.width=8}
-(p_gpp | p_rs) / (p_gpp_agg | p_rs_agg) / (GPP_lit_plot | Rs_lit_plot) +
-  plot_annotation(tag_levels = 'a')
-
-# ggsave("outputs/FigureS7.png", width = 9, height = 8)
-```
 
 
 ```{r ratio sites spatial coverage plot, fig.height=8, fig.width=9}
@@ -383,7 +271,7 @@ lm(Froot_fluxcom$Froot ~ Froot_fluxcom$FLUXCOM_GPP) %>% summary()
 Froot_fluxcom %>% select(Froot, FLUXCOM_GPP) %>% 
   ggplot(aes(FLUXCOM_GPP, Froot)) +
   geom_point() +
-  geom_smooth(method = "lm") +
+  # geom_smooth(method = "lm") +
   theme(
     legend.title = element_blank(),
     legend.text.align = 0)+
@@ -477,50 +365,7 @@ sub_raGPP_fluxcom %>% select(RaGPP_ratio, FLUXCOM_GPP) %>%
 ```
 
 
-```{r GPP by group plot}
-# plot gpp by different group category
-GPP %>% ggplot(aes(x = Group2, y = GPP, fill = as.factor(Group2))) +
-  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) +
-  geom_jitter(shape = 16, position = position_jitter(0.2), col = "gray") +
-  # geom_boxplot(width = 0.1) +
-  theme(legend.title = element_blank()) +
-  scale_fill_brewer(palette="Spectral") +
-  xlab("GPP by different groups") +
-  ylab(expression(GPP ~ "(Pg C" ~ yr^{-1} ~ ")")) -> gpp_by_group
-```
 
-
-```{r gpp group and its affect}
-## gpp_results is from "Topdown_GlobalRs.Rmd"
-## plot and show how aggregating through group could affect gpp bootdtrap output
-
-bind_rows(
-  gpp_results %>% select(`value` = GPP2) %>% 
-  mutate(GPP_type = "GPP_Rs"),
-  bootstrap_data2 %>%
-  select(`GPP` = GPP_raw, `GPP[group]` = GPP_raw_group) %>%
-  gather(GPP_type)) %>% 
-  ggplot(aes(value, fill = GPP_type)) +
-  geom_density(stat = "density", alpha = 0.65) +
-  # theme(legend.position = c(0.70, 0.50)) +
-  coord_cartesian(xlim = c(80, 210)) +
-  scale_fill_manual("",
-    labels = c(expression(GPP[lit]), expression(GPP[lit-group]), expression(GPP[Rs])),
-    values=c("#E41A1C", "darkred", "skyblue")
-  ) +
-  theme(
-    legend.title = element_blank(),
-    legend.text.align = 0
-  ) +
-  ylab("Density") +
-  xlab(expression(GPP ~ (Pg ~ C ~ yr^{-1}))) -> GPP_lit_group_plot
-```
-
-```{r outputs gpp group affect result}
-gpp_by_group / GPP_lit_group_plot +
-  plot_annotation(tag_levels = 'a')
-# ggsave("outputs/FigureSX5.png", width = 8, height = 6)
-```
 
 Presumably, as a matter of mathematics, the ratio of global Rs to global GPP should be the linear combination (sum) of all terrestrial points Neither SRDB nor FLUXNET is an unbiased sample of the land surface, but it may be instructive to look at the Rs:GPP for three data sources:
 * Global GPP estimates, comparing them against the mean Rs estimate (~85 Pg C);
@@ -648,6 +493,16 @@ ratiotest_obs <- filter(ratiotest, Type %in% c("Global", "Observations"))
 wilcox.test(Ratio ~ globalcase, data = ratiotest_obs, alternative = "less")
 ```
 
+
+### Overlap
+```{r rs-overlap, cache=FALSE, results='show'}
+rs_ip <- calc_overlap(rs_results$Rs_topdown4, rs_results$Rs_raw_agg,
+  intersection_interval = c(70, 90),
+  N_test = nrow(GlobalRs)
+)
+```
+
+## No longer used
 # bootstrapping and show the representation affects
 
 ```{r bootstrap-creation}
@@ -660,15 +515,8 @@ QUANTILES <- c(0.025, 0.5, 0.975) # Generate mean and 95% CI
 set.seed(20190827)
 
 # Rs and GPP draws used by bootstrapping GPP and Rs blocks below
-bootstrap_data3 <- tibble(
-  Rs_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GlobalRs$Rs, GlobalRs$SD),
-  Rs_raw_agg = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GlobalRs_agg$Rs, GlobalRs_agg$SD),
-  GPP_raw = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GPP$GPP, GPP$SD),
-  GPP_raw_agg_group = sapply(rep(sample_size, N_SAMPLES), RESAMPLE, GPP_agg_group$GPP, GPP_agg_group$SD),
-)
-
-sd(bootstrap_data3$Rs_raw_agg) # why is sd so small? not as expected
-sd(bootstrap_data3$GPP_raw_agg_group) # why is sd so small? not as expected
+sd(bootstrap_data$Rs_raw_agg) # why is sd so small? not as expected
+sd(bootstrap_data$GPP_raw_agg_group) # why is sd so small? not as expected
 ```
 
 
@@ -683,7 +531,7 @@ sd(bootstrap_data3$GPP_raw_agg_group) # why is sd so small? not as expected
 # GPP = NPP + Rroot + Rshoot
 
 # Step 1. Prepare samples of all variables that go into the GPP calculation
-bootstrap_data3 %>%
+bootstrap_data %>%
   mutate(
     NPP = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, NPP$NPP),
 
@@ -760,7 +608,7 @@ gpp_results_agg <- calc_bootstrap_gpp_agg(bootstrap_gpp_draws)
 #   we thus used the average of two estimates)
 
 # Step 1. Prepare samples of all variables that go into the Rs calculation
-bootstrap_data3 %>%
+bootstrap_data %>%
   mutate(
     # NPP and NPP consumed by fire etc.
     NPP = sapply(rep(sample_size, N_SAMPLES), RESAMPLE_noSD, NPP$NPP),
@@ -846,96 +694,6 @@ calc_bootstrap_rs_agg <- function(x) {
 }
 
 rs_results_agg <- calc_bootstrap_rs_agg(bootstrap_rs_draws)
-```
-
-
-```{r plot and show the representative final results}
-# plot 1
-gpp_results_agg %>%
-  select(`GPP[lit]` = GPP_raw, `GPP[Rs]` = GPP2) %>%
-  gather(GPP_type) %>% 
-  ggplot(aes(value, fill = GPP_type)) +
-  geom_density(stat = "density", alpha = 0.65) +
-  coord_cartesian(xlim = c(80, 210)) +
-  scale_fill_manual("",
-    labels = c(expression(GPP[lit]), expression(GPP[Rs])),
-    values=c("#E41A1C", "skyblue")
-  ) +
-  theme(
-    legend.position = c(0.80, 0.50),
-    legend.title = element_blank(),
-    legend.text.align = 0
-  ) +
-  ylab("Density") +
-  xlab(expression(GPP ~ (Pg ~ C ~ yr^{-1}))) -> GPP_plot1
-# print(GPP_plot1)
-
-# plot 2
-gpp_results_agg %>%
-  select(`GPP[agg]` = GPP_raw_agg_group, `GPP[Rs-agg]` = GPP4) %>%
-  gather(GPP_type) %>% 
-  ggplot(aes(value, fill = GPP_type)) +
-  geom_density(stat = "density", alpha = 0.65) +
-  coord_cartesian(xlim = c(80, 210)) +
-  scale_fill_manual("",
-    labels = c(expression(GPP[lit-agg]), expression(GPP[Rs-agg])),
-    values=c("#E41A1C", "skyblue")
-  ) +
-  theme(
-    legend.position = c(0.80, 0.50),
-    legend.title = element_blank(),
-    legend.text.align = 0
-  ) +
-  ylab("Density") +
-  xlab(expression(GPP ~ (Pg ~ C ~ yr^{-1}))) -> GPP_plot2
-
-# plot3
-rs_results_agg %>%
-  select(`Rs[lit]` = Rs_raw, `Rs[GPP]` = Rs_topdown2) %>%
-  gather(Rs_type) %>% 
-  ggplot(aes(value, fill = Rs_type)) +
-  geom_density(stat = "density", alpha = 0.65) +
-  coord_cartesian(xlim = c(50, 110)) +
-  scale_fill_manual("",
-    labels = c(expression(Rs[GPP]), expression(Rs[lit])),
-    values=c("#E41A1C", "skyblue")
-  ) +
-  theme(
-    legend.position = c(0.85, 0.50),
-    legend.title = element_blank(),
-    legend.text.align = 0
-  ) +
-  ylab("Density") +
-  xlab(expression(Rs ~ (Pg ~ C ~ yr^{-1}))) -> Rs_plot3
-
-
-# plot4
-rs_results_agg %>%
-  select(`Rs[lit]` = Rs_raw_agg, `Rs[GPP]` = Rs_topdown4) %>%
-  gather(Rs_type) %>% 
-  ggplot(aes(value, fill = Rs_type)) +
-  geom_density(stat = "density", alpha = 0.65) +
-  coord_cartesian(xlim = c(50, 110)) +
-  scale_fill_manual("",
-    labels = c(expression(Rs[GPP-agg]), expression(Rs[lit-agg])),
-    values=c("#E41A1C", "skyblue")
-  ) +
-  theme(
-    legend.position = c(0.80, 0.50),
-    legend.title = element_blank(),
-    legend.text.align = 0
-  ) +
-  ylab("Density") +
-  xlab(expression(Rs ~ (Pg ~ C ~ yr^{-1}))) -> Rs_plot4
-
-
-```
-
-
-```{r, fig.height=6, fig.width=8}
-(GPP_plot1 | Rs_plot3) / (GPP_plot2 | Rs_plot4) +
-  plot_annotation(tag_levels = 'a')
-# ggsave("outputs/FigureSXXX.png", width = 8, height = 6)
 ```
 
 

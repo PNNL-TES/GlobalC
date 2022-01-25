@@ -352,8 +352,8 @@ plot_Rroot_Rs_NPP <- function(sub_srdb, NPP_data) {
     theme(axis.title.x = element_blank())
 
   p_mul <- plot_grid(p_NPP, p_fire,
-    nrow = 1, labels = c("( a )", "( b )"),
-    vjust = c(3), hjust = c(-2.8, -2.8, -2.5)
+    nrow = 1, labels = c("a", "b"),
+    vjust = c(1), hjust = c(-1, -1, -1.5)
   )
 
   # plot Rroot_Rs ratio panel
@@ -388,8 +388,8 @@ plot_Rroot_Rs_NPP <- function(sub_srdb, NPP_data) {
 
   # output figure
   plot_grid(p_mul, RC_plot,
-    nrow = 2, labels = c("", "( c )"),
-    vjust = c(3), hjust = c(-2.8)
+    nrow = 2, labels = c("", "c"),
+    vjust = c(1), hjust = c(-1)
   )
 }
 
