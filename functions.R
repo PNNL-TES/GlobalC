@@ -280,7 +280,7 @@ plot_RaGPP <- function(RaGPP_data) {
       limits = c("Deciduous", "Evergreen", "Mixed", "Grassland", "Other"),
       labels = c(
         paste0("DF (n = ", obs_DF, ")"), paste0("EF (n = ", obs_EF, ")"),
-        paste0("MF (n = ", obs_MF, ")"), paste0("Grassland (n = ", obs_GRA, ")"),
+        paste0("MF (n = ", obs_MF, ")"), paste0("GRA (n = ", obs_GRA, ")"),
         paste0("Other (n = ", obs_Other, ")")
       )
     ) +
@@ -352,8 +352,8 @@ plot_Rroot_Rs_NPP <- function(sub_srdb, NPP_data) {
     theme(axis.title.x = element_blank())
 
   p_mul <- plot_grid(p_NPP, p_fire,
-    nrow = 1, labels = c("( a )", "( b )"),
-    vjust = c(3), hjust = c(-2.8, -2.8, -2.5)
+    nrow = 1, labels = c("a", "b"),
+    vjust = c(1), hjust = c(-1, -1, -1.5)
   )
 
   # plot Rroot_Rs ratio panel
@@ -369,7 +369,7 @@ plot_Rroot_Rs_NPP <- function(sub_srdb, NPP_data) {
     scale_x_discrete(
       limits = c("Agriculture", "DF", "EF", "Mixed", "Grassland", "Shrubland", "Other"),
       labels = c(
-        paste0("Agriculture (n = ", obs_AG, ")"), paste0("DF (n = ", obs_DF, ")"),
+        paste0("CRO (n = ", obs_AG, ")"), paste0("DF (n = ", obs_DF, ")"),
         paste0("EF (n = ", obs_EF, ")"), paste0("MF (n = ", obs_MF, ")"),
         paste0("GRA (n = ", obs_GRA, ")"), paste0("SHR (n = ", obs_SHR, ")"),
         paste0("Other (n = ", obs_Other, ")")
@@ -388,8 +388,8 @@ plot_Rroot_Rs_NPP <- function(sub_srdb, NPP_data) {
 
   # output figure
   plot_grid(p_mul, RC_plot,
-    nrow = 2, labels = c("", "( c )"),
-    vjust = c(3), hjust = c(-2.8)
+    nrow = 2, labels = c("", "c"),
+    vjust = c(1), hjust = c(-1)
   )
 }
 
