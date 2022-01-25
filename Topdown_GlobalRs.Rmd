@@ -609,7 +609,7 @@ bind_rows(
 
 gpp_by_group / GPP_lit_group_plot +
   plot_annotation(tag_levels = 'a')
-# ggsave("outputs/FigureSX5.png", width = 8, height = 6)
+# ggsave("outputs/FigureS5.png", width = 8, height = 6)
 ```
 
 ### GPP vs components relationships
@@ -699,7 +699,7 @@ red <- rgb(1, 0, 0, alpha = 1)
 pairs_colors <- c(black, red)[as.factor(lt_ip)]
 pairsdata <- gpp_results[gpp_vd$Parameter[gpp_vd$Contribution > 0.01]]
 pairsdata <- rename(pairsdata, "Rs from literature" = Rs_raw, "Rroot:Rs ratio" = Rc, "Rroot:RA ratio" = Froot)
-# pdf("outputs/FigureS8 - Boots GPP pairs.pdf", width = 8, height = 6)
+# pdf("outputs/FigureS11 - Boots GPP pairs.pdf", width = 8, height = 6)
 pairs(pairsdata, col = pairs_colors, pch = ".", main = expression(GPP[Rs]))
 # dev.off()
 # get mean Rroot:Rs of below or above the intercetion (126.7 Pg)
@@ -995,7 +995,7 @@ gt_ip <- rs_results$Rs_topdown > rs_ip # ">" b/c most bootstrapped Rs values are
 pairs_colors <- c(black, red)[as.factor(gt_ip)]
 pairsdata <- rs_results[vd_rs$Parameter[vd_rs$Contribution > 0.04]]
 pairsdata <- rename(pairsdata, "GPP from literature" = GPP_raw, "Rroot : RA ratio" = Froot_rest, "RA : GPP ratio" = RaGpp_rest)
-# pdf("outputs/FigureS9 - Boots Rs pairs.pdf", width = 8, height = 6)
+# pdf("outputs/FigureS12 - Boots Rs pairs.pdf", width = 8, height = 6)
 pairs(pairsdata, col = pairs_colors, pch = ".", main = expression(Rs[GPP]))
 # dev.off()
 
@@ -1105,7 +1105,7 @@ p_rs_agg <- ggplot(GlobalRs_agg, aes(Group_year, Rs)) +
 (p_gpp | p_rs) / (p_gpp_agg | p_rs_agg) / (GPP_lit_plot | Rs_lit_plot) +
   plot_annotation(tag_levels = 'a')
 
-# ggsave("outputs/FigureS7.1.png", width = 9, height = 8)
+# ggsave("outputs/FigureS8.png", width = 9, height = 8)
 
 ```
 
@@ -1125,7 +1125,7 @@ bind_rows(
   xlab(expression(GPP~(Pg~C~yr^{-1}))) +
   ylab(expression(""))
 
-# ggsave("outputs/FigureS7.2.png", width = 6, height = 4)
+# ggsave("outputs/FigureS8X2.png", width = 6, height = 4)
 ```
 
 
@@ -1211,13 +1211,13 @@ rs_results %>%
 
 (GPP_plot1 | Rs_plot3) / (GPP_plot2 | Rs_plot4) +
   plot_annotation(tag_levels = 'a')
-# ggsave("outputs/FigureSXXX.png", width = 8, height = 6)
+# ggsave("outputs/FigureS9.png", width = 8, height = 6)
 
 ```
 
 
 
-## Combining GPP and Rs - Figure 2
+## Combining GPP and Rs - Figure 1 (updated version)
 
 What's the most likely values for GPP and R[S] that are consistent with the underlying distributions?
 
@@ -1333,7 +1333,7 @@ p_joint <- ggplot(joint, aes(GPP, Rs, color = Source)) +
   #   angle = 90)
 
 print(p_joint)
-# ggsave("outputs/Figure2.png", width = 8, height = 8)
+# ggsave("outputs/Figure1.png", width = 8, height = 8)
 
 # Combine three panels together
 library(patchwork)
@@ -1616,7 +1616,7 @@ cat("Test whether global Rh:GPP higher than observations:")
 ratiotest_obs_rh <- filter(ratiotest_rh, Type %in% c("Global", "Observations"))
 wilcox.test(Ratio ~ globalcase, data = ratiotest_obs_rh, alternative = "less")
 
-# ggsave("outputs/Figure3.jpg", width = 8, height = 8, units = "in")
+# ggsave("outputs/Figure2.jpg", width = 8, height = 8, units = "in")
 
 ```
 
@@ -1771,7 +1771,7 @@ _**Statistical analysis**_
 ## Compare the results of different re-sampling methods (N = `r N_SAMPLES`)
 ```{r sample method comparison, fig.height=6, fig.width=8}
 sample_size_tst(10, 10000)
-# ggsave("outputs/FigureS7.jpg", width = 8, height = 6, dpi = 300, units = "in")
+# ggsave("outputs/FigureS10.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
 ## Summarize stats and software used.
@@ -1827,7 +1827,7 @@ p_ratios_ensemble <- ggplot(data = cmip_local_OBSLatLon, aes(source, Ratio, colo
   guides(colour = guide_legend(override.aes = list(alpha = 1)))
 print(p_ratios_ensemble)
 
-# ggsave("outputs/FigureS10.jpg", width = 8, height = 6, dpi = 300, units = "in")
+# ggsave("outputs/FigureSXXX.jpg", width = 8, height = 6, dpi = 300, units = "in")
 ```
 
 # Conceptual diagram to explian the mechanism
